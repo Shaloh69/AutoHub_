@@ -1,3 +1,167 @@
 @import "tailwindcss";
 
+/* Custom AutoHub styles */
+.animate-fade-in {
+  animation: fadeIn 0.6s ease-in-out;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.6s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Custom scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #E10600;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #C70500;
+}
+
+/* Dark mode scrollbar */
+.dark ::-webkit-scrollbar-track {
+  background: #243447;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #E10600;
+}
+
+/* Selection styling */
+::selection {
+  background-color: #E10600;
+  color: #FAFAFA;
+}
+
+.dark ::selection {
+  background-color: #FFD166;
+  color: #0A0A0A;
+}
+
+/* Focus outline customization */
+.focus\:outline-autohub:focus {
+  outline: 2px solid #E10600;
+  outline-offset: 2px;
+}
+
+/* Gradient text utilities */
+.text-gradient-autohub {
+  background: linear-gradient(135deg, #E10600 0%, #FFD166 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.text-gradient-luxury {
+  background: linear-gradient(135deg, #0A0A0A 0%, #243447 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Custom card hover effects */
+.card-hover-lift {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-hover-lift:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 25px -5px rgba(225, 6, 0, 0.1), 0 10px 10px -5px rgba(225, 6, 0, 0.04);
+}
+
+/* Line clamp utilities */
+.line-clamp-3 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+/* AutoHub specific animations */
+@keyframes pulse-gold {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.animate-pulse-gold {
+  animation: pulse-gold 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Premium badge styling */
+.premium-badge {
+  background: linear-gradient(135deg, #FFD166 0%, #E6BC5C 100%);
+  color: #0A0A0A;
+  font-weight: 600;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+}
+
+/* Custom button styles */
+.btn-autohub-primary {
+  background: linear-gradient(135deg, #E10600 0%, #C70500 100%);
+  color: #FAFAFA;
+  font-weight: 600;
+  transition: all 0.2s;
+  box-shadow: 0 4px 6px -1px rgba(225, 6, 0, 0.1), 0 2px 4px -1px rgba(225, 6, 0, 0.06);
+}
+
+.btn-autohub-primary:hover {
+  background: linear-gradient(135deg, #C70500 0%, #A60400 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 10px 15px -3px rgba(225, 6, 0, 0.1), 0 4px 6px -2px rgba(225, 6, 0, 0.05);
+}
+
+.btn-autohub-secondary {
+  background: linear-gradient(135deg, #FFD166 0%, #E6BC5C 100%);
+  color: #0A0A0A;
+  font-weight: 600;
+  transition: all 0.2s;
+  box-shadow: 0 4px 6px -1px rgba(255, 209, 102, 0.1), 0 2px 4px -1px rgba(255, 209, 102, 0.06);
+}
+
+.btn-autohub-secondary:hover {
+  background: linear-gradient(135deg, #E6BC5C 0%, #CCA652 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 10px 15px -3px rgba(255, 209, 102, 0.1), 0 4px 6px -2px rgba(255, 209, 102, 0.05);
+}
+
 @config "../tailwind.config.js"

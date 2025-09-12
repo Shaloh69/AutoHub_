@@ -24,6 +24,80 @@ export const Logo: React.FC<IconSvgProps> = ({
   </svg>
 );
 
+export const CheckIcon = ({ size = 24, width, height, ...props }: IconProps) => (
+  <svg
+    aria-hidden="true"
+    fill="none"
+    focusable="false"
+    height={size || height}
+    role="presentation"
+    viewBox="0 0 24 24"
+    width={size || width}
+    {...props}
+  >
+    <path
+      d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"
+      fill="currentColor"
+    />
+  </svg>
+);
+
+export const CarIcon = ({ size = 24, width, height, ...props }: IconProps) => (
+  <svg
+    aria-hidden="true"
+    fill="none"
+    focusable="false"
+    height={size || height}
+    role="presentation"
+    viewBox="0 0 24 24"
+    width={size || width}
+    {...props}
+  >
+    <path
+      d="M5 13h14l-1-5H6l-1 5zm-2 0c-.55 0-1-.45-1-1s.45-1 1-1h1l1.34-5.34c.15-.59.69-1 1.29-1h10.74c.6 0 1.14.41 1.29 1L19 11h1c.55 0 1 .45 1 1s-.45 1-1 1H3z"
+      fill="currentColor"
+    />
+    <circle cx="7.5" cy="16.5" r="1.5" fill="currentColor" />
+    <circle cx="16.5" cy="16.5" r="1.5" fill="currentColor" />
+  </svg>
+);
+
+export const DashboardIcon = ({ size = 24, width, height, ...props }: IconProps) => (
+  <svg
+    aria-hidden="true"
+    fill="none"
+    focusable="false"
+    height={size || height}
+    role="presentation"
+    viewBox="0 0 24 24"
+    width={size || width}
+    {...props}
+  >
+    <path
+      d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"
+      fill="currentColor"
+    />
+  </svg>
+);
+
+export const NotificationIcon = ({ size = 24, width, height, ...props }: IconProps) => (
+  <svg
+    aria-hidden="true"
+    fill="none"
+    focusable="false"
+    height={size || height}
+    role="presentation"
+    viewBox="0 0 24 24"
+    width={size || width}
+    {...props}
+  >
+    <path
+      d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"
+      fill="currentColor"
+    />
+  </svg>
+);
+
 export const DiscordIcon: React.FC<IconSvgProps> = ({
   size = 24,
   width,

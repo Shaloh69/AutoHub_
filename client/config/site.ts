@@ -1,24 +1,20 @@
 export type SiteConfig = typeof siteConfig;
 
 export const siteConfig = {
-  name: "Task Manager",
-  description: "yes.",
+  name: "AutoHub",
+  description: "The ultimate destination for buying and selling premium vehicles. Discover your perfect car with AutoHub's curated selection of quality automobiles.",
   navItems: [
     {
-      label: "Home",
-      href: "/",
+      label: "Browse Cars",
+      href: "/cars",
     },
     {
-      label: "Docs",
-      href: "/docs",
+      label: "Sell Your Car",
+      href: "/dashboard/create-listing",
     },
     {
-      label: "Pricing",
-      href: "/pricing",
-    },
-    {
-      label: "Blog",
-      href: "/blog",
+      label: "How It Works",
+      href: "/how-it-works",
     },
     {
       label: "About",
@@ -27,32 +23,32 @@ export const siteConfig = {
   ],
   navMenuItems: [
     {
-      label: "Profile",
-      href: "/profile",
-    },
-    {
       label: "Dashboard",
       href: "/dashboard",
     },
     {
-      label: "Projects",
-      href: "/projects",
+      label: "Browse Cars",
+      href: "/cars",
     },
     {
-      label: "Team",
-      href: "/team",
+      label: "Sell Car",
+      href: "/dashboard/create-listing",
     },
     {
-      label: "Calendar",
-      href: "/calendar",
+      label: "My Listings",
+      href: "/dashboard",
     },
     {
-      label: "Settings",
-      href: "/settings",
+      label: "Subscription",
+      href: "/subscription",
     },
     {
-      label: "Help & Feedback",
-      href: "/help-feedback",
+      label: "Profile Settings",
+      href: "/dashboard/profile",
+    },
+    {
+      label: "Support",
+      href: "/support",
     },
     {
       label: "Logout",
@@ -60,10 +56,11 @@ export const siteConfig = {
     },
   ],
   links: {
-    github: "https://github.com/heroui-inc/heroui",
-    twitter: "https://twitter.com/hero_ui",
-    docs: "https://heroui.com",
-    discord: "https://discord.gg/9b6yyZKmH4",
-    sponsor: "https://patreon.com/jrgarciadev",
+    github: "https://github.com/autohub",
+    twitter: "https://twitter.com/autohub_official",
+    docs: "https://docs.autohub.com",
+    discord: "https://discord.gg/autohub",
+    sponsor: "https://github.com/sponsors/autohub",
+    support: "https://support.autohub.com",
   },
 };
