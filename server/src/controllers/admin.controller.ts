@@ -368,7 +368,7 @@ export class AdminController {
                 });
             }
 
-            const banExpiresAt = duration ? new Date(Date.now() + duration * 24 * 60 * 60 * 1000) : null;
+            const banExpiresAt = duration ? new Date(Date.now() + duration * 24 * 60 * 60 * 1000) : "";
 
             await this.userRepository.update(userId, {
                 is_banned: true,
@@ -416,11 +416,11 @@ export class AdminController {
                     error: 'User not found'
                 });
             }
-
+            
             await this.userRepository.update(userId, {
                 is_banned: false,
-                ban_reason: null,
-                ban_expires_at: null
+                ban_reason: "",
+                ban_expires_at: ""
             });
 
             res.json({
