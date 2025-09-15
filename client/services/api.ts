@@ -32,7 +32,7 @@ export interface User {
   email: string;
   firstName: string;
   lastName: string;
-  role: 'USER' | 'ADMIN' | 'SELLER';
+  role: 'USER' | 'ADMIN' | 'MODERATOR';
   isVerified: boolean;
   subscription?: Subscription;
   createdAt: string;
