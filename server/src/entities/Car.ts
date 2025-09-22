@@ -78,314 +78,268 @@ export enum Drivetrain {
 @Index(['is_premium', 'premium_until'])
 export class Car {
     @PrimaryGeneratedColumn()
-    id: number;
+    id!: number;
 
     @Column({ length: 255 })
-    title: string;
+    title!: string;
 
     @Column({ type: 'text', nullable: true })
-    description: string;
+    description!: string;
 
     @Column()
-    year: number;
+    year!: number;
 
     @Column({ type: 'decimal', precision: 12, scale: 2 })
-    price: number;
+    price!: number;
 
     @Column({ type: 'decimal', precision: 12, scale: 2, nullable: true })
-    original_price: number;
+    original_price!: number;
 
     @Column({ length: 3, default: 'PHP' })
-    currency: string;
+    currency!: string;
 
     @Column({ default: true })
-    negotiable: boolean;
+    negotiable!: boolean;
 
     @Column({ default: false })
-    financing_available: boolean;
+    financing_available!: boolean;
 
     @Column({ default: false })
-    trade_in_accepted: boolean;
+    trade_in_accepted!: boolean;
 
     // Technical Specifications
     @Column()
-    mileage: number;
+    mileage!: number;
 
     @Column({ type: 'enum', enum: FuelType })
-    fuel_type: FuelType;
+    fuel_type!: FuelType;
 
     @Column({ type: 'enum', enum: TransmissionType })
-    transmission: TransmissionType;
+    transmission!: TransmissionType;
 
     @Column({ length: 20, nullable: true })
-    engine_size: string;
+    engine_size!: string;
 
     @Column({ nullable: true })
-    horsepower: number;
+    horsepower!: number;
 
     @Column({ type: 'enum', enum: Drivetrain, nullable: true })
-    drivetrain: Drivetrain;
+    drivetrain!: Drivetrain;
 
     // Colors
     @Column({ nullable: true })
-    exterior_color_id: number;
+    exterior_color_id!: number;
 
     @Column({ nullable: true })
-    interior_color_id: number;
+    interior_color_id!: number;
 
     @Column({ length: 50, nullable: true })
-    custom_exterior_color: string;
+    custom_exterior_color!: string;
 
     @Column({ length: 50, nullable: true })
-    custom_interior_color: string;
+    custom_interior_color!: string;
 
     // Condition & History
     @Column({ type: 'enum', enum: ConditionRating })
-    condition_rating: ConditionRating;
+    condition_rating!: ConditionRating;
 
     @Column({ default: false })
-    accident_history: boolean;
+    accident_history!: boolean;
 
     @Column({ type: 'text', nullable: true })
-    accident_details: string;
+    accident_details!: string;
 
     @Column({ default: false })
-    flood_history: boolean;
+    flood_history!: boolean;
 
     @Column({ default: true })
-    service_history: boolean;
+    service_history!: boolean;
 
     @Column({ default: false })
-    service_records_available: boolean;
+    service_records_available!: boolean;
 
     @Column({ default: 1 })
-    number_of_owners: number;
+    number_of_owners!: number;
 
     @Column({ default: false })
-    warranty_remaining: boolean;
-
-    @Column({ type: 'text', nullable: true })
-    warranty_details: string;
-
-    // Vehicle Identification
-    @Column({ length: 17, unique: true, nullable: true })
-    vin: string;
-
-    @Column({ length: 50, nullable: true })
-    engine_number: string;
-
-    @Column({ length: 50, nullable: true })
-    chassis_number: string;
-
-    @Column({ length: 20, nullable: true })
-    plate_number: string;
-
-    @Column({ type: 'date', nullable: true })
-    registration_expiry: Date;
-
-    @Column({ default: true })
-    or_cr_available: boolean;
-
-    // Philippines Specific
-    @Column({ default: true })
-    lto_registered: boolean;
-
-    @Column({ default: false })
-    casa_maintained: boolean;
-
-    @Column({ default: false })
-    comprehensive_insurance: boolean;
+    is_bank_financed!: boolean;
 
     @Column({ length: 100, nullable: true })
-    insurance_company: string;
+    financing_bank!: string;
 
-    @Column({ type: 'date', nullable: true })
-    insurance_expiry: Date;
-
-    // Location (Philippines specific)
+    // Location
     @Column()
-    city_id: number;
+    city_id!: number;
 
     @Column()
-    province_id: number;
+    province_id!: number;
 
     @Column()
-    region_id: number;
-
-    @Column({ length: 100, nullable: true })
-    barangay: string;
+    region_id!: number;
 
     @Column({ type: 'text', nullable: true })
-    detailed_address: string;
+    exact_location!: string;
 
-    @Column({ type: 'decimal', precision: 10, scale: 8, default: 14.5995 })
-    latitude: number;
+    @Column({ type: 'decimal', precision: 10, scale: 8, nullable: true })
+    latitude!: number;
 
-    @Column({ type: 'decimal', precision: 11, scale: 8, default: 120.9842 })
-    longitude: number;
+    @Column({ type: 'decimal', precision: 11, scale: 8, nullable: true })
+    longitude!: number;
 
-    // Listing Management
-    @Column({ type: 'enum', enum: CarStatus, default: CarStatus.PENDING })
-    status: CarStatus;
+    // Status & Approval
+    @Column({
+        type: 'enum',
+        enum: CarStatus,
+        default: CarStatus.DRAFT
+    })
+    status!: CarStatus;
 
-    @Column({ type: 'enum', enum: ApprovalStatus, default: ApprovalStatus.PENDING })
-    approval_status: ApprovalStatus;
+    @Column({
+        type: 'enum',
+        enum: ApprovalStatus,
+        default: ApprovalStatus.PENDING
+    })
+    approval_status!: ApprovalStatus;
 
     @Column({ nullable: true })
-    approved_by: number;
+    approved_by!: number;
 
     @Column({ type: 'timestamp', nullable: true })
-    approved_at: Date;
+    approved_at!: Date;
 
     @Column({ type: 'text', nullable: true })
-    rejection_reason: string;
+    rejection_reason!: string;
 
     @Column({ type: 'text', nullable: true })
-    revision_notes: string;
+    admin_notes!: string;
 
     // Premium Features
     @Column({ default: false })
-    is_featured: boolean;
+    is_featured!: boolean;
 
     @Column({ type: 'timestamp', nullable: true })
-    featured_until: Date;
+    featured_until!: Date;
 
     @Column({ default: false })
-    is_premium: boolean;
+    is_premium!: boolean;
 
     @Column({ type: 'timestamp', nullable: true })
-    premium_until: Date;
+    premium_until!: Date;
 
     @Column({ default: 0 })
-    boost_count: number;
+    boost_count!: number;
 
     @Column({ type: 'timestamp', nullable: true })
-    last_boosted_at: Date;
+    last_boosted_at!: Date;
 
-    // Performance Metrics
+    // Metrics
     @Column({ default: 0 })
-    views_count: number;
-
-    @Column({ default: 0 })
-    unique_views_count: number;
+    view_count!: number;
 
     @Column({ default: 0 })
-    contact_count: number;
+    inquiry_count!: number;
 
     @Column({ default: 0 })
-    favorite_count: number;
-
-    @Column({ type: 'decimal', precision: 3, scale: 2, default: 0.00 })
-    average_rating: number;
+    favorite_count!: number;
 
     @Column({ default: 0 })
-    total_ratings: number;
+    share_count!: number;
 
-    // Search & SEO
-    @Column({ type: 'decimal', precision: 5, scale: 2, default: 0 })
-    search_score: number;
+    @Column({ type: 'timestamp', nullable: true })
+    last_viewed_at!: Date;
 
-    @Column({ length: 255, unique: true, nullable: true })
-    seo_slug: string;
+    // SEO & Marketing
+    @Column({ length: 200, unique: true, nullable: true })
+    seo_slug!: string;
 
     @Column({ length: 255, nullable: true })
-    meta_title: string;
+    meta_title!: string;
 
     @Column({ type: 'text', nullable: true })
-    meta_description: string;
+    meta_description!: string;
 
-    @Column({ type: 'text', nullable: true })
-    keywords: string;
-
-    // Quality Score
-    @Column({ type: 'decimal', precision: 3, scale: 2, default: 0.00 })
-    quality_score: number;
-
-    @Column({ type: 'decimal', precision: 3, scale: 2, default: 0.00 })
-    completeness_score: number;
+    @Column({ type: 'json', nullable: true })
+    tags!: string[];
 
     // Timestamps
-    @Column({ default: true })
-    is_active: boolean;
-
-    @Column({ type: 'timestamp', nullable: true })
-    expires_at: Date;
-
-    @Column({ type: 'timestamp', nullable: true })
-    sold_at: Date;
-
-    @Column({ type: 'timestamp', nullable: true })
-    last_price_update: Date;
-
     @CreateDateColumn()
-    created_at: Date;
+    created_at!: Date;
 
     @UpdateDateColumn()
-    updated_at: Date;
+    updated_at!: Date;
+
+    @Column({ type: 'timestamp', nullable: true })
+    published_at!: Date;
+
+    @Column({ type: 'timestamp', nullable: true })
+    expires_at!: Date;
+
+    @Column({ type: 'timestamp', nullable: true })
+    sold_at!: Date;
 
     // Relations
     @ManyToOne(() => User, user => user.cars)
-    seller: User;
+    seller!: User;
 
     @Column()
-    seller_id: number;
+    seller_id!: number;
 
     @ManyToOne(() => Brand)
-    brand: Brand;
+    brand!: Brand;
 
     @Column()
-    brand_id: number;
+    brand_id!: number;
 
     @ManyToOne(() => Model)
-    model: Model;
+    model!: Model;
 
     @Column()
-    model_id: number;
+    model_id!: number;
 
     @ManyToOne(() => Category, { nullable: true })
-    category: Category;
+    category!: Category;
 
     @Column({ nullable: true })
-    category_id: number;
+    category_id!: number;
 
     @ManyToOne(() => User, { nullable: true })
-    approver: User;
+    approver!: User;
 
     @ManyToOne(() => Currency)
-    currencyObj: Currency;
+    currencyObj!: Currency;
 
     @ManyToOne(() => StandardColor, { nullable: true })
-    exterior_color: StandardColor;
+    exterior_color!: StandardColor;
 
     @ManyToOne(() => StandardColor, { nullable: true })
-    interior_color: StandardColor;
+    interior_color!: StandardColor;
 
     @ManyToOne(() => PhCity)
-    city: PhCity;
+    city!: PhCity;
 
     @ManyToOne(() => PhProvince)
-    province: PhProvince;
+    province!: PhProvince;
 
     @ManyToOne(() => PhRegion)
-    region: PhRegion;
+    region!: PhRegion;
 
     @OneToMany(() => CarImage, image => image.car)
-    images: CarImage[];
+    images!: CarImage[];
 
     @OneToMany(() => CarFeature, carFeature => carFeature.car)
-    carFeatures: CarFeature[];
+    carFeatures!: CarFeature[];
 
     @OneToMany(() => Inquiry, inquiry => inquiry.car)
-    inquiries: Inquiry[];
+    inquiries!: Inquiry[];
 
     @OneToMany(() => Transaction, transaction => transaction.car)
-    transactions: Transaction[];
+    transactions!: Transaction[];
 
     @OneToMany(() => Favorite, favorite => favorite.car)
-    favorites: Favorite[];
+    favorites!: Favorite[];
 
     @OneToMany(() => PriceHistory, priceHistory => priceHistory.car)
-    priceHistory: PriceHistory[];
+    priceHistory!: PriceHistory[];
 
     // Virtual getters
     get is_sold(): boolean {
@@ -402,5 +356,13 @@ export class Car {
 
     get is_premium_active(): boolean {
         return this.is_premium && this.premium_until && new Date() < this.premium_until;
+    }
+
+    get age_in_years(): number {
+        return new Date().getFullYear() - this.year;
+    }
+
+    get is_expired(): boolean {
+        return this.expires_at ? this.expires_at < new Date() : false;
     }
 }
