@@ -4,39 +4,29 @@ from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.pool import QueuePool
 from typing import Generator
 import redis
-from config import get_settings
+from app.config import settings
 
-settings = get_settings()
-
-# Create database engine with connection pooling
+# Create SQLAlchemy engine with connection pooling
 engine = create_engine(
     settings.DATABASE_URL,
-    poolclass=QueuePool,
-    pool_size=settings.DB_POOL_SIZE,
-    max_overflow=settings.DB_MAX_OVERFLOW,
-    pool_recycle=settings.DB_POOL_RECYCLE,
-    pool_pre_ping=True,
     echo=settings.DB_ECHO,
+    poolclass=QueuePool,
+    pool_size=20,
+    max_overflow=40,
+    pool_pre_ping=True,
+    pool_recycle=3600,
 )
 
-# Set MySQL specific settings
-@event.listens_for(engine, "connect")
-def set_mysql_pragma(dbapi_conn, connection_record):
-    cursor = dbapi_conn.cursor()
-    cursor.execute("SET time_zone = '+08:00'")
-    cursor.execute("SET SESSION sql_mode='STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION'")
-    cursor.close()
-
-# Create sessionmaker
+# Create session factory
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-# Base class for models
+# Create declarative base
 Base = declarative_base()
 
-# Redis connection
+# Redis connection for caching
 redis_client = redis.from_url(
     settings.REDIS_URL,
-    encoding="utf-8",
+    password=settings.REDIS_PASSWORD,
     decode_responses=True,
     socket_connect_timeout=5,
     socket_timeout=5,
@@ -45,8 +35,8 @@ redis_client = redis.from_url(
 
 def get_db() -> Generator[Session, None, None]:
     """
-    Database dependency for FastAPI endpoints.
-    Yields a database session and ensures it's closed after use.
+    Database dependency for FastAPI endpoints
+    Yields a database session and ensures it's closed after use
     """
     db = SessionLocal()
     try:
@@ -55,144 +45,110 @@ def get_db() -> Generator[Session, None, None]:
         db.close()
 
 
-def get_redis():
-    """
-    Redis dependency for FastAPI endpoints.
-    Returns the Redis client.
-    """
+def get_redis() -> redis.Redis:
+    """Get Redis client instance"""
     return redis_client
 
 
-class DatabaseManager:
-    """Utility class for database operations"""
-    
-    @staticmethod
-    def create_all_tables():
-        """Create all tables in the database"""
-        Base.metadata.create_all(bind=engine)
-    
-    @staticmethod
-    def drop_all_tables():
-        """Drop all tables from the database"""
-        Base.metadata.drop_all(bind=engine)
-    
-    @staticmethod
-    def get_session() -> Session:
-        """Get a new database session"""
-        return SessionLocal()
-    
-    @staticmethod
-    def close_session(db: Session):
-        """Close a database session"""
-        db.close()
+def init_db():
+    """Initialize database tables"""
+    Base.metadata.create_all(bind=engine)
 
 
+def close_db_connections():
+    """Close all database connections"""
+    engine.dispose()
+
+
+# Event listener to set timezone for MySQL connections
+@event.listens_for(engine, "connect")
+def set_timezone(dbapi_conn, connection_record):
+    """Set timezone to Philippines time for each connection"""
+    cursor = dbapi_conn.cursor()
+    cursor.execute("SET time_zone = '+08:00'")
+    cursor.close()
+
+
+# Cache utilities
 class CacheManager:
-    """Utility class for Redis cache operations"""
+    """Redis cache manager with common operations"""
     
-    @staticmethod
-    def get(key: str):
+    def __init__(self, redis_client: redis.Redis):
+        self.redis = redis_client
+    
+    def get(self, key: str):
         """Get value from cache"""
         try:
-            return redis_client.get(key)
+            return self.redis.get(key)
         except Exception as e:
-            print(f"Cache get error: {e}")
+            print(f"Redis GET error: {e}")
             return None
     
-    @staticmethod
-    def set(key: str, value: str, ttl: int = None):
+    def set(self, key: str, value: str, ttl: int = None):
         """Set value in cache with optional TTL"""
         try:
             if ttl:
-                redis_client.setex(key, ttl, value)
+                self.redis.setex(key, ttl, value)
             else:
-                redis_client.set(key, value)
+                self.redis.set(key, value)
             return True
         except Exception as e:
-            print(f"Cache set error: {e}")
+            print(f"Redis SET error: {e}")
             return False
     
-    @staticmethod
-    def delete(key: str):
+    def delete(self, key: str):
         """Delete key from cache"""
         try:
-            redis_client.delete(key)
+            self.redis.delete(key)
             return True
         except Exception as e:
-            print(f"Cache delete error: {e}")
+            print(f"Redis DELETE error: {e}")
             return False
     
-    @staticmethod
-    def exists(key: str) -> bool:
+    def exists(self, key: str) -> bool:
         """Check if key exists in cache"""
         try:
-            return redis_client.exists(key) > 0
+            return bool(self.redis.exists(key))
         except Exception as e:
-            print(f"Cache exists error: {e}")
+            print(f"Redis EXISTS error: {e}")
             return False
     
-    @staticmethod
-    def flush_pattern(pattern: str):
-        """Delete all keys matching pattern"""
-        try:
-            keys = redis_client.keys(pattern)
-            if keys:
-                redis_client.delete(*keys)
-            return True
-        except Exception as e:
-            print(f"Cache flush error: {e}")
-            return False
-    
-    @staticmethod
-    def increment(key: str, amount: int = 1) -> int:
+    def increment(self, key: str, amount: int = 1) -> int:
         """Increment counter"""
         try:
-            return redis_client.incrby(key, amount)
+            return self.redis.incrby(key, amount)
         except Exception as e:
-            print(f"Cache increment error: {e}")
+            print(f"Redis INCREMENT error: {e}")
             return 0
     
-    @staticmethod
-    def set_hash(name: str, mapping: dict, ttl: int = None):
-        """Set hash with optional TTL"""
+    def expire(self, key: str, seconds: int):
+        """Set expiration on key"""
         try:
-            redis_client.hset(name, mapping=mapping)
-            if ttl:
-                redis_client.expire(name, ttl)
+            self.redis.expire(key, seconds)
             return True
         except Exception as e:
-            print(f"Cache set hash error: {e}")
+            print(f"Redis EXPIRE error: {e}")
             return False
     
-    @staticmethod
-    def get_hash(name: str, key: str = None):
-        """Get hash value or entire hash"""
+    def keys(self, pattern: str) -> list:
+        """Get all keys matching pattern"""
         try:
-            if key:
-                return redis_client.hget(name, key)
-            return redis_client.hgetall(name)
+            return self.redis.keys(pattern)
         except Exception as e:
-            print(f"Cache get hash error: {e}")
-            return None
+            print(f"Redis KEYS error: {e}")
+            return []
+    
+    def flush_pattern(self, pattern: str):
+        """Delete all keys matching pattern"""
+        try:
+            keys = self.keys(pattern)
+            if keys:
+                self.redis.delete(*keys)
+            return True
+        except Exception as e:
+            print(f"Redis FLUSH error: {e}")
+            return False
 
 
-def test_database_connection():
-    """Test database connection"""
-    try:
-        db = SessionLocal()
-        db.execute("SELECT 1")
-        db.close()
-        return True
-    except Exception as e:
-        print(f"Database connection error: {e}")
-        return False
-
-
-def test_redis_connection():
-    """Test Redis connection"""
-    try:
-        redis_client.ping()
-        return True
-    except Exception as e:
-        print(f"Redis connection error: {e}")
-        return False
+# Create cache manager instance
+cache = CacheManager(redis_client)
