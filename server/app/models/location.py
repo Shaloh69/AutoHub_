@@ -1,9 +1,7 @@
-from sqlalchemy import Column, Integer, String, Boolean, DECIMAL, JSON, TIMESTAMP, ForeignKey, Enum
+from sqlalchemy import Column, Integer, String, Boolean, DECIMAL, ForeignKey
 from sqlalchemy.orm import relationship
-from geoalchemy2 import Geometry
 from datetime import datetime
 from app.database import Base
-import enum
 
 
 class Currency(Base):
@@ -15,7 +13,7 @@ class Currency(Base):
     symbol = Column(String(10), nullable=False)
     exchange_rate_to_php = Column(DECIMAL(10, 4), default=1.0000)
     is_active = Column(Boolean, default=True, index=True)
-    updated_at = Column(TIMESTAMP, default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_at = Column(Integer, default=int(datetime.utcnow().timestamp()))
     
     def __repr__(self):
         return f"<Currency {self.code}: {self.name}>"
@@ -60,74 +58,21 @@ class PhCity(Base):
     
     id = Column(Integer, primary_key=True, autoincrement=True)
     province_id = Column(Integer, ForeignKey("ph_provinces.id"), nullable=False, index=True)
-    city_code = Column(String(10), unique=True)
+    city_code = Column(String(10), index=True)
     name = Column(String(100), nullable=False, index=True)
-    city_type = Column(
-        Enum("city", "municipality", "district", name="city_type_enum"),
-        default="city",
-        index=True
-    )
-    is_highly_urbanized = Column(Boolean, default=False)
-    latitude = Column(DECIMAL(10, 8), nullable=False, default=0)
-    longitude = Column(DECIMAL(11, 8), nullable=False, default=0)
-    postal_codes = Column(JSON, nullable=True)
+    city_type = Column(String(20), default="municipality")  # city, municipality, component_city
+    zip_code = Column(String(10))
+    latitude = Column(DECIMAL(10, 8))
+    longitude = Column(DECIMAL(11, 8))
+    population = Column(Integer)
+    is_capital = Column(Boolean, default=False)
     is_active = Column(Boolean, default=True)
-    
-    # Spatial column (requires MySQL spatial support or PostGIS)
-    # Note: This uses POINT without SRID specification for broader MySQL compatibility
-    # location_point = Column(Geometry("POINT"), nullable=True)
     
     # Relationships
     province = relationship("PhProvince", back_populates="cities")
     
     def __repr__(self):
-        return f"<PhCity {self.name}, {self.province.name if self.province else 'N/A'}>"
-    
-    @property
-    def coordinates(self):
-        """Return coordinates as dict"""
-        return {
-            "latitude": float(self.latitude),
-            "longitude": float(self.longitude)
-        }
-    
-    def distance_to(self, lat: float, lng: float) -> float:
-        """
-        Calculate approximate distance in kilometers using Haversine formula
-        """
-        from math import radians, sin, cos, sqrt, atan2
-        
-        # Earth radius in kilometers
-        R = 6371.0
-        
-        lat1 = radians(float(self.latitude))
-        lon1 = radians(float(self.longitude))
-        lat2 = radians(lat)
-        lon2 = radians(lng)
-        
-        dlon = lon2 - lon1
-        dlat = lat2 - lat1
-        
-        a = sin(dlat / 2)**2 + cos(lat1) * cos(lat2) * sin(dlon / 2)**2
-        c = 2 * atan2(sqrt(a), sqrt(1 - a))
-        
-        distance = R * c
-        return distance
-
-
-class ColorFamily(str, enum.Enum):
-    BLACK = "black"
-    WHITE = "white"
-    SILVER = "silver"
-    GRAY = "gray"
-    RED = "red"
-    BLUE = "blue"
-    GREEN = "green"
-    YELLOW = "yellow"
-    ORANGE = "orange"
-    BROWN = "brown"
-    PURPLE = "purple"
-    OTHER = "other"
+        return f"<PhCity {self.name}, {self.province.name}>"
 
 
 class StandardColor(Base):
@@ -136,8 +81,9 @@ class StandardColor(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(50), unique=True, nullable=False, index=True)
     hex_code = Column(String(7))
-    color_family = Column(Enum(ColorFamily), nullable=False, index=True)
-    is_common = Column(Boolean, default=True, index=True)
+    category = Column(String(20))  # primary, neutral, metallic, special
+    is_popular = Column(Boolean, default=False)
+    display_order = Column(Integer, default=0)
     
     def __repr__(self):
-        return f"<StandardColor {self.name} ({self.hex_code})>"b
+        return f"<StandardColor {self.name}>"

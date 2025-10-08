@@ -1,6 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session, joinedload
-from typing import List
+from sqlalchemy import or_
+from typing import List, Optional
 from datetime import datetime
 from app.database import get_db
 from app.schemas.inquiry import (
@@ -13,7 +14,7 @@ from app.core.dependencies import get_current_user, get_optional_user
 from app.models.user import User
 from app.models.car import Car
 from app.models.inquiry import Inquiry, InquiryResponse as InquiryResponseModel
-from app.models.analytics import Notification
+from app.services.notification_service import NotificationService
 
 router = APIRouter()
 
@@ -24,11 +25,7 @@ async def create_inquiry(
     current_user: User = Depends(get_optional_user),
     db: Session = Depends(get_db)
 ):
-    """
-    Create new inquiry for a car
-    
-    Can be created by authenticated users or guests
-    """
+    """Create new inquiry for a car (authenticated or guest)"""
     # Get car
     car = db.query(Car).filter(Car.id == inquiry_data.car_id).first()
     if not car:
@@ -58,72 +55,47 @@ async def create_inquiry(
         financing_needed=inquiry_data.financing_needed,
         trade_in_vehicle=inquiry_data.trade_in_vehicle,
         status="new",
-        priority="medium"
+        created_at=datetime.utcnow()
     )
     
     db.add(inquiry)
-    db.flush()
     
     # Update car contact count
     car.contact_count += 1
     
-    # Create notification for seller
-    notification = Notification(
-        user_id=car.seller_id,
-        type="new_inquiry",
-        title="New Inquiry",
-        message=f"New inquiry for your listing: {car.title}",
-        action_text="View Inquiry",
-        action_url=f"/inquiries/{inquiry.id}",
-        related_car_id=car.id,
-        related_inquiry_id=inquiry.id,
-        priority="high"
-    )
-    db.add(notification)
-    
     db.commit()
     db.refresh(inquiry)
+    
+    # Send notification to seller
+    NotificationService.notify_new_inquiry(
+        db,
+        seller_id=car.seller_id,
+        car_id=car.id,
+        buyer_name=inquiry.buyer_name or "A buyer"
+    )
     
     return IDResponse(id=inquiry.id, message="Inquiry sent successfully")
 
 
-@router.get("", response_model=PaginatedResponse)
+@router.get("", response_model=List[InquiryResponse])
 async def get_inquiries(
-    inbox: bool = False,  # False = sent by me, True = received by me
-    status: str = None,
-    page: int = 1,
-    limit: int = 20,
+    role: str = Query("received", pattern="^(sent|received)$"),
+    status: Optional[str] = None,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """
-    Get inquiries (sent or received)
-    """
-    if inbox:
-        # Inquiries received (I'm the seller)
-        query = db.query(Inquiry).filter(Inquiry.seller_id == current_user.id)
-    else:
-        # Inquiries sent (I'm the buyer)
+    """Get user's inquiries (sent or received)"""
+    if role == "sent":
         query = db.query(Inquiry).filter(Inquiry.buyer_id == current_user.id)
+    else:
+        query = db.query(Inquiry).filter(Inquiry.seller_id == current_user.id)
     
     if status:
         query = query.filter(Inquiry.status == status)
     
-    total = query.count()
-    offset = (page - 1) * limit
-    inquiries = query.order_by(Inquiry.created_at.desc()).offset(offset).limit(limit).all()
+    inquiries = query.order_by(Inquiry.created_at.desc()).all()
     
-    total_pages = (total + limit - 1) // limit
-    
-    return PaginatedResponse(
-        data=[InquiryResponse.model_validate(inq) for inq in inquiries],
-        total=total,
-        page=page,
-        limit=limit,
-        total_pages=total_pages,
-        has_next=page < total_pages,
-        has_prev=page > 1
-    )
+    return [InquiryResponse.model_validate(i) for i in inquiries]
 
 
 @router.get("/{inquiry_id}", response_model=InquiryDetailResponse)
@@ -132,27 +104,25 @@ async def get_inquiry(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """
-    Get inquiry details
-    """
+    """Get inquiry details with responses"""
     inquiry = db.query(Inquiry).options(
+        joinedload(Inquiry.responses),
         joinedload(Inquiry.car),
-        joinedload(Inquiry.buyer),
-        joinedload(Inquiry.seller),
-        joinedload(Inquiry.responses)
-    ).filter(Inquiry.id == inquiry_id).first()
+        joinedload(Inquiry.buyer)
+    ).filter(
+        Inquiry.id == inquiry_id,
+        or_(
+            Inquiry.buyer_id == current_user.id,
+            Inquiry.seller_id == current_user.id
+        )
+    ).first()
     
     if not inquiry:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Inquiry not found")
     
-    # Check access
-    if inquiry.buyer_id != current_user.id and inquiry.seller_id != current_user.id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
-    
     # Mark as read if seller is viewing
     if inquiry.seller_id == current_user.id and not inquiry.is_read:
         inquiry.is_read = True
-        inquiry.status = "read"
         db.commit()
     
     return InquiryDetailResponse.model_validate(inquiry)
@@ -165,16 +135,15 @@ async def respond_to_inquiry(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """
-    Respond to an inquiry
-    """
+    """Respond to an inquiry"""
+    # Get inquiry
     inquiry = db.query(Inquiry).filter(Inquiry.id == inquiry_id).first()
     if not inquiry:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Inquiry not found")
     
-    # Check access (both buyer and seller can respond)
+    # Verify user can respond
     if inquiry.buyer_id != current_user.id and inquiry.seller_id != current_user.id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Unauthorized")
     
     # Create response
     response = InquiryResponseModel(
@@ -182,10 +151,8 @@ async def respond_to_inquiry(
         user_id=current_user.id,
         message=response_data.message,
         response_type=response_data.response_type,
-        is_internal_note=response_data.is_internal_note,
         counter_offer_price=response_data.counter_offer_price,
-        suggested_datetime=response_data.suggested_datetime,
-        meeting_location=response_data.meeting_location
+        created_at=datetime.utcnow()
     )
     
     db.add(response)
@@ -196,69 +163,46 @@ async def respond_to_inquiry(
     inquiry.last_response_by = current_user.id
     inquiry.status = "replied"
     
-    # Create notification for the other party
-    if current_user.id == inquiry.seller_id:
-        # Seller responded, notify buyer
-        if inquiry.buyer_id:
-            notification = Notification(
-                user_id=inquiry.buyer_id,
-                type="inquiry_response",
-                title="New Response",
-                message=f"You have a new response to your inquiry",
-                action_text="View Response",
-                action_url=f"/inquiries/{inquiry_id}",
-                related_inquiry_id=inquiry_id,
-                priority="medium"
-            )
-            db.add(notification)
-    else:
-        # Buyer responded, notify seller
-        notification = Notification(
-            user_id=inquiry.seller_id,
-            type="inquiry_response",
-            title="New Response",
-            message=f"You have a new response to your inquiry",
-            action_text="View Response",
-            action_url=f"/inquiries/{inquiry_id}",
-            related_inquiry_id=inquiry_id,
-            priority="medium"
-        )
-        db.add(notification)
-    
     db.commit()
     db.refresh(response)
+    
+    # Send notification
+    if inquiry.seller_id == current_user.id and inquiry.buyer_id:
+        NotificationService.notify_inquiry_response(db, inquiry.buyer_id, inquiry.car_id)
     
     return InquiryResponseResponse.model_validate(response)
 
 
-@router.put("/{inquiry_id}", response_model=MessageResponse)
+@router.put("/{inquiry_id}", response_model=InquiryResponse)
 async def update_inquiry(
     inquiry_id: int,
     update_data: InquiryUpdate,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """
-    Update inquiry status
+    """Update inquiry status"""
+    inquiry = db.query(Inquiry).filter(
+        Inquiry.id == inquiry_id,
+        Inquiry.seller_id == current_user.id
+    ).first()
     
-    Only seller can update inquiry
-    """
-    inquiry = db.query(Inquiry).filter(Inquiry.id == inquiry_id).first()
     if not inquiry:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Inquiry not found")
-    
-    if inquiry.seller_id != current_user.id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
     
     # Update fields
     update_dict = update_data.model_dump(exclude_unset=True)
     for key, value in update_dict.items():
-        if hasattr(inquiry, key):
-            setattr(inquiry, key, value)
+        setattr(inquiry, key, value)
+    
+    inquiry.updated_at = datetime.utcnow()
+    
+    if update_data.status == "closed":
+        inquiry.closed_at = datetime.utcnow()
     
     db.commit()
+    db.refresh(inquiry)
     
-    return MessageResponse(message="Inquiry updated successfully")
+    return InquiryResponse.model_validate(inquiry)
 
 
 @router.post("/{inquiry_id}/rate", response_model=MessageResponse)
@@ -268,40 +212,19 @@ async def rate_inquiry(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """
-    Rate inquiry interaction
-    
-    Buyer rates seller, seller rates buyer
-    """
+    """Rate inquiry interaction"""
     inquiry = db.query(Inquiry).filter(Inquiry.id == inquiry_id).first()
+    
     if not inquiry:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Inquiry not found")
     
-    # Check access
-    if inquiry.buyer_id != current_user.id and inquiry.seller_id != current_user.id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
-    
-    if current_user.id == inquiry.buyer_id:
-        # Buyer rating seller
+    # Buyer rates seller, seller rates buyer
+    if inquiry.buyer_id == current_user.id:
         inquiry.seller_rating = rating_data.rating
-        
-        # Update seller average rating
-        seller = db.query(User).filter(User.id == inquiry.seller_id).first()
-        if seller:
-            total_rating = (seller.average_rating * seller.total_ratings) + float(rating_data.rating)
-            seller.total_ratings += 1
-            seller.average_rating = total_rating / seller.total_ratings
-    else:
-        # Seller rating buyer
+    elif inquiry.seller_id == current_user.id:
         inquiry.buyer_rating = rating_data.rating
-        
-        # Update buyer average rating
-        if inquiry.buyer_id:
-            buyer = db.query(User).filter(User.id == inquiry.buyer_id).first()
-            if buyer:
-                total_rating = (buyer.average_rating * buyer.total_ratings) + float(rating_data.rating)
-                buyer.total_ratings += 1
-                buyer.average_rating = total_rating / buyer.total_ratings
+    else:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Unauthorized")
     
     db.commit()
     
@@ -314,19 +237,21 @@ async def delete_inquiry(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """
-    Delete inquiry
+    """Delete inquiry (soft delete)"""
+    inquiry = db.query(Inquiry).filter(
+        Inquiry.id == inquiry_id,
+        or_(
+            Inquiry.buyer_id == current_user.id,
+            Inquiry.seller_id == current_user.id
+        )
+    ).first()
     
-    Only buyer can delete their own inquiry
-    """
-    inquiry = db.query(Inquiry).filter(Inquiry.id == inquiry_id).first()
     if not inquiry:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Inquiry not found")
     
-    if inquiry.buyer_id != current_user.id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+    inquiry.status = "closed"
+    inquiry.closed_at = datetime.utcnow()
     
-    db.delete(inquiry)
     db.commit()
     
     return MessageResponse(message="Inquiry deleted successfully")

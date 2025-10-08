@@ -3,16 +3,17 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from app.database import get_db
 from app.schemas.car import (
-    CarCreate, CarUpdate, CarResponse, CarDetailResponse, CarSearchParams,
+    CarCreate, CarUpdate, CarResponse, CarDetailResponse,
     CarImageUpload, CarBoost, BrandResponse, ModelResponse, FeatureResponse,
     PriceHistoryResponse
 )
 from app.schemas.common import PaginatedResponse, MessageResponse, IDResponse
 from app.services.car_service import CarService
 from app.services.file_service import FileService
-from app.core.dependencies import get_current_user, get_current_seller, get_optional_user, get_pagination
+from app.core.dependencies import get_current_user, get_current_seller, get_optional_user
 from app.models.user import User
-from app.models.car import CarImage
+from app.models.car import CarImage, Car
+from app.models.transaction import PriceHistory
 
 router = APIRouter()
 
@@ -26,7 +27,8 @@ async def create_car(
     """
     Create new car listing
     
-    Requires seller/dealer role and verified account
+    Requires seller/dealer role and verified account.
+    Checks subscription limits before creating.
     """
     try:
         car = CarService.create_car(db, current_user.id, car_data.model_dump())
@@ -37,38 +39,68 @@ async def create_car(
 
 @router.get("", response_model=PaginatedResponse)
 async def search_cars(
+    # Search query
     q: Optional[str] = None,
+    
+    # Brand & Model
     brand_id: Optional[int] = None,
     model_id: Optional[int] = None,
     category_id: Optional[int] = None,
+    
+    # Price range
     min_price: Optional[float] = None,
     max_price: Optional[float] = None,
+    
+    # Year range
     min_year: Optional[int] = None,
     max_year: Optional[int] = None,
+    
+    # Technical specs
     fuel_type: Optional[str] = None,
     transmission: Optional[str] = None,
     min_mileage: Optional[int] = None,
     max_mileage: Optional[int] = None,
+    
+    # Condition
     condition_rating: Optional[str] = None,
+    
+    # Location
     city_id: Optional[int] = None,
     province_id: Optional[int] = None,
     region_id: Optional[int] = None,
+    
+    # Location-based search
     latitude: Optional[float] = None,
     longitude: Optional[float] = None,
-    radius_km: Optional[int] = None,
+    radius_km: Optional[int] = Query(25, ge=1, le=500),
+    
+    # Features
     is_featured: Optional[bool] = None,
     negotiable: Optional[bool] = None,
     financing_available: Optional[bool] = None,
-    sort_by: str = "created_at",
-    sort_order: str = "desc",
-    page: int = 1,
-    limit: int = 20,
+    
+    # Sorting
+    sort_by: str = Query("created_at", pattern="^(created_at|price|year|mileage|views_count)$"),
+    sort_order: str = Query("desc", pattern="^(asc|desc)$"),
+    
+    # Pagination
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    
+    # Dependencies
+    current_user: Optional[User] = Depends(get_optional_user),
     db: Session = Depends(get_db)
 ):
     """
-    Search and filter car listings
+    Search cars with advanced filters
     
-    Supports various filters including location-based search
+    Supports:
+    - Full-text search
+    - Price/year/mileage range filtering
+    - Location-based search with radius
+    - Multiple filter combinations
+    - Sorting options
+    - Pagination
     """
     filters = {
         "q": q,
@@ -97,18 +129,20 @@ async def search_cars(
         "sort_order": sort_order
     }
     
-    # Remove None values
-    filters = {k: v for k, v in filters.items() if v is not None}
+    # Search cars
+    cars, total = CarService.search_cars(db, filters, page, page_size)
     
-    cars, total = CarService.search_cars(db, filters, page, limit)
+    # Convert to response models
+    items = [CarResponse.model_validate(car) for car in cars]
     
-    total_pages = (total + limit - 1) // limit
+    # Calculate pagination
+    total_pages = (total + page_size - 1) // page_size
     
     return PaginatedResponse(
-        data=[CarResponse.model_validate(car) for car in cars],
+        items=items,
         total=total,
         page=page,
-        limit=limit,
+        page_size=page_size,
         total_pages=total_pages,
         has_next=page < total_pages,
         has_prev=page > 1
@@ -124,9 +158,14 @@ async def get_car(
     """
     Get car details by ID
     
-    Records view for analytics
+    Records view and returns complete car information including:
+    - All images
+    - Features
+    - Seller information
+    - Location details
     """
     car = CarService.get_car(db, car_id, current_user.id if current_user else None)
+    
     if not car:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Car not found")
     
@@ -143,12 +182,12 @@ async def update_car(
     """
     Update car listing
     
-    Only car owner can update
+    Only the car owner can update the listing.
+    Tracks price changes in price history.
     """
     try:
-        car = CarService.update_car(
-            db, car_id, current_user.id, car_data.model_dump(exclude_unset=True)
-        )
+        update_dict = car_data.model_dump(exclude_unset=True)
+        car = CarService.update_car(db, car_id, current_user.id, update_dict)
         return CarResponse.model_validate(car)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
@@ -162,6 +201,9 @@ async def delete_car(
 ):
     """
     Delete car listing (soft delete)
+    
+    Sets status to 'removed' and is_active to False.
+    Only the car owner can delete their listing.
     """
     try:
         CarService.delete_car(db, car_id, current_user.id)
@@ -174,34 +216,40 @@ async def delete_car(
 async def upload_car_image(
     car_id: int,
     file: UploadFile = File(...),
+    image_type: str = Query("exterior", pattern="^(exterior|interior|engine|dashboard|wheels|damage|documents|other)$"),
     is_primary: bool = False,
-    image_type: str = "exterior",
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
-    Upload image for car listing
+    Upload car image
     
-    Maximum images per listing depends on subscription plan
+    Automatically creates thumbnail and medium-sized versions.
+    Validates file type and size.
     """
     # Verify car ownership
-    car = CarService.get_car(db, car_id, current_user.id)
-    if not car or car.seller_id != current_user.id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+    car = db.query(Car).filter(Car.id == car_id, Car.seller_id == current_user.id).first()
+    if not car:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Car not found")
     
-    # Check image count limit
-    current_images = db.query(CarImage).filter(CarImage.car_id == car_id).count()
-    max_images = 20  # TODO: Get from subscription plan
+    # Check image limit
+    image_count = db.query(CarImage).filter(CarImage.car_id == car_id).count()
+    subscription = current_user.current_subscription
+    max_images = subscription.plan.max_images_per_listing if subscription else 5
     
-    if current_images >= max_images:
+    if image_count >= max_images:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Maximum {max_images} images allowed"
+            detail=f"Maximum {max_images} images allowed for your subscription"
         )
     
     try:
-        # Upload file
+        # Upload image
         result = await FileService.upload_image(file, folder=f"cars/{car_id}")
+        
+        # If this is set as primary, unset other primary images
+        if is_primary:
+            db.query(CarImage).filter(CarImage.car_id == car_id).update({"is_primary": False})
         
         # Create image record
         car_image = CarImage(
@@ -209,21 +257,14 @@ async def upload_car_image(
             image_url=result["file_url"],
             thumbnail_url=result.get("thumbnail_url"),
             medium_url=result.get("medium_url"),
-            large_url=result.get("large_url"),
-            is_primary=is_primary,
-            file_size=result.get("file_size"),
-            width=result.get("width"),
-            height=result.get("height"),
+            file_name=result["file_name"],
+            file_size=result["file_size"],
             image_type=image_type,
-            processing_status="ready"
+            is_primary=is_primary or image_count == 0,  # First image is always primary
+            display_order=image_count,
+            width=result.get("width"),
+            height=result.get("height")
         )
-        
-        # If this is primary, unset other primary images
-        if is_primary:
-            db.query(CarImage).filter(
-                CarImage.car_id == car_id,
-                CarImage.is_primary == True
-            ).update({"is_primary": False})
         
         db.add(car_image)
         db.commit()
@@ -244,12 +285,15 @@ async def delete_car_image(
 ):
     """
     Delete car image
-    """
-    # Verify ownership
-    car = CarService.get_car(db, car_id, current_user.id)
-    if not car or car.seller_id != current_user.id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
     
+    Removes image file from storage and database record.
+    """
+    # Verify car ownership
+    car = db.query(Car).filter(Car.id == car_id, Car.seller_id == current_user.id).first()
+    if not car:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Car not found")
+    
+    # Get image
     image = db.query(CarImage).filter(
         CarImage.id == image_id,
         CarImage.car_id == car_id
@@ -258,10 +302,10 @@ async def delete_car_image(
     if not image:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Image not found")
     
-    # Delete file
+    # Delete file from storage
     FileService.delete_image(image.image_url)
     
-    # Delete record
+    # Delete from database
     db.delete(image)
     db.commit()
     
@@ -278,13 +322,52 @@ async def boost_car(
     """
     Boost car listing for increased visibility
     
-    Requires active subscription with boost credits
+    Requires active subscription with available boost credits.
+    Increases ranking score and priority in search results.
     """
     try:
         car = CarService.boost_car(db, car_id, current_user.id, boost_data.duration_hours)
         return CarResponse.model_validate(car)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@router.post("/{car_id}/feature", response_model=CarResponse)
+async def feature_car(
+    car_id: int,
+    duration_days: int = Query(30, ge=1, le=365),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Make car listing featured
+    
+    Featured listings appear at the top of search results.
+    Requires subscription with featured listing slots.
+    """
+    from datetime import datetime, timedelta
+    
+    # Verify car ownership
+    car = db.query(Car).filter(Car.id == car_id, Car.seller_id == current_user.id).first()
+    if not car:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Car not found")
+    
+    # Check subscription
+    if not current_user.current_subscription:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Featured listings require an active subscription"
+        )
+    
+    # Set as featured
+    car.is_featured = True
+    car.featured_until = datetime.utcnow() + timedelta(days=duration_days)
+    car.ranking_score += 50
+    
+    db.commit()
+    db.refresh(car)
+    
+    return CarResponse.model_validate(car)
 
 
 @router.get("/{car_id}/price-history", response_model=List[PriceHistoryResponse])
@@ -294,9 +377,9 @@ async def get_price_history(
 ):
     """
     Get price history for a car
-    """
-    from app.models.transaction import PriceHistory
     
+    Shows all price changes with dates and reasons.
+    """
     history = db.query(PriceHistory).filter(
         PriceHistory.car_id == car_id
     ).order_by(PriceHistory.created_at.desc()).all()
@@ -304,7 +387,7 @@ async def get_price_history(
     return [PriceHistoryResponse.model_validate(h) for h in history]
 
 
-# Brands, Models, Features endpoints
+# Metadata endpoints
 @router.get("/meta/brands", response_model=List[BrandResponse])
 async def get_brands(
     popular_only: bool = False,
@@ -312,6 +395,8 @@ async def get_brands(
 ):
     """
     Get all car brands
+    
+    Optionally filter to only popular brands in Philippines.
     """
     brands = CarService.get_brands(db, popular_only)
     return [BrandResponse.model_validate(b) for b in brands]
@@ -323,7 +408,9 @@ async def get_models(
     db: Session = Depends(get_db)
 ):
     """
-    Get car models, optionally filtered by brand
+    Get car models
+    
+    Optionally filtered by brand.
     """
     models = CarService.get_models(db, brand_id)
     return [ModelResponse.model_validate(m) for m in models]
@@ -335,7 +422,80 @@ async def get_features(
     db: Session = Depends(get_db)
 ):
     """
-    Get car features, optionally filtered by category
+    Get car features
+    
+    Optionally filtered by category (safety, comfort, technology, etc).
     """
     features = CarService.get_features(db, category)
     return [FeatureResponse.model_validate(f) for f in features]
+
+
+@router.get("/nearby")
+async def get_nearby_cars(
+    latitude: float,
+    longitude: float,
+    radius_km: int = Query(25, ge=1, le=500),
+    limit: int = Query(20, ge=1, le=100),
+    db: Session = Depends(get_db)
+):
+    """
+    Get cars near a location
+    
+    Uses GPS coordinates to find cars within specified radius.
+    """
+    filters = {
+        "latitude": latitude,
+        "longitude": longitude,
+        "radius_km": radius_km,
+        "sort_by": "created_at",
+        "sort_order": "desc"
+    }
+    
+    cars, total = CarService.search_cars(db, filters, 1, limit)
+    
+    return {
+        "cars": [CarResponse.model_validate(car) for car in cars],
+        "total": total,
+        "radius_km": radius_km
+    }
+
+
+@router.get("/similar/{car_id}")
+async def get_similar_cars(
+    car_id: int,
+    limit: int = Query(10, ge=1, le=50),
+    db: Session = Depends(get_db)
+):
+    """
+    Get similar cars based on brand, model, price range
+    
+    Useful for "you might also like" features.
+    """
+    # Get reference car
+    car = db.query(Car).filter(Car.id == car_id).first()
+    if not car:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Car not found")
+    
+    # Find similar cars
+    price_min = float(car.price) * 0.8
+    price_max = float(car.price) * 1.2
+    
+    filters = {
+        "brand_id": car.brand_id,
+        "min_price": price_min,
+        "max_price": price_max,
+        "min_year": car.year - 2,
+        "max_year": car.year + 2,
+        "sort_by": "created_at",
+        "sort_order": "desc"
+    }
+    
+    cars, _ = CarService.search_cars(db, filters, 1, limit)
+    
+    # Exclude the original car
+    similar = [c for c in cars if c.id != car_id][:limit]
+    
+    return {
+        "similar_cars": [CarResponse.model_validate(c) for c in similar],
+        "based_on": CarResponse.model_validate(car)
+    }

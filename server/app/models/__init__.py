@@ -1,4 +1,5 @@
-from app.models.user import User
+"""Database Models Package"""
+from app.models.user import User, UserRole
 from app.models.location import Currency, PhRegion, PhProvince, PhCity, StandardColor
 from app.models.car import Brand, Model, Category, Feature, Car, CarImage, CarFeature
 from app.models.inquiry import Inquiry, InquiryResponse, InquiryAttachment, Favorite
@@ -17,7 +18,7 @@ from app.models.security import FraudIndicator, AuditLog, SystemConfig
 
 __all__ = [
     # User
-    "User",
+    "User", "UserRole",
     # Location
     "Currency", "PhRegion", "PhProvince", "PhCity", "StandardColor",
     # Car

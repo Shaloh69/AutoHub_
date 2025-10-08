@@ -50,7 +50,7 @@ class AuthService:
         return encoded_jwt
     
     @staticmethod
-    def decode_token(token: str) -> Optional[Dict]:
+    def decode_token(token: str) -> Optional[dict]:
         """Decode JWT token"""
         try:
             payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
@@ -59,73 +59,10 @@ class AuthService:
             return None
     
     @staticmethod
-    def register_user(db: Session, user_data: dict) -> User:
-        """Register new user"""
-        # Check if email exists
-        existing_user = db.query(User).filter(User.email == user_data["email"]).first()
-        if existing_user:
-            raise ValueError("Email already registered")
-        
-        # Verify city exists
-        city = db.query(PhCity).filter(PhCity.id == user_data["city_id"]).first()
-        if not city:
-            raise ValueError("Invalid city_id")
-        
-        # Hash password
-        hashed_password = AuthService.hash_password(user_data.pop("password"))
-        
-        # Create user
-        user = User(
-            **user_data,
-            password_hash=hashed_password,
-            province_id=city.province_id,
-            region_id=city.province.region_id
-        )
-        
-        db.add(user)
-        db.commit()
-        db.refresh(user)
-        
-        # Generate email verification token
-        token = AuthService.generate_verification_token(user.id, "email")
-        cache.set(f"email_verify:{token}", str(user.id), ttl=86400)  # 24 hours
-        
-        # TODO: Send verification email
-        
-        return user
-    
-    @staticmethod
-    def authenticate_user(db: Session, email: str, password: str) -> Optional[User]:
-        """Authenticate user"""
-        user = db.query(User).filter(User.email == email).first()
-        if not user:
-            return None
-        
-        if not AuthService.verify_password(password, user.password_hash):
-            return None
-        
-        if not user.is_active:
-            raise ValueError("Account is inactive")
-        
-        if user.is_banned:
-            raise ValueError("Account is banned")
-        
-        # Update last login
-        user.last_login_at = datetime.utcnow()
-        user.login_count += 1
-        db.commit()
-        
-        return user
-    
-    @staticmethod
-    def generate_tokens(user: User) -> Dict[str, str]:
+    def generate_tokens(user: User) -> Dict[str, any]:
         """Generate access and refresh tokens"""
-        access_token = AuthService.create_access_token(
-            data={"sub": str(user.id), "email": user.email, "role": user.role.value}
-        )
-        refresh_token = AuthService.create_refresh_token(
-            data={"sub": str(user.id), "email": user.email}
-        )
+        access_token = AuthService.create_access_token({"sub": str(user.id)})
+        refresh_token = AuthService.create_refresh_token({"sub": str(user.id)})
         
         # Store refresh token in cache
         cache.set(f"refresh_token:{user.id}", refresh_token, ttl=settings.JWT_REFRESH_EXPIRATION_DAYS * 86400)
@@ -141,26 +78,87 @@ class AuthService:
         }
     
     @staticmethod
-    def refresh_access_token(db: Session, refresh_token: str) -> Dict[str, str]:
-        """Refresh access token"""
+    def register_user(db: Session, user_data: dict) -> User:
+        """Register new user"""
+        # Check if email exists
+        existing_user = db.query(User).filter(User.email == user_data["email"]).first()
+        if existing_user:
+            raise ValueError("Email already registered")
+        
+        # Verify city exists
+        city = db.query(PhCity).filter(PhCity.id == user_data["city_id"]).first()
+        if not city:
+            raise ValueError("Invalid city_id")
+        
+        # Set province and region from city
+        user_data["province_id"] = city.province_id
+        user_data["region_id"] = city.province.region_id
+        
+        # Hash password
+        password = user_data.pop("password")
+        user_data["password_hash"] = AuthService.hash_password(password)
+        
+        # Create user
+        user = User(**user_data)
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+        
+        # Send verification email (implement later)
+        AuthService.send_verification_email(user)
+        
+        return user
+    
+    @staticmethod
+    def authenticate_user(db: Session, email: str, password: str) -> Optional[User]:
+        """Authenticate user with email and password"""
+        user = db.query(User).filter(User.email == email).first()
+        if not user:
+            return None
+        
+        if not AuthService.verify_password(password, user.password_hash):
+            # Increment login attempts
+            user.login_attempts += 1
+            if user.login_attempts >= 5:
+                user.locked_until = datetime.utcnow() + timedelta(minutes=30)
+            db.commit()
+            return None
+        
+        # Reset login attempts on successful login
+        user.login_attempts = 0
+        user.last_login_at = datetime.utcnow()
+        db.commit()
+        
+        return user
+    
+    @staticmethod
+    def refresh_access_token(db: Session, refresh_token: str) -> Optional[Dict[str, str]]:
+        """Refresh access token using refresh token"""
         payload = AuthService.decode_token(refresh_token)
         if not payload or payload.get("type") != "refresh":
-            raise ValueError("Invalid refresh token")
+            return None
         
-        user_id = int(payload.get("sub"))
+        user_id = payload.get("sub")
+        if not user_id:
+            return None
         
         # Verify refresh token in cache
         cached_token = cache.get(f"refresh_token:{user_id}")
         if not cached_token or cached_token != refresh_token:
-            raise ValueError("Refresh token expired or revoked")
+            return None
         
-        # Get user
-        user = db.query(User).filter(User.id == user_id).first()
-        if not user or not user.is_active:
-            raise ValueError("User not found or inactive")
+        # Generate new access token
+        user = db.query(User).filter(User.id == int(user_id)).first()
+        if not user:
+            return None
         
-        # Generate new tokens
-        return AuthService.generate_tokens(user)
+        access_token = AuthService.create_access_token({"sub": user_id})
+        
+        return {
+            "access_token": access_token,
+            "token_type": "bearer",
+            "expires_in": settings.JWT_EXPIRATION_HOURS * 3600
+        }
     
     @staticmethod
     def revoke_refresh_token(user_id: int):
@@ -168,10 +166,13 @@ class AuthService:
         cache.delete(f"refresh_token:{user_id}")
     
     @staticmethod
-    def generate_verification_token(user_id: int, token_type: str) -> str:
-        """Generate verification token"""
+    def send_verification_email(user: User):
+        """Send email verification link"""
         token = secrets.token_urlsafe(32)
-        return token
+        cache.set(f"email_verify:{token}", str(user.id), ttl=86400)  # 24 hours
+        
+        # TODO: Send actual email
+        print(f"Verification token for {user.email}: {token}")
     
     @staticmethod
     def verify_email(db: Session, token: str) -> bool:
@@ -185,24 +186,27 @@ class AuthService:
             return False
         
         user.email_verified = True
+        user.verified_at = datetime.utcnow()
         db.commit()
         
         cache.delete(f"email_verify:{token}")
         return True
     
     @staticmethod
-    def generate_password_reset_token(db: Session, email: str) -> Optional[str]:
-        """Generate password reset token"""
+    def request_password_reset(db: Session, email: str) -> str:
+        """Request password reset"""
         user = db.query(User).filter(User.email == email).first()
         if not user:
-            return None
+            # Don't reveal if email exists
+            return "reset_requested"
         
         token = secrets.token_urlsafe(32)
         cache.set(f"password_reset:{token}", str(user.id), ttl=3600)  # 1 hour
         
-        # TODO: Send password reset email
+        # TODO: Send reset email
+        print(f"Password reset token for {email}: {token}")
         
-        return token
+        return "reset_requested"
     
     @staticmethod
     def reset_password(db: Session, token: str, new_password: str) -> bool:
@@ -216,9 +220,14 @@ class AuthService:
             return False
         
         user.password_hash = AuthService.hash_password(new_password)
+        user.password_changed_at = datetime.utcnow()
         db.commit()
         
         cache.delete(f"password_reset:{token}")
+        
+        # Revoke all refresh tokens
+        AuthService.revoke_refresh_token(user.id)
+        
         return True
     
     @staticmethod
@@ -228,6 +237,7 @@ class AuthService:
             raise ValueError("Current password is incorrect")
         
         user.password_hash = AuthService.hash_password(new_password)
+        user.password_changed_at = datetime.utcnow()
         db.commit()
         
         # Revoke all refresh tokens
@@ -245,6 +255,7 @@ class AuthService:
         cache.set(f"phone_otp:{user_id}:{phone}", otp, ttl=600)  # 10 minutes
         
         # TODO: Send OTP via SMS
+        print(f"OTP for {phone}: {otp}")
         
         return otp
     

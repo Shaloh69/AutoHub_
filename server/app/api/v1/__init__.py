@@ -1,4 +1,4 @@
-"""API v1 package"""
-from . import auth, cars, users, subscriptions, inquiries
+"""API Version 1 Package"""
+from app.api.v1 import auth, cars, users, subscriptions, inquiries, transactions, analytics
 
-__all__ = ["auth", "cars", "users", "subscriptions", "inquiries"]
+__all__ = ["auth", "cars", "users", "subscriptions", "inquiries", "transactions", "analytics"]

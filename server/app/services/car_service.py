@@ -1,14 +1,16 @@
 from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import and_, or_, func
-from typing import List, Optional, Dict
+from sqlalchemy import and_, or_, func, desc
+from typing import List, Optional, Dict, Tuple
 from datetime import datetime, timedelta
 from decimal import Decimal
 from app.models.car import Car, CarImage, CarFeature, Brand, Model, Feature
 from app.models.user import User
 from app.models.location import PhCity
 from app.models.transaction import PriceHistory
-from app.models.analytics import CarView, UserAction
+from app.models.analytics import CarView
+from app.models.subscription import UserSubscription, SubscriptionPlan
 from app.database import cache
+from app.utils.helpers import generate_slug, calculate_distance
 import json
 
 
@@ -40,14 +42,16 @@ class CarService:
         car_data["region_id"] = city.province.region_id
         
         # Generate SEO slug
-        car_data["seo_slug"] = CarService.generate_slug(car_data["title"])
+        car_data["seo_slug"] = generate_slug(car_data["title"])
+        
+        # Set status
+        car_data["status"] = "pending"
+        car_data["approval_status"] = "pending"
         
         # Create car
         car = Car(
             seller_id=user_id,
             **car_data,
-            status="pending",
-            approval_status="pending",
             created_at=datetime.utcnow()
         )
         
@@ -60,17 +64,19 @@ class CarService:
                 car_feature = CarFeature(car_id=car.id, feature_id=feature_id)
                 db.add(car_feature)
         
-        # Calculate completeness score
+        # Calculate scores
         car.completeness_score = CarService.calculate_completeness(car)
+        car.quality_score = CarService.calculate_quality_score(car)
+        
+        # Update user stats
+        user.total_listings += 1
+        user.active_listings += 1
         
         db.commit()
         db.refresh(car)
         
-        # Clear user cache
+        # Clear cache
         cache.delete(f"user_cars:{user_id}")
-        
-        # Track action
-        CarService.track_action(db, user_id, "upload_car", "car", car.id)
         
         return car
     
@@ -79,86 +85,108 @@ class CarService:
         """Update car listing"""
         car = db.query(Car).filter(Car.id == car_id, Car.seller_id == user_id).first()
         if not car:
-            raise ValueError("Car not found or access denied")
+            raise ValueError("Car not found or unauthorized")
         
-        # Track price change
+        # Track price changes
         if "price" in car_data and car_data["price"] != car.price:
             old_price = car.price
             new_price = car_data["price"]
-            price_change = ((new_price - old_price) / old_price * 100) if old_price > 0 else 0
+            price_change = ((new_price - old_price) / old_price) * 100
             
             price_history = PriceHistory(
                 car_id=car.id,
                 old_price=old_price,
                 new_price=new_price,
                 price_change_percent=price_change,
-                changed_by=user_id,
-                change_reason="manual"
+                change_reason="manual",
+                changed_by=user_id
             )
             db.add(price_history)
-            car.original_price = old_price
-            car.last_price_update = datetime.utcnow()
         
-        # Update features if provided
-        if "feature_ids" in car_data:
-            feature_ids = car_data.pop("feature_ids")
-            # Remove old features
-            db.query(CarFeature).filter(CarFeature.car_id == car.id).delete()
-            # Add new features
-            for feature_id in feature_ids:
-                car_feature = CarFeature(car_id=car.id, feature_id=feature_id)
-                db.add(car_feature)
-        
-        # Update car fields
+        # Update fields
         for key, value in car_data.items():
-            if hasattr(car, key) and value is not None:
+            if hasattr(car, key) and key != "id":
                 setattr(car, key, value)
         
         car.updated_at = datetime.utcnow()
         car.completeness_score = CarService.calculate_completeness(car)
+        car.quality_score = CarService.calculate_quality_score(car)
         
         db.commit()
         db.refresh(car)
         
-        # Clear caches
-        cache.delete(f"car:{car.id}")
-        cache.delete(f"user_cars:{user_id}")
+        # Clear cache
+        cache.delete(f"car:{car_id}")
         
         return car
+    
+    @staticmethod
+    def delete_car(db: Session, car_id: int, user_id: int) -> bool:
+        """Delete car listing"""
+        car = db.query(Car).filter(Car.id == car_id, Car.seller_id == user_id).first()
+        if not car:
+            raise ValueError("Car not found or unauthorized")
+        
+        # Soft delete
+        car.deleted_at = datetime.utcnow()
+        car.is_active = False
+        car.status = "removed"
+        
+        # Update user stats
+        user = db.query(User).filter(User.id == user_id).first()
+        if user:
+            user.active_listings = max(0, user.active_listings - 1)
+        
+        db.commit()
+        
+        # Clear cache
+        cache.delete(f"car:{car_id}")
+        cache.delete(f"user_cars:{user_id}")
+        
+        return True
     
     @staticmethod
     def get_car(db: Session, car_id: int, user_id: Optional[int] = None) -> Optional[Car]:
-        """Get car by ID"""
+        """Get single car with details"""
         # Try cache first
-        cached = cache.get(f"car:{car_id}")
+        cached = cache.get_json(f"car:{car_id}")
         if cached:
-            return json.loads(cached)
-        
-        car = db.query(Car).options(
-            joinedload(Car.seller),
-            joinedload(Car.brand),
-            joinedload(Car.model),
-            joinedload(Car.city),
-            joinedload(Car.images),
-            joinedload(Car.features).joinedload(CarFeature.feature)
-        ).filter(Car.id == car_id).first()
-        
-        if car:
-            # Track view
-            CarService.record_view(db, car.id, user_id)
+            car = db.query(Car).filter(Car.id == car_id).first()
+        else:
+            car = db.query(Car).options(
+                joinedload(Car.images),
+                joinedload(Car.features),
+                joinedload(Car.seller),
+                joinedload(Car.brand),
+                joinedload(Car.model),
+                joinedload(Car.city)
+            ).filter(Car.id == car_id).first()
             
-            # Cache for 5 minutes
-            cache.set(f"car:{car.id}", json.dumps(car, default=str), ttl=300)
+            if car:
+                # Cache for 5 minutes
+                cache.set_json(f"car:{car_id}", {"id": car.id}, ttl=300)
+        
+        if not car:
+            return None
+        
+        # Record view
+        CarService.record_view(db, car_id, user_id)
         
         return car
     
     @staticmethod
-    def search_cars(db: Session, filters: dict, page: int = 1, limit: int = 20) -> tuple:
+    def search_cars(
+        db: Session,
+        filters: dict,
+        page: int = 1,
+        page_size: int = 20
+    ) -> Tuple[List[Car], int]:
         """Search cars with filters"""
         query = db.query(Car).filter(
-            Car.status == "approved",
+            Car.is_active == True,
             Car.approval_status == "approved",
-            Car.is_active == True
+            Car.status == "active",
+            Car.deleted_at.is_(None)
         )
         
         # Apply filters
@@ -166,8 +194,8 @@ class CarService:
             search_term = f"%{filters['q']}%"
             query = query.filter(
                 or_(
-                    Car.title.ilike(search_term),
-                    Car.description.ilike(search_term)
+                    Car.title.like(search_term),
+                    Car.description.like(search_term)
                 )
             )
         
@@ -176,9 +204,6 @@ class CarService:
         
         if filters.get("model_id"):
             query = query.filter(Car.model_id == filters["model_id"])
-        
-        if filters.get("category_id"):
-            query = query.filter(Car.category_id == filters["category_id"])
         
         if filters.get("min_price"):
             query = query.filter(Car.price >= filters["min_price"])
@@ -204,9 +229,6 @@ class CarService:
         if filters.get("max_mileage"):
             query = query.filter(Car.mileage <= filters["max_mileage"])
         
-        if filters.get("condition_rating"):
-            query = query.filter(Car.condition_rating == filters["condition_rating"])
-        
         if filters.get("city_id"):
             query = query.filter(Car.city_id == filters["city_id"])
         
@@ -216,96 +238,73 @@ class CarService:
         if filters.get("region_id"):
             query = query.filter(Car.region_id == filters["region_id"])
         
-        # Location-based search
-        if filters.get("latitude") and filters.get("longitude") and filters.get("radius_km"):
-            lat = float(filters["latitude"])
-            lng = float(filters["longitude"])
-            radius = float(filters["radius_km"])
-            
-            # Haversine formula for distance in MySQL
-            query = query.filter(
-                func.acos(
-                    func.cos(func.radians(lat)) *
-                    func.cos(func.radians(Car.latitude)) *
-                    func.cos(func.radians(Car.longitude) - func.radians(lng)) +
-                    func.sin(func.radians(lat)) *
-                    func.sin(func.radians(Car.latitude))
-                ) * 6371 <= radius
-            )
-        
         if filters.get("is_featured"):
-            query = query.filter(Car.is_featured == True, Car.featured_until >= datetime.utcnow())
+            query = query.filter(Car.is_featured == True)
         
-        if filters.get("negotiable") is not None:
-            query = query.filter(Car.negotiable == filters["negotiable"])
-        
-        if filters.get("financing_available"):
-            query = query.filter(Car.financing_available == True)
+        # Location-based search
+        if filters.get("latitude") and filters.get("longitude"):
+            radius_km = filters.get("radius_km", 25)
+            # This is a simple bounding box search
+            # For production, use spatial queries
+            lat_range = radius_km / 111.0  # Rough conversion
+            lng_range = radius_km / (111.0 * abs(filters["latitude"]))
+            
+            query = query.filter(
+                Car.latitude.between(
+                    filters["latitude"] - lat_range,
+                    filters["latitude"] + lat_range
+                ),
+                Car.longitude.between(
+                    filters["longitude"] - lng_range,
+                    filters["longitude"] + lng_range
+                )
+            )
         
         # Sorting
         sort_by = filters.get("sort_by", "created_at")
         sort_order = filters.get("sort_order", "desc")
         
         if sort_by == "price":
-            query = query.order_by(Car.price.desc() if sort_order == "desc" else Car.price.asc())
+            order_col = Car.price
         elif sort_by == "year":
-            query = query.order_by(Car.year.desc() if sort_order == "desc" else Car.year.asc())
+            order_col = Car.year
         elif sort_by == "mileage":
-            query = query.order_by(Car.mileage.asc() if sort_order == "asc" else Car.mileage.desc())
+            order_col = Car.mileage
         elif sort_by == "views_count":
-            query = query.order_by(Car.views_count.desc() if sort_order == "desc" else Car.views_count.asc())
+            order_col = Car.views_count
         else:
-            query = query.order_by(Car.created_at.desc() if sort_order == "desc" else Car.created_at.asc())
+            order_col = Car.created_at
+        
+        if sort_order == "asc":
+            query = query.order_by(order_col.asc())
+        else:
+            query = query.order_by(order_col.desc())
         
         # Get total count
         total = query.count()
         
-        # Paginate
-        offset = (page - 1) * limit
-        cars = query.offset(offset).limit(limit).all()
+        # Apply pagination
+        offset = (page - 1) * page_size
+        cars = query.offset(offset).limit(page_size).all()
         
         return cars, total
     
     @staticmethod
-    def delete_car(db: Session, car_id: int, user_id: int) -> bool:
-        """Delete car listing"""
-        car = db.query(Car).filter(Car.id == car_id, Car.seller_id == user_id).first()
-        if not car:
-            raise ValueError("Car not found or access denied")
-        
-        # Soft delete
-        car.is_active = False
-        car.status = "removed"
-        db.commit()
-        
-        # Clear caches
-        cache.delete(f"car:{car.id}")
-        cache.delete(f"user_cars:{user_id}")
-        
-        return True
-    
-    @staticmethod
     def boost_car(db: Session, car_id: int, user_id: int, duration_hours: int = 168) -> Car:
-        """Boost car listing"""
+        """Boost car listing for increased visibility"""
         car = db.query(Car).filter(Car.id == car_id, Car.seller_id == user_id).first()
         if not car:
-            raise ValueError("Car not found or access denied")
+            raise ValueError("Car not found or unauthorized")
         
-        # Check subscription feature usage
-        # TODO: Implement subscription feature check
+        # Check if user has boost credits
+        # TODO: Implement credit checking
         
-        car.last_boosted_at = datetime.utcnow()
-        car.boost_count += 1
-        car.subscription_boosted = True
-        car.subscription_boost_expires_at = datetime.utcnow() + timedelta(hours=duration_hours)
-        
-        # Increase search score
-        car.search_score = min(car.search_score + 5, 10)
+        # Set boost expiry
+        car.boosted_until = datetime.utcnow() + timedelta(hours=duration_hours)
+        car.ranking_score += 10  # Boost ranking
         
         db.commit()
         db.refresh(car)
-        
-        cache.delete(f"car:{car.id}")
         
         return car
     
@@ -313,148 +312,136 @@ class CarService:
     def check_listing_limits(db: Session, user_id: int) -> bool:
         """Check if user can create more listings"""
         user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            return False
         
-        # Count active listings
-        active_count = db.query(Car).filter(
-            Car.seller_id == user_id,
-            Car.status.in_(["approved", "pending"]),
-            Car.is_active == True
-        ).count()
+        # Get user's subscription
+        subscription = db.query(UserSubscription).filter(
+            UserSubscription.user_id == user_id,
+            UserSubscription.status == "active"
+        ).first()
         
-        # Get subscription limits
-        # For now, use default limits
-        max_listings = 3  # Free plan default
+        if not subscription:
+            # Free tier limit
+            return user.active_listings < 3
         
-        if user.subscription_status == "active":
-            # TODO: Get limits from subscription
-            max_listings = 10
-        
-        return active_count < max_listings
+        plan = subscription.plan
+        return user.active_listings < plan.max_active_listings
     
     @staticmethod
-    def calculate_completeness(car: Car) -> Decimal:
-        """Calculate listing completeness score"""
+    def calculate_completeness(car: Car) -> int:
+        """Calculate completeness score (0-100)"""
         score = 0
         total_fields = 20
         
-        # Required fields (already filled)
-        score += 5
-        
-        # Optional but important fields
+        # Basic fields (5 points each)
         if car.description and len(car.description) > 50:
-            score += 1
+            score += 5
+        if car.vin_number:
+            score += 5
         if car.engine_size:
-            score += 1
+            score += 5
         if car.horsepower:
-            score += 1
-        if car.drivetrain:
-            score += 1
-        if car.vin:
-            score += 1
-        if car.plate_number:
-            score += 1
-        if car.registration_expiry:
-            score += 1
+            score += 5
         if car.detailed_address:
-            score += 1
-        if car.warranty_details:
-            score += 1
-        if car.insurance_company:
-            score += 1
+            score += 5
         
-        # Images (up to 5 points)
-        image_count = len(car.images) if hasattr(car, 'images') else 0
-        score += min(image_count, 5)
+        # Images (20 points)
+        if hasattr(car, 'images'):
+            image_count = len(car.images)
+            score += min(20, image_count * 4)
         
-        percentage = (score / total_fields) * 100
-        return Decimal(str(round(percentage, 2)))
+        # Features (15 points)
+        if hasattr(car, 'features'):
+            feature_count = len(car.features)
+            score += min(15, feature_count * 3)
+        
+        # Documentation (10 points)
+        if car.registration_status == "registered":
+            score += 5
+        if car.or_cr_status == "complete":
+            score += 5
+        
+        # History (10 points)
+        if not car.accident_history:
+            score += 5
+        if car.service_history_available:
+            score += 5
+        
+        # Warranty (10 points)
+        if car.warranty_remaining:
+            score += 10
+        
+        return min(100, score)
     
     @staticmethod
-    def generate_slug(title: str) -> str:
-        """Generate SEO-friendly slug"""
-        import re
-        slug = title.lower()
-        slug = re.sub(r'[^a-z0-9\s-]', '', slug)
-        slug = re.sub(r'[\s-]+', '-', slug)
-        slug = slug.strip('-')
+    def calculate_quality_score(car: Car) -> int:
+        """Calculate quality score based on condition"""
+        score = 50  # Base score
         
-        # Add timestamp to ensure uniqueness
-        from time import time
-        slug = f"{slug}-{int(time())}"
+        # Condition rating
+        condition_scores = {
+            "excellent": 25,
+            "very_good": 20,
+            "good": 15,
+            "fair": 10,
+            "poor": 5
+        }
+        score += condition_scores.get(car.condition_rating, 10)
         
-        return slug[:255]
+        # Mileage (lower is better)
+        if car.mileage < 20000:
+            score += 15
+        elif car.mileage < 50000:
+            score += 10
+        elif car.mileage < 100000:
+            score += 5
+        
+        # History
+        if not car.accident_history:
+            score += 10
+        if car.number_of_owners == 1:
+            score += 5
+        
+        return min(100, score)
     
     @staticmethod
-    def record_view(db: Session, car_id: int, user_id: Optional[int] = None, session_id: Optional[str] = None, ip_address: Optional[str] = None):
+    def record_view(db: Session, car_id: int, user_id: Optional[int] = None):
         """Record car view"""
-        # Check if unique view
-        is_unique = True
-        if user_id:
-            existing = db.query(CarView).filter(
-                CarView.car_id == car_id,
-                CarView.user_id == user_id
-            ).first()
-            is_unique = existing is None
-        elif session_id:
-            existing = db.query(CarView).filter(
-                CarView.car_id == car_id,
-                CarView.session_id == session_id
-            ).first()
-            is_unique = existing is None
-        
-        # Create view record
         view = CarView(
             car_id=car_id,
             user_id=user_id,
-            session_id=session_id,
-            ip_address=ip_address,
-            is_unique_view=is_unique,
             viewed_at=datetime.utcnow()
         )
         db.add(view)
         
-        # Update car view counts
+        # Update view count
         car = db.query(Car).filter(Car.id == car_id).first()
         if car:
             car.views_count += 1
-            if is_unique:
-                car.unique_views_count += 1
         
-        db.commit()
-    
-    @staticmethod
-    def track_action(db: Session, user_id: int, action_type: str, target_type: str, target_id: int, metadata: dict = None):
-        """Track user action"""
-        action = UserAction(
-            user_id=user_id,
-            action_type=action_type,
-            target_type=target_type,
-            target_id=target_id,
-            metadata=metadata
-        )
-        db.add(action)
         db.commit()
     
     @staticmethod
     def get_brands(db: Session, popular_only: bool = False) -> List[Brand]:
         """Get all brands"""
-        query = db.query(Brand).filter(Brand.is_active == True)
+        query = db.query(Brand)
         if popular_only:
             query = query.filter(Brand.is_popular_in_ph == True)
-        return query.order_by(Brand.name).all()
+        return query.order_by(Brand.display_order, Brand.name).all()
     
     @staticmethod
     def get_models(db: Session, brand_id: Optional[int] = None) -> List[Model]:
-        """Get models by brand"""
-        query = db.query(Model).filter(Model.is_active == True)
+        """Get models, optionally filtered by brand"""
+        query = db.query(Model)
         if brand_id:
             query = query.filter(Model.brand_id == brand_id)
         return query.order_by(Model.name).all()
     
     @staticmethod
     def get_features(db: Session, category: Optional[str] = None) -> List[Feature]:
-        """Get features"""
-        query = db.query(Feature).filter(Feature.is_active == True)
+        """Get features, optionally filtered by category"""
+        query = db.query(Feature)
         if category:
             query = query.filter(Feature.category == category)
-        return query.order_by(Feature.name).all()
+        return query.order_by(Feature.category, Feature.name).all()

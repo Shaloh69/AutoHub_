@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, DECIMAL, Text, TIMESTAMP, ForeignKey, Enum
+from sqlalchemy import Column, Integer, String, Boolean, DECIMAL, Text, TIMESTAMP, Date, ForeignKey, Enum
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from app.database import Base
@@ -13,91 +13,126 @@ class UserRole(str, enum.Enum):
     MODERATOR = "moderator"
 
 
+class VerificationLevel(str, enum.Enum):
+    NONE = "none"
+    EMAIL = "email"
+    PHONE = "phone"
+    IDENTITY = "identity"
+    BUSINESS = "business"
+
+
 class User(Base):
     __tablename__ = "users"
     
-    # Primary Key
     id = Column(Integer, primary_key=True, autoincrement=True)
     
     # Authentication
     email = Column(String(255), unique=True, nullable=False, index=True)
     password_hash = Column(String(255), nullable=False)
+    role = Column(Enum(UserRole), default=UserRole.BUYER, nullable=False, index=True)
     
     # Personal Information
     first_name = Column(String(100), nullable=False)
     last_name = Column(String(100), nullable=False)
-    phone = Column(String(20))
-    role = Column(Enum(UserRole), nullable=False, default=UserRole.BUYER, index=True)
-    profile_image = Column(String(500))
+    phone = Column(String(20), index=True)
+    date_of_birth = Column(Date)
+    gender = Column(Enum("male", "female", "other", "prefer_not_to_say"))
     
-    # Philippines Address
+    # Profile
+    profile_image = Column(String(500))
+    bio = Column(Text)
+    
+    # Location
+    city_id = Column(Integer, ForeignKey("ph_cities.id"), nullable=True, index=True)
+    province_id = Column(Integer, ForeignKey("ph_provinces.id"), nullable=True, index=True)
+    region_id = Column(Integer, ForeignKey("ph_regions.id"), nullable=True, index=True)
     address = Column(Text)
-    city_id = Column(Integer, ForeignKey("ph_cities.id", ondelete="SET NULL"))
-    province_id = Column(Integer, ForeignKey("ph_provinces.id", ondelete="SET NULL"))
-    region_id = Column(Integer, ForeignKey("ph_regions.id", ondelete="SET NULL"))
     postal_code = Column(String(10))
     barangay = Column(String(100))
+    latitude = Column(DECIMAL(10, 8))
+    longitude = Column(DECIMAL(11, 8))
     
     # Business Information (for dealers)
     business_name = Column(String(200))
     business_permit_number = Column(String(100))
     tin_number = Column(String(20))
-    dealer_license_number = Column(String(100))
+    dti_registration = Column(String(100))
+    business_address = Column(Text)
+    business_phone = Column(String(20))
+    business_email = Column(String(255))
+    business_website = Column(String(255))
     
     # Verification Status
     email_verified = Column(Boolean, default=False)
     phone_verified = Column(Boolean, default=False)
     identity_verified = Column(Boolean, default=False)
     business_verified = Column(Boolean, default=False)
+    verification_level = Column(Enum(VerificationLevel), default=VerificationLevel.NONE)
+    verified_at = Column(TIMESTAMP)
     
     # Verification Documents
-    valid_id_front_url = Column(String(500))
-    valid_id_back_url = Column(String(500))
-    selfie_with_id_url = Column(String(500))
-    business_permit_url = Column(String(500))
+    id_type = Column(Enum("drivers_license", "passport", "national_id", "voters_id"))
+    id_number = Column(String(50))
+    id_expiry_date = Column(Date)
+    id_front_image = Column(String(500))
+    id_back_image = Column(String(500))
+    selfie_image = Column(String(500))
     
-    # Rating Statistics
-    average_rating = Column(DECIMAL(3, 2), default=0.00, index=True)
+    # Preferences
+    preferred_currency = Column(Integer, ForeignKey("currencies.id"), default=1)
+    language = Column(String(10), default="en")
+    timezone = Column(String(50), default="Asia/Manila")
+    email_notifications = Column(Boolean, default=True)
+    sms_notifications = Column(Boolean, default=True)
+    push_notifications = Column(Boolean, default=True)
+    
+    # Rating & Trust
+    average_rating = Column(DECIMAL(3, 2), default=0.00)
     total_ratings = Column(Integer, default=0)
+    positive_feedback = Column(Integer, default=0)
+    negative_feedback = Column(Integer, default=0)
+    response_rate = Column(DECIMAL(5, 2), default=0.00)
+    response_time_hours = Column(Integer)
     total_sales = Column(Integer, default=0)
     total_purchases = Column(Integer, default=0)
+    
+    # Fraud Detection
+    fraud_score = Column(Integer, default=0)
+    warnings_count = Column(Integer, default=0)
+    last_warning_at = Column(TIMESTAMP)
+    warning_reasons = Column(Text)
     
     # Account Status
     is_active = Column(Boolean, default=True, index=True)
     is_banned = Column(Boolean, default=False, index=True)
     ban_reason = Column(Text)
-    ban_expires_at = Column(TIMESTAMP, nullable=True)
+    banned_at = Column(TIMESTAMP)
+    banned_until = Column(TIMESTAMP)
     
-    # Fraud Prevention
-    fraud_score = Column(DECIMAL(3, 2), default=0.00, index=True)
-    warning_count = Column(Integer, default=0)
-    last_warning_at = Column(TIMESTAMP, nullable=True)
+    # Subscription
+    current_subscription_id = Column(Integer, ForeignKey("user_subscriptions.id"))
+    subscription_status = Column(Enum("free", "trial", "active", "cancelled", "expired"), default="free")
+    subscription_expires_at = Column(TIMESTAMP)
     
-    # Preferences
-    preferred_currency = Column(String(3), ForeignKey("currencies.code"), default="PHP")
-    email_notifications = Column(Boolean, default=True)
-    sms_notifications = Column(Boolean, default=True)
-    push_notifications = Column(Boolean, default=True)
+    # Statistics
+    total_views = Column(Integer, default=0)
+    total_listings = Column(Integer, default=0)
+    active_listings = Column(Integer, default=0)
+    sold_listings = Column(Integer, default=0)
     
-    # Tracking
-    last_login_at = Column(TIMESTAMP, nullable=True, index=True)
+    # Security
+    last_login_at = Column(TIMESTAMP)
     last_login_ip = Column(String(45))
-    login_count = Column(Integer, default=0)
-    
-    # Subscription fields
-    current_subscription_id = Column(Integer, ForeignKey("user_subscriptions.id", ondelete="SET NULL"), nullable=True)
-    subscription_status = Column(
-        Enum("none", "active", "cancelled", "expired", "trial", name="subscription_status_enum"),
-        default="none",
-        index=True
-    )
-    subscription_expires_at = Column(TIMESTAMP, nullable=True, index=True)
-    total_subscription_payments = Column(DECIMAL(12, 2), default=0.00)
-    subscription_started_at = Column(TIMESTAMP, nullable=True)
+    login_attempts = Column(Integer, default=0)
+    locked_until = Column(TIMESTAMP)
+    password_changed_at = Column(TIMESTAMP)
+    two_factor_enabled = Column(Boolean, default=False)
+    two_factor_secret = Column(String(100))
     
     # Timestamps
-    created_at = Column(TIMESTAMP, default=datetime.utcnow)
+    created_at = Column(TIMESTAMP, default=datetime.utcnow, index=True)
     updated_at = Column(TIMESTAMP, default=datetime.utcnow, onupdate=datetime.utcnow)
+    deleted_at = Column(TIMESTAMP)
     
     # Relationships
     city = relationship("PhCity", foreign_keys=[city_id], backref="users")
@@ -118,7 +153,6 @@ class User(Base):
     
     # Subscription relationships
     subscriptions = relationship("UserSubscription", foreign_keys="UserSubscription.user_id", back_populates="user")
-    current_subscription = relationship("UserSubscription", foreign_keys=[current_subscription_id], uselist=False)
     
     # Analytics
     actions = relationship("UserAction", back_populates="user")

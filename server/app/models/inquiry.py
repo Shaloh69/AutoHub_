@@ -26,22 +26,6 @@ class InquiryStatus(str, enum.Enum):
     SPAM = "spam"
 
 
-class Priority(str, enum.Enum):
-    LOW = "low"
-    MEDIUM = "medium"
-    HIGH = "high"
-    URGENT = "urgent"
-
-
-class ClosedReason(str, enum.Enum):
-    RESOLVED = "resolved"
-    NO_RESPONSE = "no_response"
-    SPAM = "spam"
-    INAPPROPRIATE = "inappropriate"
-    CAR_SOLD = "car_sold"
-    BUYER_CANCELLED = "buyer_cancelled"
-
-
 class ResponseType(str, enum.Enum):
     MESSAGE = "message"
     PRICE_COUNTER = "price_counter"
@@ -55,7 +39,7 @@ class Inquiry(Base):
     
     id = Column(Integer, primary_key=True, autoincrement=True)
     car_id = Column(Integer, ForeignKey("cars.id", ondelete="CASCADE"), nullable=False, index=True)
-    buyer_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    buyer_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), index=True)
     seller_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     
     # Basic Info
@@ -71,41 +55,33 @@ class Inquiry(Base):
     test_drive_requested = Column(Boolean, default=False)
     inspection_requested = Column(Boolean, default=False)
     financing_needed = Column(Boolean, default=False)
-    trade_in_vehicle = Column(Text)
+    trade_in_vehicle = Column(Boolean, default=False)
     
-    # Communication tracking
+    # Status
     status = Column(Enum(InquiryStatus), default=InquiryStatus.NEW, index=True)
     is_read = Column(Boolean, default=False)
-    priority = Column(Enum(Priority), default=Priority.MEDIUM, index=True)
+    priority = Column(Enum("low", "medium", "high", "urgent"), default="medium")
     
     # Response tracking
     response_count = Column(Integer, default=0)
-    last_response_at = Column(TIMESTAMP, nullable=True)
-    last_response_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    last_response_at = Column(TIMESTAMP)
+    last_response_by = Column(Integer, ForeignKey("users.id"))
     
-    # Auto-close feature
-    auto_close_at = Column(TIMESTAMP, nullable=True)
-    closed_reason = Column(Enum(ClosedReason), nullable=True)
-    
-    # Rating after inquiry
-    buyer_rating = Column(DECIMAL(3, 2), nullable=True)
-    seller_rating = Column(DECIMAL(3, 2), nullable=True)
+    # Ratings
+    buyer_rating = Column(DECIMAL(3, 2))
+    seller_rating = Column(DECIMAL(3, 2))
     
     # Timestamps
     created_at = Column(TIMESTAMP, default=datetime.utcnow, index=True)
     updated_at = Column(TIMESTAMP, default=datetime.utcnow, onupdate=datetime.utcnow)
+    closed_at = Column(TIMESTAMP)
     
     # Relationships
     car = relationship("Car", back_populates="inquiries")
     buyer = relationship("User", foreign_keys=[buyer_id], back_populates="sent_inquiries")
     seller = relationship("User", foreign_keys=[seller_id], back_populates="received_inquiries")
-    last_responder = relationship("User", foreign_keys=[last_response_by])
-    
     responses = relationship("InquiryResponse", back_populates="inquiry", cascade="all, delete-orphan")
     attachments = relationship("InquiryAttachment", back_populates="inquiry", cascade="all, delete-orphan")
-    
-    def __repr__(self):
-        return f"<Inquiry {self.id}: Car {self.car_id}, Buyer {self.buyer_id}>"
 
 
 class InquiryResponse(Base):
@@ -113,57 +89,30 @@ class InquiryResponse(Base):
     
     id = Column(Integer, primary_key=True, autoincrement=True)
     inquiry_id = Column(Integer, ForeignKey("inquiries.id", ondelete="CASCADE"), nullable=False, index=True)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     message = Column(Text, nullable=False)
-    is_internal_note = Column(Boolean, default=False)
-    is_automated = Column(Boolean, default=False)
-    response_type = Column(Enum(ResponseType), default=ResponseType.MESSAGE, index=True)
-    
-    # For price negotiations
+    response_type = Column(Enum(ResponseType), default=ResponseType.MESSAGE)
     counter_offer_price = Column(DECIMAL(12, 2))
-    
-    # For test drive scheduling
-    suggested_datetime = Column(TIMESTAMP, nullable=True)
-    meeting_location = Column(Text)
-    
-    # Message status
-    is_read = Column(Boolean, default=False)
-    read_at = Column(TIMESTAMP, nullable=True)
-    
-    # Timestamp
-    created_at = Column(TIMESTAMP, default=datetime.utcnow, index=True)
+    is_automated = Column(Boolean, default=False)
+    created_at = Column(TIMESTAMP, default=datetime.utcnow)
     
     # Relationships
     inquiry = relationship("Inquiry", back_populates="responses")
-    user = relationship("User")
-    attachments = relationship("InquiryAttachment", back_populates="response", cascade="all, delete-orphan")
-    
-    def __repr__(self):
-        return f"<InquiryResponse {self.id} for Inquiry {self.inquiry_id}>"
 
 
 class InquiryAttachment(Base):
     __tablename__ = "inquiry_attachments"
     
     id = Column(Integer, primary_key=True, autoincrement=True)
-    inquiry_id = Column(Integer, ForeignKey("inquiries.id", ondelete="CASCADE"), nullable=False, index=True)
-    response_id = Column(Integer, ForeignKey("inquiry_responses.id", ondelete="CASCADE"), nullable=True, index=True)
+    inquiry_id = Column(Integer, ForeignKey("inquiries.id", ondelete="CASCADE"), nullable=False)
     file_url = Column(String(500), nullable=False)
-    file_name = Column(String(255), nullable=False)
-    file_type = Column(String(50), nullable=False, index=True)
-    file_size = Column(Integer, nullable=False)
-    uploaded_by = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    is_image = Column(Boolean, default=False)
-    thumbnail_url = Column(String(500))
-    created_at = Column(TIMESTAMP, default=datetime.utcnow)
+    file_name = Column(String(255))
+    file_type = Column(String(50))
+    file_size = Column(Integer)
+    uploaded_at = Column(TIMESTAMP, default=datetime.utcnow)
     
     # Relationships
     inquiry = relationship("Inquiry", back_populates="attachments")
-    response = relationship("InquiryResponse", back_populates="attachments")
-    uploader = relationship("User")
-    
-    def __repr__(self):
-        return f"<InquiryAttachment {self.id}: {self.file_name}>"
 
 
 class Favorite(Base):
@@ -172,11 +121,9 @@ class Favorite(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     car_id = Column(Integer, ForeignKey("cars.id", ondelete="CASCADE"), nullable=False, index=True)
-    created_at = Column(TIMESTAMP, default=datetime.utcnow, index=True)
+    notes = Column(Text)
+    created_at = Column(TIMESTAMP, default=datetime.utcnow)
     
     # Relationships
     user = relationship("User", back_populates="favorites")
     car = relationship("Car", back_populates="favorites")
-    
-    def __repr__(self):
-        return f"<Favorite: User {self.user_id}, Car {self.car_id}>"

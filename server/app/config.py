@@ -1,3 +1,4 @@
+
 from pydantic_settings import BaseSettings
 from typing import List, Optional
 from functools import lru_cache
@@ -16,6 +17,9 @@ class Settings(BaseSettings):
     # Database
     DATABASE_URL: str = "mysql+pymysql://root:password@localhost:3306/car_marketplace_ph"
     DB_ECHO: bool = False
+    DB_POOL_SIZE: int = 20
+    DB_MAX_OVERFLOW: int = 40
+    DB_POOL_RECYCLE: int = 3600
     
     # Security
     SECRET_KEY: str
@@ -23,6 +27,7 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
     JWT_EXPIRATION_HOURS: int = 24
     JWT_REFRESH_EXPIRATION_DAYS: int = 30
+    PASSWORD_MIN_LENGTH: int = 8
     
     # Redis
     REDIS_URL: str = "redis://localhost:6379/0"
@@ -80,43 +85,35 @@ class Settings(BaseSettings):
     # Location
     DEFAULT_SEARCH_RADIUS_KM: int = 25
     MAX_SEARCH_RADIUS_KM: int = 500
-    COORDINATE_PRECISION_METERS: int = 100
+    COORDINATES_PRECISION: int = 6
     
-    # Subscription
-    FREE_TRIAL_DAYS: int = 7
-    SUBSCRIPTION_GRACE_PERIOD_DAYS: int = 3
-    BOOST_LISTING_DURATION_HOURS: int = 168
-    FEATURED_LISTING_DURATION_HOURS: int = 720
-    
-    # Fraud Detection
-    ENABLE_FRAUD_DETECTION: bool = True
-    FRAUD_THRESHOLD_SCORE: float = 0.75
-    MAX_PRICE_DEVIATION_PERCENT: int = 50
+    # Pagination
+    DEFAULT_PAGE_SIZE: int = 20
+    MAX_PAGE_SIZE: int = 100
     
     # Rate Limiting
     RATE_LIMIT_PER_MINUTE: int = 60
     RATE_LIMIT_PER_HOUR: int = 1000
     
+    # Session
+    SESSION_COOKIE_NAME: str = "car_marketplace_session"
+    SESSION_MAX_AGE: int = 86400
+    
     # Logging
     LOG_LEVEL: str = "INFO"
     LOG_FILE: str = "logs/app.log"
     
-    # Celery
-    CELERY_BROKER_URL: str = "redis://localhost:6379/1"
-    CELERY_RESULT_BACKEND: str = "redis://localhost:6379/2"
+    # Subscription Plans
+    FREE_MAX_LISTINGS: int = 3
+    BASIC_MAX_LISTINGS: int = 10
+    PREMIUM_MAX_LISTINGS: int = 25
+    PRO_MAX_LISTINGS: int = 100
+    ENTERPRISE_MAX_LISTINGS: int = 999999
     
-    # Frontend
-    FRONTEND_URL: str = "http://localhost:3000"
-    
-    # Admin
-    ADMIN_EMAIL: str = "admin@carmarketplace.ph"
-    SUPPORT_EMAIL: str = "support@carmarketplace.ph"
-    
-    # Feature Flags
-    ENABLE_SUBSCRIPTIONS: bool = True
-    ENABLE_SMS_NOTIFICATIONS: bool = True
-    ENABLE_EMAIL_NOTIFICATIONS: bool = True
-    MAINTENANCE_MODE: bool = False
+    # Image Processing
+    THUMBNAIL_SIZE: tuple = (150, 150)
+    MEDIUM_SIZE: tuple = (800, 600)
+    LARGE_SIZE: tuple = (1920, 1440)
     
     class Config:
         env_file = ".env"
@@ -129,5 +126,5 @@ def get_settings() -> Settings:
     return Settings()
 
 
-# Create settings instance
+# Global settings instance
 settings = get_settings()

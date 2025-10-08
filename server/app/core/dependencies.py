@@ -1,4 +1,4 @@
-from fastapi import Depends, HTTPException, status, Header
+from fastapi import Depends, HTTPException, status, Header, Query
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from typing import Optional
@@ -55,75 +55,20 @@ async def get_current_user(
     return user
 
 
-async def get_current_active_user(
-    current_user: User = Depends(get_current_user)
-) -> User:
-    """Get current active user (verified email)"""
-    if not current_user.email_verified:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Email not verified"
-        )
-    return current_user
-
-
-async def get_current_verified_user(
-    current_user: User = Depends(get_current_user)
-) -> User:
-    """Get current fully verified user"""
-    if not current_user.is_verified:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Account not fully verified"
-        )
-    return current_user
-
-
-def require_role(required_roles: list):
-    """Dependency to check user role"""
-    async def role_checker(current_user: User = Depends(get_current_user)) -> User:
-        if current_user.role not in required_roles:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Insufficient permissions"
-            )
-        return current_user
-    return role_checker
-
-
-# Role-specific dependencies
-async def get_current_admin(
-    current_user: User = Depends(require_role([UserRole.ADMIN]))
-) -> User:
-    """Get current admin user"""
-    return current_user
-
-
-async def get_current_seller(
-    current_user: User = Depends(require_role([UserRole.SELLER, UserRole.DEALER, UserRole.ADMIN]))
-) -> User:
-    """Get current seller/dealer user"""
-    return current_user
-
-
-async def get_current_dealer(
-    current_user: User = Depends(require_role([UserRole.DEALER, UserRole.ADMIN]))
-) -> User:
-    """Get current dealer user"""
-    return current_user
-
-
-# Optional authentication
 async def get_optional_user(
-    credentials: Optional[HTTPAuthorizationCredentials] = Depends(HTTPBearer(auto_error=False)),
+    authorization: Optional[str] = Header(None),
     db: Session = Depends(get_db)
 ) -> Optional[User]:
     """Get current user if authenticated, None otherwise"""
-    if not credentials:
+    if not authorization:
         return None
     
+    if not authorization.startswith("Bearer "):
+        return None
+    
+    token = authorization.replace("Bearer ", "")
+    
     try:
-        token = credentials.credentials
         payload = AuthService.decode_token(token)
         if not payload:
             return None
@@ -133,30 +78,99 @@ async def get_optional_user(
             return None
         
         user = db.query(User).filter(User.id == int(user_id)).first()
-        if user and user.is_active and not user.is_banned:
-            return user
+        if not user or not user.is_active or user.is_banned:
+            return None
+        
+        return user
     except:
-        pass
-    
-    return None
+        return None
 
 
-# Pagination dependencies
-async def get_pagination(
-    page: int = 1,
-    limit: int = 20
-):
-    """Get pagination parameters"""
-    if page < 1:
+async def get_current_verified_user(
+    current_user: User = Depends(get_current_user)
+) -> User:
+    """Get current user with verified email and phone"""
+    if not current_user.email_verified:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Page must be >= 1"
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Email verification required"
         )
     
-    if limit < 1 or limit > 100:
+    if not current_user.phone_verified:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Limit must be between 1 and 100"
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Phone verification required"
         )
     
-    return {"page": page, "limit": limit}
+    return current_user
+
+
+async def get_current_seller(
+    current_user: User = Depends(get_current_verified_user)
+) -> User:
+    """Get current user with seller/dealer role"""
+    if current_user.role not in [UserRole.SELLER, UserRole.DEALER, UserRole.ADMIN]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Seller or dealer role required"
+        )
+    
+    return current_user
+
+
+async def get_current_dealer(
+    current_user: User = Depends(get_current_verified_user)
+) -> User:
+    """Get current user with dealer role"""
+    if current_user.role not in [UserRole.DEALER, UserRole.ADMIN]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Dealer role required"
+        )
+    
+    return current_user
+
+
+async def get_current_admin(
+    current_user: User = Depends(get_current_user)
+) -> User:
+    """Get current user with admin role"""
+    if current_user.role != UserRole.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin role required"
+        )
+    
+    return current_user
+
+
+async def get_current_moderator(
+    current_user: User = Depends(get_current_user)
+) -> User:
+    """Get current user with moderator or admin role"""
+    if current_user.role not in [UserRole.MODERATOR, UserRole.ADMIN]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Moderator or admin role required"
+        )
+    
+    return current_user
+
+
+class PaginationParams:
+    """Pagination parameters"""
+    def __init__(
+        self,
+        page: int = Query(1, ge=1, description="Page number"),
+        page_size: int = Query(20, ge=1, le=100, description="Items per page")
+    ):
+        self.page = page
+        self.page_size = page_size
+        self.offset = (page - 1) * page_size
+        self.limit = page_size
+
+
+def get_pagination() -> PaginationParams:
+    """Dependency for pagination parameters"""
+    return Depends(PaginationParams)
+
