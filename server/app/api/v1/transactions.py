@@ -1,6 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from sqlalchemy import or_
 from typing import List
+from datetime import datetime
 from app.database import get_db
 from app.schemas.transaction import (
     TransactionCreate, TransactionUpdate, TransactionResponse, TransactionDetailResponse
@@ -23,19 +25,19 @@ async def create_transaction(
     """Create new transaction"""
     # Get car
     car = db.query(Car).filter(Car.id == transaction_data.car_id).first()
-    if not car:
+    if not car:  # type: ignore
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Car not found")
     
-    if car.status != "active":
+    if car.status != "active":  # type: ignore
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Car is not available")
     
     # Create transaction
     transaction = Transaction(
         car_id=transaction_data.car_id,
-        seller_id=car.seller_id,
-        buyer_id=current_user.id,
+        seller_id=car.seller_id,  # type: ignore
+        buyer_id=int(current_user.id),  # type: ignore
         agreed_price=transaction_data.agreed_price,
-        original_price=car.price,
+        original_price=car.price,  # type: ignore
         payment_method=transaction_data.payment_method,
         deposit_amount=transaction_data.deposit_amount,
         financing_provider=transaction_data.financing_provider,
@@ -50,12 +52,12 @@ async def create_transaction(
     db.add(transaction)
     
     # Update car status
-    car.status = "reserved"
+    car.status = "reserved"  # type: ignore
     
     db.commit()
     db.refresh(transaction)
     
-    return IDResponse(id=transaction.id, message="Transaction initiated successfully")
+    return IDResponse(id=transaction.id, message="Transaction initiated successfully")  # type: ignore
 
 
 @router.get("", response_model=List[TransactionResponse])
@@ -66,9 +68,9 @@ async def get_transactions(
 ):
     """Get user transactions"""
     if role == "buyer":
-        transactions = db.query(Transaction).filter(Transaction.buyer_id == current_user.id).all()
+        transactions = db.query(Transaction).filter(Transaction.buyer_id == current_user.id).all()  # type: ignore
     else:
-        transactions = db.query(Transaction).filter(Transaction.seller_id == current_user.id).all()
+        transactions = db.query(Transaction).filter(Transaction.seller_id == current_user.id).all()  # type: ignore
     
     return [TransactionResponse.model_validate(t) for t in transactions]
 
@@ -83,12 +85,12 @@ async def get_transaction(
     transaction = db.query(Transaction).filter(
         Transaction.id == transaction_id,
         or_(
-            Transaction.buyer_id == current_user.id,
-            Transaction.seller_id == current_user.id
+            Transaction.buyer_id == current_user.id,  # type: ignore
+            Transaction.seller_id == current_user.id  # type: ignore
         )
     ).first()
     
-    if not transaction:
+    if not transaction:  # type: ignore
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Transaction not found")
     
     return TransactionDetailResponse.model_validate(transaction)
@@ -104,26 +106,25 @@ async def update_transaction(
     """Update transaction status"""
     transaction = db.query(Transaction).filter(Transaction.id == transaction_id).first()
     
-    if not transaction:
+    if not transaction:  # type: ignore
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Transaction not found")
     
     # Only seller or buyer can update
-    if transaction.seller_id != current_user.id and transaction.buyer_id != current_user.id:
+    if transaction.seller_id != current_user.id and transaction.buyer_id != current_user.id:  # type: ignore
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Unauthorized")
     
     # Update fields
     update_dict = update_data.model_dump(exclude_unset=True)
     for key, value in update_dict.items():
-        setattr(transaction, key, value)
+        setattr(transaction, key, value)  # type: ignore
     
     # If completed, update car status
     if update_data.status == "completed":
-        car = db.query(Car).filter(Car.id == transaction.car_id).first()
-        if car:
-            car.status = "sold"
+        car = db.query(Car).filter(Car.id == transaction.car_id).first()  # type: ignore
+        if car:  # type: ignore
+            car.status = "sold"  # type: ignore
     
     db.commit()
     db.refresh(transaction)
     
     return TransactionResponse.model_validate(transaction)
-

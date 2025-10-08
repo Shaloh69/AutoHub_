@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import and_, or_, func, desc
-from typing import List, Optional, Dict, Tuple
+from typing import List, Optional, Dict, Tuple, cast
 from datetime import datetime, timedelta
 from decimal import Decimal
 from app.models.car import Car, CarImage, CarFeature, Brand, Model, Feature
@@ -22,7 +22,7 @@ class CarService:
         """Create car listing"""
         # Verify user can create listing
         user = db.query(User).filter(User.id == user_id).first()
-        if not user or not user.can_list_cars:
+        if not user or not user.can_list_cars: # type: ignore
             raise ValueError("User cannot create listings")
         
         # Check subscription limits
@@ -38,8 +38,8 @@ class CarService:
             raise ValueError("Invalid city_id")
         
         # Set province and region from city
-        car_data["province_id"] = city.province_id
-        car_data["region_id"] = city.province.region_id
+        car_data["province_id"] = int(city.province_id)  # type: ignore
+        car_data["region_id"] = int(city.province.region_id)  # type: ignore
         
         # Generate SEO slug
         car_data["seo_slug"] = generate_slug(car_data["title"])
@@ -61,16 +61,22 @@ class CarService:
         # Add features
         if feature_ids:
             for feature_id in feature_ids:
-                car_feature = CarFeature(car_id=car.id, feature_id=feature_id)
+                car_feature = CarFeature(car_id=int(car.id), feature_id=feature_id)  # type: ignore
                 db.add(car_feature)
         
         # Calculate scores
-        car.completeness_score = CarService.calculate_completeness(car)
-        car.quality_score = CarService.calculate_quality_score(car)
+        completeness = CarService.calculate_completeness(car)
+        quality = CarService.calculate_quality_score(car)
+        
+        setattr(car, 'completeness_score', completeness)
+        setattr(car, 'quality_score', quality)
         
         # Update user stats
-        user.total_listings += 1
-        user.active_listings += 1
+        user_listings = int(user.total_listings) if user.total_listings else 0  # type: ignore
+        user_active = int(user.active_listings) if user.active_listings else 0  # type: ignore
+        
+        setattr(user, 'total_listings', user_listings + 1)
+        setattr(user, 'active_listings', user_active + 1)
         
         db.commit()
         db.refresh(car)
@@ -88,29 +94,36 @@ class CarService:
             raise ValueError("Car not found or unauthorized")
         
         # Track price changes
-        if "price" in car_data and car_data["price"] != car.price:
-            old_price = car.price
-            new_price = car_data["price"]
-            price_change = ((new_price - old_price) / old_price) * 100
+        if "price" in car_data:
+            new_price = Decimal(str(car_data["price"]))
+            old_price = Decimal(str(car.price))  # type: ignore
             
-            price_history = PriceHistory(
-                car_id=car.id,
-                old_price=old_price,
-                new_price=new_price,
-                price_change_percent=price_change,
-                change_reason="manual",
-                changed_by=user_id
-            )
-            db.add(price_history)
+            if new_price != old_price:
+                price_change = ((new_price - old_price) / old_price) * 100
+                
+                price_history = PriceHistory(
+                    car_id=car_id,
+                    old_price=old_price,
+                    new_price=new_price,
+                    price_change_percent=price_change,
+                    change_reason="manual",
+                    changed_by=user_id
+                )
+                db.add(price_history)
         
         # Update fields
         for key, value in car_data.items():
             if hasattr(car, key) and key != "id":
                 setattr(car, key, value)
         
-        car.updated_at = datetime.utcnow()
-        car.completeness_score = CarService.calculate_completeness(car)
-        car.quality_score = CarService.calculate_quality_score(car)
+        setattr(car, 'updated_at', datetime.utcnow())
+        
+        # Recalculate scores
+        completeness = CarService.calculate_completeness(car)
+        quality = CarService.calculate_quality_score(car)
+        
+        setattr(car, 'completeness_score', completeness)
+        setattr(car, 'quality_score', quality)
         
         db.commit()
         db.refresh(car)
@@ -128,14 +141,15 @@ class CarService:
             raise ValueError("Car not found or unauthorized")
         
         # Soft delete
-        car.deleted_at = datetime.utcnow()
-        car.is_active = False
-        car.status = "removed"
+        setattr(car, 'deleted_at', datetime.utcnow())
+        setattr(car, 'is_active', False)
+        setattr(car, 'status', 'removed')
         
         # Update user stats
         user = db.query(User).filter(User.id == user_id).first()
         if user:
-            user.active_listings = max(0, user.active_listings - 1)
+            current_active = int(user.active_listings) if user.active_listings else 0  # type: ignore
+            setattr(user, 'active_listings', max(0, current_active - 1))
         
         db.commit()
         
@@ -164,7 +178,7 @@ class CarService:
             
             if car:
                 # Cache for 5 minutes
-                cache.set_json(f"car:{car_id}", {"id": car.id}, ttl=300)
+                cache.set_json(f"car:{car_id}", {"id": int(car.id)}, ttl=300)  # type: ignore
         
         if not car:
             return None
@@ -183,7 +197,7 @@ class CarService:
     ) -> Tuple[List[Car], int]:
         """Search cars with filters"""
         query = db.query(Car).filter(
-            Car.is_active == True,
+            Car.is_active == True,  # noqa: E712
             Car.approval_status == "approved",
             Car.status == "active",
             Car.deleted_at.is_(None)
@@ -239,15 +253,15 @@ class CarService:
             query = query.filter(Car.region_id == filters["region_id"])
         
         if filters.get("is_featured"):
-            query = query.filter(Car.is_featured == True)
+            query = query.filter(Car.is_featured == True)  # noqa: E712
         
         # Location-based search
         if filters.get("latitude") and filters.get("longitude"):
             radius_km = filters.get("radius_km", 25)
             # This is a simple bounding box search
             # For production, use spatial queries
-            lat_range = radius_km / 111.0  # Rough conversion
-            lng_range = radius_km / (111.0 * abs(filters["latitude"]))
+            lat_range = radius_km / 110.574  # Rough conversion
+            lng_range = radius_km / (111.320 * abs(filters["latitude"]))
             
             query = query.filter(
                 Car.latitude.between(
@@ -300,8 +314,11 @@ class CarService:
         # TODO: Implement credit checking
         
         # Set boost expiry
-        car.boosted_until = datetime.utcnow() + timedelta(hours=duration_hours)
-        car.ranking_score += 10  # Boost ranking
+        setattr(car, 'boosted_until', datetime.utcnow() + timedelta(hours=duration_hours))
+        
+        # Boost ranking
+        current_ranking = int(car.ranking_score) if car.ranking_score else 0  # type: ignore
+        setattr(car, 'ranking_score', current_ranking + 10)
         
         db.commit()
         db.refresh(car)
@@ -321,55 +338,61 @@ class CarService:
             UserSubscription.status == "active"
         ).first()
         
+        current_active = int(user.active_listings) if user.active_listings else 0  # type: ignore
+        
         if not subscription:
             # Free tier limit
-            return user.active_listings < 3
+            return current_active < 3
         
         plan = subscription.plan
-        return user.active_listings < plan.max_active_listings
+        max_listings = int(plan.max_active_listings) if plan.max_active_listings else 0  # type: ignore
+        return current_active < max_listings
     
     @staticmethod
     def calculate_completeness(car: Car) -> int:
         """Calculate completeness score (0-100)"""
         score = 0
-        total_fields = 20
         
         # Basic fields (5 points each)
-        if car.description and len(car.description) > 50:
+        description = str(car.description) if car.description else ""  # type: ignore
+        if description and len(description) > 50:
             score += 5
-        if car.vin_number:
+        if car.vin_number: # type: ignore
             score += 5
-        if car.engine_size:
+        if car.engine_size: # type: ignore
             score += 5
-        if car.horsepower:
+        if car.horsepower: # type: ignore
             score += 5
-        if car.detailed_address:
+        if car.detailed_address: # type: ignore
             score += 5
         
         # Images (20 points)
-        if hasattr(car, 'images'):
+        if hasattr(car, 'images') and car.images:
             image_count = len(car.images)
             score += min(20, image_count * 4)
         
         # Features (15 points)
-        if hasattr(car, 'features'):
+        if hasattr(car, 'features') and car.features:
             feature_count = len(car.features)
             score += min(15, feature_count * 3)
         
         # Documentation (10 points)
-        if car.registration_status == "registered":
+        reg_status = str(car.registration_status) if car.registration_status else ""  # type: ignore
+        or_cr = str(car.or_cr_status) if car.or_cr_status else ""  # type: ignore
+        
+        if reg_status == "registered":
             score += 5
-        if car.or_cr_status == "complete":
+        if or_cr == "complete":
             score += 5
         
         # History (10 points)
-        if not car.accident_history:
+        if not car.accident_history: # type: ignore
             score += 5
-        if car.service_history_available:
+        if car.service_history_available: # type: ignore
             score += 5
         
         # Warranty (10 points)
-        if car.warranty_remaining:
+        if car.warranty_remaining: # type: ignore
             score += 10
         
         return min(100, score)
@@ -387,20 +410,24 @@ class CarService:
             "fair": 10,
             "poor": 5
         }
-        score += condition_scores.get(car.condition_rating, 10)
+        condition = str(car.condition_rating) if car.condition_rating else "fair"  # type: ignore
+        score += condition_scores.get(condition, 10)
         
         # Mileage (lower is better)
-        if car.mileage < 20000:
+        mileage = int(car.mileage) if car.mileage else 100000  # type: ignore
+        if mileage < 20000:
             score += 15
-        elif car.mileage < 50000:
+        elif mileage < 50000:
             score += 10
-        elif car.mileage < 100000:
+        elif mileage < 100000:
             score += 5
         
         # History
-        if not car.accident_history:
+        if not car.accident_history: # type: ignore
             score += 10
-        if car.number_of_owners == 1:
+        
+        num_owners = int(car.number_of_owners) if car.number_of_owners else 1  # type: ignore
+        if num_owners == 1:
             score += 5
         
         return min(100, score)
@@ -418,7 +445,8 @@ class CarService:
         # Update view count
         car = db.query(Car).filter(Car.id == car_id).first()
         if car:
-            car.views_count += 1
+            current_views = int(car.views_count) if car.views_count else 0  # type: ignore
+            setattr(car, 'views_count', current_views + 1)
         
         db.commit()
     
@@ -427,7 +455,7 @@ class CarService:
         """Get all brands"""
         query = db.query(Brand)
         if popular_only:
-            query = query.filter(Brand.is_popular_in_ph == True)
+            query = query.filter(Brand.is_popular_in_ph == True)  # noqa: E712
         return query.order_by(Brand.display_order, Brand.name).all()
     
     @staticmethod

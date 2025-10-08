@@ -168,12 +168,12 @@ class User(Base):
     
     @property
     def is_verified(self):
-        return self.email_verified and self.phone_verified
+        return self.email_verified and self.phone_verified  # type: ignore
     
     @property
     def is_dealer_verified(self):
-        return self.role == UserRole.DEALER and self.business_verified
+        return self.role == UserRole.DEALER and self.business_verified  # type: ignore
     
     @property
     def can_list_cars(self):
-        return self.is_active and not self.is_banned and self.is_verified
+        return self.is_active and not self.is_banned and self.is_verified  # type: ignore

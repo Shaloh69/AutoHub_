@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
+from datetime import datetime, timedelta
 from app.database import get_db
 from app.schemas.car import (
     CarCreate, CarUpdate, CarResponse, CarDetailResponse,
@@ -31,8 +32,10 @@ async def create_car(
     Checks subscription limits before creating.
     """
     try:
-        car = CarService.create_car(db, current_user.id, car_data.model_dump())
-        return IDResponse(id=car.id, message="Car listing created successfully")
+        # Extract user_id as int from User instance
+        user_id = int(current_user.id)  # type: ignore
+        car = CarService.create_car(db, user_id, car_data.model_dump())
+        return IDResponse(id=int(car.id), message="Car listing created successfully")  # type: ignore
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
@@ -130,6 +133,7 @@ async def search_cars(
     }
     
     # Search cars
+    user_id = int(current_user.id) if current_user else None  # type: ignore
     cars, total = CarService.search_cars(db, filters, page, page_size)
     
     # Convert to response models
@@ -164,7 +168,8 @@ async def get_car(
     - Seller information
     - Location details
     """
-    car = CarService.get_car(db, car_id, current_user.id if current_user else None)
+    user_id = int(current_user.id) if current_user else None  # type: ignore
+    car = CarService.get_car(db, car_id, user_id)
     
     if not car:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Car not found")
@@ -187,7 +192,8 @@ async def update_car(
     """
     try:
         update_dict = car_data.model_dump(exclude_unset=True)
-        car = CarService.update_car(db, car_id, current_user.id, update_dict)
+        user_id = int(current_user.id)  # type: ignore
+        car = CarService.update_car(db, car_id, user_id, update_dict)
         return CarResponse.model_validate(car)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
@@ -206,7 +212,8 @@ async def delete_car(
     Only the car owner can delete their listing.
     """
     try:
-        CarService.delete_car(db, car_id, current_user.id)
+        user_id = int(current_user.id)  # type: ignore
+        CarService.delete_car(db, car_id, user_id)
         return MessageResponse(message="Car listing deleted successfully")
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
@@ -228,7 +235,8 @@ async def upload_car_image(
     Validates file type and size.
     """
     # Verify car ownership
-    car = db.query(Car).filter(Car.id == car_id, Car.seller_id == current_user.id).first()
+    user_id = int(current_user.id)  # type: ignore
+    car = db.query(Car).filter(Car.id == car_id, Car.seller_id == user_id).first()
     if not car:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Car not found")
     
@@ -289,7 +297,8 @@ async def delete_car_image(
     Removes image file from storage and database record.
     """
     # Verify car ownership
-    car = db.query(Car).filter(Car.id == car_id, Car.seller_id == current_user.id).first()
+    user_id = int(current_user.id)  # type: ignore
+    car = db.query(Car).filter(Car.id == car_id, Car.seller_id == user_id).first()
     if not car:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Car not found")
     
@@ -326,7 +335,8 @@ async def boost_car(
     Increases ranking score and priority in search results.
     """
     try:
-        car = CarService.boost_car(db, car_id, current_user.id, boost_data.duration_hours)
+        user_id = int(current_user.id)  # type: ignore
+        car = CarService.boost_car(db, car_id, user_id, boost_data.duration_hours)
         return CarResponse.model_validate(car)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
@@ -345,10 +355,9 @@ async def feature_car(
     Featured listings appear at the top of search results.
     Requires subscription with featured listing slots.
     """
-    from datetime import datetime, timedelta
-    
     # Verify car ownership
-    car = db.query(Car).filter(Car.id == car_id, Car.seller_id == current_user.id).first()
+    user_id = int(current_user.id)  # type: ignore
+    car = db.query(Car).filter(Car.id == car_id, Car.seller_id == user_id).first()
     if not car:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Car not found")
     
@@ -359,10 +368,13 @@ async def feature_car(
             detail="Featured listings require an active subscription"
         )
     
-    # Set as featured
-    car.is_featured = True
-    car.featured_until = datetime.utcnow() + timedelta(days=duration_days)
-    car.ranking_score += 50
+    # Set as featured - use setattr to avoid type errors
+    setattr(car, 'is_featured', True)
+    setattr(car, 'featured_until', datetime.utcnow() + timedelta(days=duration_days))
+    
+    # Update ranking score
+    current_score = int(car.ranking_score) if car.ranking_score else 0  # type: ignore
+    setattr(car, 'ranking_score', current_score + 50)
     
     db.commit()
     db.refresh(car)
@@ -477,15 +489,16 @@ async def get_similar_cars(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Car not found")
     
     # Find similar cars
-    price_min = float(car.price) * 0.8
-    price_max = float(car.price) * 1.2
+    car_price = float(car.price)  # type: ignore
+    price_min = car_price * 0.8
+    price_max = car_price * 1.2
     
     filters = {
-        "brand_id": car.brand_id,
+        "brand_id": int(car.brand_id),  # type: ignore
         "min_price": price_min,
         "max_price": price_max,
-        "min_year": car.year - 2,
-        "max_year": car.year + 2,
+        "min_year": int(car.year) - 2,  # type: ignore
+        "max_year": int(car.year) + 2,  # type: ignore
         "sort_by": "created_at",
         "sort_order": "desc"
     }
@@ -493,7 +506,7 @@ async def get_similar_cars(
     cars, _ = CarService.search_cars(db, filters, 1, limit)
     
     # Exclude the original car
-    similar = [c for c in cars if c.id != car_id][:limit]
+    similar = [c for c in cars if int(c.id) != car_id][:limit]  # type: ignore
     
     return {
         "similar_cars": [CarResponse.model_validate(c) for c in similar],

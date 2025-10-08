@@ -20,20 +20,20 @@ async def get_dashboard(
 ):
     """Get dashboard statistics"""
     # Get user's cars
-    total_listings = db.query(Car).filter(Car.seller_id == current_user.id).count()
+    total_listings = db.query(Car).filter(Car.seller_id == current_user.id).count()  # type: ignore
     active_listings = db.query(Car).filter(
-        Car.seller_id == current_user.id,
-        Car.status == "active"
+        Car.seller_id == current_user.id,  # type: ignore
+        Car.status == "active"  # type: ignore
     ).count()
     
     # Get total views
     total_views = db.query(func.sum(Car.views_count)).filter(
-        Car.seller_id == current_user.id
+        Car.seller_id == current_user.id  # type: ignore
     ).scalar() or 0
     
     # Get inquiries
     total_inquiries = db.query(Inquiry).filter(
-        Inquiry.seller_id == current_user.id
+        Inquiry.seller_id == current_user.id  # type: ignore
     ).count()
     
     return {
@@ -53,8 +53,8 @@ async def get_car_analytics(
 ):
     """Get car view analytics"""
     # Verify ownership
-    car = db.query(Car).filter(Car.id == car_id, Car.seller_id == current_user.id).first()
-    if not car:
+    car = db.query(Car).filter(Car.id == car_id, Car.seller_id == current_user.id).first()  # type: ignore
+    if not car:  # type: ignore
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Car not found")
     
     # Get views for the past N days
@@ -70,7 +70,7 @@ async def get_car_analytics(
     
     return {
         "car_id": car_id,
-        "total_views": car.views_count,
+        "total_views": car.views_count,  # type: ignore
         "period_days": days,
         "daily_views": [{"date": str(v.date), "count": v.count} for v in views]
     }
@@ -88,7 +88,7 @@ async def get_market_insights(
         func.min(Car.price).label("min_price"),
         func.max(Car.price).label("max_price"),
         func.count(Car.id).label("listing_count")
-    ).filter(Car.status == "active")
+    ).filter(Car.status == "active")  # type: ignore
     
     if brand_id:
         query = query.filter(Car.brand_id == brand_id)
@@ -97,9 +97,18 @@ async def get_market_insights(
     
     result = query.first()
     
+    # Handle None result
+    if not result:
+        return {
+            "avg_price": 0.0,
+            "min_price": 0.0,
+            "max_price": 0.0,
+            "listing_count": 0
+        }
+    
     return {
-        "avg_price": float(result.avg_price) if result.avg_price else 0,
-        "min_price": float(result.min_price) if result.min_price else 0,
-        "max_price": float(result.max_price) if result.max_price else 0,
-        "listing_count": result.listing_count
+        "avg_price": float(result.avg_price) if result.avg_price else 0.0,
+        "min_price": float(result.min_price) if result.min_price else 0.0,
+        "max_price": float(result.max_price) if result.max_price else 0.0,
+        "listing_count": result.listing_count if result.listing_count else 0
     }

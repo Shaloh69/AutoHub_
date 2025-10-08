@@ -2,7 +2,7 @@ from sqlalchemy import create_engine, event
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.pool import QueuePool
-from typing import Generator
+from typing import Generator, Optional
 import redis
 import json
 from app.config import settings
@@ -25,6 +25,9 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
 # Redis connection for caching
+redis_client: Optional[redis.Redis] = None
+redis_available = False
+
 try:
     redis_client = redis.from_url(
         settings.REDIS_URL,
@@ -54,7 +57,7 @@ def get_db() -> Generator[Session, None, None]:
 
 def get_redis() -> redis.Redis:
     """Get Redis client instance"""
-    if not redis_available:
+    if not redis_available or redis_client is None:
         raise Exception("Redis is not available")
     return redis_client
 
@@ -85,35 +88,35 @@ def set_timezone(dbapi_conn, connection_record):
 class CacheManager:
     """Redis cache manager with common operations"""
     
-    def __init__(self, redis_client: redis.Redis = None):
-        self.redis = redis_client or redis_client
+    def __init__(self, redis_client: Optional[redis.Redis] = None):
+        self.redis = redis_client
         self.enabled = redis_available and self.redis is not None
     
-    def get(self, key: str):
+    def get(self, key: str) -> Optional[str]:
         """Get value from cache"""
         if not self.enabled:
             return None
         try:
-            return self.redis.get(key)
+            return self.redis.get(key)  # type: ignore
         except Exception as e:
             print(f"Redis GET error: {e}")
             return None
     
-    def set(self, key: str, value: str, ttl: int = None):
+    def set(self, key: str, value: str, ttl: Optional[int] = None) -> bool:
         """Set value in cache with optional TTL"""
         if not self.enabled:
             return False
         try:
             if ttl:
-                self.redis.setex(key, ttl, value)
+                self.redis.setex(key, ttl, value)  # type: ignore
             else:
-                self.redis.set(key, value)
+                self.redis.set(key, value)  # type: ignore
             return True
         except Exception as e:
             print(f"Redis SET error: {e}")
             return False
     
-    def get_json(self, key: str):
+    def get_json(self, key: str) -> Optional[dict]:
         """Get JSON value from cache"""
         value = self.get(key)
         if value:
@@ -123,19 +126,19 @@ class CacheManager:
                 return None
         return None
     
-    def set_json(self, key: str, value: dict, ttl: int = None):
+    def set_json(self, key: str, value: dict, ttl: Optional[int] = None) -> bool:
         """Set JSON value in cache"""
         try:
             return self.set(key, json.dumps(value), ttl)
         except:
             return False
     
-    def delete(self, key: str):
+    def delete(self, key: str) -> bool:
         """Delete key from cache"""
         if not self.enabled:
             return False
         try:
-            self.redis.delete(key)
+            self.redis.delete(key)  # type: ignore
             return True
         except Exception as e:
             print(f"Redis DELETE error: {e}")
@@ -146,27 +149,27 @@ class CacheManager:
         if not self.enabled:
             return False
         try:
-            return self.redis.exists(key) > 0
+            return self.redis.exists(key) > 0  # type: ignore
         except Exception as e:
             print(f"Redis EXISTS error: {e}")
             return False
     
-    def incr(self, key: str, amount: int = 1):
+    def incr(self, key: str, amount: int = 1) -> Optional[int]:
         """Increment value in cache"""
         if not self.enabled:
             return None
         try:
-            return self.redis.incrby(key, amount)
+            return self.redis.incrby(key, amount)  # type: ignore
         except Exception as e:
             print(f"Redis INCR error: {e}")
             return None
     
-    def expire(self, key: str, seconds: int):
+    def expire(self, key: str, seconds: int) -> bool:
         """Set expiration on key"""
         if not self.enabled:
             return False
         try:
-            return self.redis.expire(key, seconds)
+            return self.redis.expire(key, seconds)  # type: ignore
         except Exception as e:
             print(f"Redis EXPIRE error: {e}")
             return False

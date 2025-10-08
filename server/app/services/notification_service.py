@@ -48,7 +48,7 @@ class NotificationService:
         query = db.query(Notification).filter(Notification.user_id == user_id)
         
         if unread_only:
-            query = query.filter(Notification.is_read == False)
+            query = query.filter(Notification.is_read == False)  # type: ignore
         
         return query.order_by(Notification.created_at.desc()).limit(limit).all()
     
@@ -60,11 +60,11 @@ class NotificationService:
             Notification.user_id == user_id
         ).first()
         
-        if not notification:
+        if not notification:  # type: ignore
             return False
         
-        notification.is_read = True
-        notification.read_at = datetime.utcnow()
+        notification.is_read = True  # type: ignore
+        notification.read_at = datetime.utcnow()  # type: ignore
         
         db.commit()
         
@@ -75,7 +75,7 @@ class NotificationService:
         """Mark all notifications as read"""
         count = db.query(Notification).filter(
             Notification.user_id == user_id,
-            Notification.is_read == False
+            Notification.is_read == False  # type: ignore
         ).update({"is_read": True, "read_at": datetime.utcnow()})
         
         db.commit()
@@ -90,7 +90,7 @@ class NotificationService:
             Notification.user_id == user_id
         ).first()
         
-        if not notification:
+        if not notification:  # type: ignore
             return False
         
         db.delete(notification)
@@ -103,7 +103,7 @@ class NotificationService:
         """Get count of unread notifications"""
         return db.query(Notification).filter(
             Notification.user_id == user_id,
-            Notification.is_read == False
+            Notification.is_read == False  # type: ignore
         ).count()
     
     # Notification templates

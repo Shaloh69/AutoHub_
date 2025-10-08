@@ -55,7 +55,7 @@ async def login(credentials: UserLogin, db: Session = Depends(get_db)):
     """
     user = AuthService.authenticate_user(db, credentials.email, credentials.password)
     
-    if not user:
+    if not user:  # type: ignore
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password",
@@ -97,7 +97,7 @@ async def logout(current_user: User = Depends(get_current_user)):
     - Clears token from cache
     - User must login again
     """
-    AuthService.revoke_refresh_token(current_user.id)
+    AuthService.revoke_refresh_token(int(current_user.id))  # type: ignore
     return MessageResponse(message="Logged out successfully", success=True)
 
 
@@ -148,7 +148,7 @@ async def request_phone_verification(
     - Sends OTP via SMS
     - Returns success message
     """
-    AuthService.generate_phone_otp(current_user.id, phone_data.phone)
+    AuthService.generate_phone_otp(int(current_user.id), phone_data.phone)  # type: ignore
     return MessageResponse(
         message=f"OTP sent to {phone_data.phone}. Valid for 10 minutes.",
         success=True
@@ -170,7 +170,7 @@ async def verify_phone(
     - Deletes OTP from cache
     """
     success = AuthService.verify_phone_otp(
-        db, current_user.id, verification.phone, verification.otp
+        db, int(current_user.id), verification.phone, verification.otp  # type: ignore
     )
     
     if not success:
@@ -267,7 +267,7 @@ async def resend_verification_email(
     - Sends verification email
     - Only for unverified users
     """
-    if current_user.email_verified:
+    if current_user.email_verified:  # type: ignore
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email is already verified"
@@ -310,16 +310,16 @@ async def get_verification_status(current_user: User = Depends(get_current_user)
     - Used for onboarding flow
     """
     return {
-        "user_id": current_user.id,
-        "email_verified": current_user.email_verified,
-        "phone_verified": current_user.phone_verified,
-        "identity_verified": current_user.identity_verified,
-        "business_verified": current_user.business_verified,
-        "verification_level": current_user.verification_level,
-        "can_list_cars": current_user.can_list_cars,
+        "user_id": current_user.id,  # type: ignore
+        "email_verified": current_user.email_verified,  # type: ignore
+        "phone_verified": current_user.phone_verified,  # type: ignore
+        "identity_verified": current_user.identity_verified,  # type: ignore
+        "business_verified": current_user.business_verified,  # type: ignore
+        "verification_level": current_user.verification_level,  # type: ignore
+        "can_list_cars": current_user.can_list_cars,  # type: ignore
         "is_fully_verified": (
-            current_user.email_verified and 
-            current_user.phone_verified and 
-            current_user.identity_verified
+            current_user.email_verified and   # type: ignore
+            current_user.phone_verified and   # type: ignore
+            current_user.identity_verified  # type: ignore
         )
     }

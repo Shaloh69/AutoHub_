@@ -34,7 +34,8 @@ class FileService:
             raise ValueError(f"File too large. Max size: {settings.MAX_IMAGE_SIZE_MB}MB")
         
         # Generate unique filename
-        file_extension = file.filename.split('.')[-1].lower()
+        original_filename = file.filename or "image.jpg"
+        file_extension = original_filename.split('.')[-1].lower() if '.' in original_filename else 'jpg'
         unique_filename = f"{uuid.uuid4()}.{file_extension}"
         
         # Create folder if it doesn't exist
@@ -44,10 +45,10 @@ class FileService:
         # Save original
         original_path = os.path.join(upload_path, unique_filename)
         
-        result = {
+        result: Dict[str, str] = {
             "file_url": f"/uploads/{folder}/{unique_filename}",
             "file_name": unique_filename,
-            "file_size": file_size
+            "file_size": str(file_size)
         }
         
         if resize:
@@ -56,7 +57,7 @@ class FileService:
             
             # Convert RGBA to RGB if necessary
             if image.mode == 'RGBA':
-                background = Image.new('RGB', image.size, (255, 255, 255))
+                background = Image.new('RGB', image.size, (255, 255, 255))  # type: ignore
                 background.paste(image, mask=image.split()[3])
                 image = background
             
@@ -80,8 +81,8 @@ class FileService:
             result["medium_url"] = f"/uploads/{folder}/{medium_filename}"
             
             # Store dimensions
-            result["width"] = image.width
-            result["height"] = image.height
+            result["width"] = str(image.width)
+            result["height"] = str(image.height)
         else:
             # Save without resizing
             with open(original_path, 'wb') as f:

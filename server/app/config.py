@@ -1,7 +1,7 @@
-
 from pydantic_settings import BaseSettings
 from typing import List, Optional
 from functools import lru_cache
+import secrets
 
 
 class Settings(BaseSettings):
@@ -21,9 +21,9 @@ class Settings(BaseSettings):
     DB_MAX_OVERFLOW: int = 40
     DB_POOL_RECYCLE: int = 3600
     
-    # Security
-    SECRET_KEY: str
-    JWT_SECRET: str
+    # Security - MUST be set in production via environment variables!
+    SECRET_KEY: str = "CHANGE_THIS_IN_PRODUCTION_" + secrets.token_urlsafe(32)
+    JWT_SECRET: str = "CHANGE_THIS_IN_PRODUCTION_" + secrets.token_urlsafe(32)
     JWT_ALGORITHM: str = "HS256"
     JWT_EXPIRATION_HOURS: int = 24
     JWT_REFRESH_EXPIRATION_DAYS: int = 30
@@ -118,6 +118,28 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         case_sensitive = True
+    
+    def __init__(self, **kwargs):
+        """Initialize settings and validate security keys"""
+        super().__init__(**kwargs)
+        
+        # Warn if using default security keys
+        if not self.DEBUG:
+            if "CHANGE_THIS_IN_PRODUCTION" in self.SECRET_KEY:
+                import warnings
+                warnings.warn(
+                    "⚠️  WARNING: Using default SECRET_KEY in production! "
+                    "Set SECRET_KEY environment variable immediately!",
+                    RuntimeWarning
+                )
+            
+            if "CHANGE_THIS_IN_PRODUCTION" in self.JWT_SECRET:
+                import warnings
+                warnings.warn(
+                    "⚠️  WARNING: Using default JWT_SECRET in production! "
+                    "Set JWT_SECRET environment variable immediately!",
+                    RuntimeWarning
+                )
 
 
 @lru_cache()

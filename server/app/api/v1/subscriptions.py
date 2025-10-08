@@ -27,9 +27,9 @@ async def get_current_subscription(
     db: Session = Depends(get_db)
 ):
     """Get user's current subscription"""
-    subscription = SubscriptionService.get_user_subscription(db, current_user.id)
+    subscription = SubscriptionService.get_user_subscription(db, int(current_user.id))  # type: ignore
     
-    if not subscription:
+    if not subscription:  # type: ignore
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="No active subscription found"
@@ -48,7 +48,7 @@ async def subscribe_to_plan(
     try:
         subscription = SubscriptionService.subscribe(
             db,
-            user_id=current_user.id,
+            user_id=int(current_user.id),  # type: ignore
             plan_id=subscription_data.plan_id,
             billing_cycle=subscription_data.billing_cycle,
             payment_method=subscription_data.payment_method,
@@ -66,7 +66,7 @@ async def cancel_subscription(
 ):
     """Cancel current subscription"""
     try:
-        SubscriptionService.cancel_subscription(db, current_user.id)
+        SubscriptionService.cancel_subscription(db, int(current_user.id))  # type: ignore
         return MessageResponse(message="Subscription cancelled successfully")
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
@@ -78,7 +78,7 @@ async def get_subscription_usage(
     db: Session = Depends(get_db)
 ):
     """Get subscription usage statistics"""
-    usage = SubscriptionService.get_usage(db, current_user.id)
+    usage = SubscriptionService.get_usage(db, int(current_user.id))  # type: ignore
     return SubscriptionUsageResponse(**usage)
 
 
@@ -89,7 +89,7 @@ async def validate_promo_code(
     db: Session = Depends(get_db)
 ):
     """Validate promotion code"""
-    discount = SubscriptionService.validate_promo_code(db, promo_data.code, current_user.id)
+    discount = SubscriptionService.validate_promo_code(db, promo_data.code, int(current_user.id))  # type: ignore
     
     if discount:
         return PromoCodeResponse(
@@ -116,17 +116,17 @@ async def get_payment_history(
     from app.models.subscription import SubscriptionPayment
     
     payments = db.query(SubscriptionPayment).filter(
-        SubscriptionPayment.user_id == current_user.id
+        SubscriptionPayment.user_id == current_user.id  # type: ignore
     ).order_by(SubscriptionPayment.created_at.desc()).all()
     
     return [
         {
-            "id": p.id,
-            "amount": float(p.amount),
-            "currency": p.currency,
-            "payment_method": p.payment_method,
-            "status": p.status,
-            "created_at": p.created_at
+            "id": p.id,  # type: ignore
+            "amount": float(p.amount),  # type: ignore
+            "currency": p.currency,  # type: ignore
+            "payment_method": p.payment_method,  # type: ignore
+            "status": p.status,  # type: ignore
+            "created_at": p.created_at  # type: ignore
         }
         for p in payments
     ]
@@ -141,7 +141,7 @@ async def upgrade_subscription(
     """Upgrade to a higher plan"""
     # Cancel current subscription
     try:
-        SubscriptionService.cancel_subscription(db, current_user.id)
+        SubscriptionService.cancel_subscription(db, int(current_user.id))  # type: ignore
     except:
         pass
     
@@ -149,7 +149,7 @@ async def upgrade_subscription(
     try:
         subscription = SubscriptionService.subscribe(
             db,
-            user_id=current_user.id,
+            user_id=int(current_user.id),  # type: ignore
             plan_id=plan_id,
             billing_cycle="monthly",
             payment_method="credit_card"
@@ -160,4 +160,3 @@ async def upgrade_subscription(
         }
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
-

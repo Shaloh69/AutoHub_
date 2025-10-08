@@ -18,12 +18,15 @@ class PaymentService:
     ) -> Dict:
         """Create payment intent"""
         
+        # Use empty dict if metadata is None
+        safe_metadata = metadata or {}
+        
         if payment_method == "stripe":
-            return PaymentService.create_stripe_payment(amount, currency, metadata)
+            return PaymentService.create_stripe_payment(amount, currency, safe_metadata)
         elif payment_method == "gcash":
-            return PaymentService.create_gcash_payment(amount, metadata)
+            return PaymentService.create_gcash_payment(amount, safe_metadata)
         elif payment_method == "paymaya":
-            return PaymentService.create_paymaya_payment(amount, metadata)
+            return PaymentService.create_paymaya_payment(amount, safe_metadata)
         else:
             raise ValueError(f"Unsupported payment method: {payment_method}")
     
@@ -40,7 +43,7 @@ class PaymentService:
             intent = stripe.PaymentIntent.create(
                 amount=int(amount * 100),  # Convert to cents
                 currency=currency.lower(),
-                metadata=metadata or {}
+                metadata=metadata
             )
             
             return {
