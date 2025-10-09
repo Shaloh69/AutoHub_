@@ -40,13 +40,17 @@ async def get_current_user(
             detail="User not found"
         )
     
-    if not user.is_active:
+    # FIX: Use getattr to safely access Column[bool] values
+    is_active = getattr(user, 'is_active', True)
+    if not is_active:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Account is inactive"
         )
     
-    if user.is_banned:
+    # FIX: Use getattr to safely access Column[bool] values
+    is_banned = getattr(user, 'is_banned', False)
+    if is_banned:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Account is banned"
@@ -78,7 +82,14 @@ async def get_optional_user(
             return None
         
         user = db.query(User).filter(User.id == int(user_id)).first()
-        if not user or not user.is_active or user.is_banned:
+        if not user:
+            return None
+        
+        # FIX: Use getattr to safely access Column[bool] values
+        is_active = getattr(user, 'is_active', True)
+        is_banned = getattr(user, 'is_banned', False)
+        
+        if not is_active or is_banned:
             return None
         
         return user
@@ -90,13 +101,17 @@ async def get_current_verified_user(
     current_user: User = Depends(get_current_user)
 ) -> User:
     """Get current user with verified email and phone"""
-    if not current_user.email_verified:
+    # FIX: Use getattr to safely access Column[bool] values
+    email_verified = getattr(current_user, 'email_verified', False)
+    if not email_verified:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Email verification required"
         )
     
-    if not current_user.phone_verified:
+    # FIX: Use getattr to safely access Column[bool] values
+    phone_verified = getattr(current_user, 'phone_verified', False)
+    if not phone_verified:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Phone verification required"
@@ -109,7 +124,10 @@ async def get_current_seller(
     current_user: User = Depends(get_current_verified_user)
 ) -> User:
     """Get current user with seller/dealer role"""
-    if current_user.role not in [UserRole.SELLER, UserRole.DEALER, UserRole.ADMIN]:
+    # FIX: Use getattr to safely access Column role value
+    user_role = getattr(current_user, 'role', None)
+    
+    if user_role not in [UserRole.SELLER, UserRole.DEALER, UserRole.ADMIN]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Seller or dealer role required"
@@ -122,7 +140,10 @@ async def get_current_dealer(
     current_user: User = Depends(get_current_verified_user)
 ) -> User:
     """Get current user with dealer role"""
-    if current_user.role not in [UserRole.DEALER, UserRole.ADMIN]:
+    # FIX: Use getattr to safely access Column role value
+    user_role = getattr(current_user, 'role', None)
+    
+    if user_role not in [UserRole.DEALER, UserRole.ADMIN]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Dealer role required"
@@ -135,7 +156,10 @@ async def get_current_admin(
     current_user: User = Depends(get_current_user)
 ) -> User:
     """Get current user with admin role"""
-    if current_user.role != UserRole.ADMIN:
+    # FIX: Use getattr to safely access Column role value
+    user_role = getattr(current_user, 'role', None)
+    
+    if user_role != UserRole.ADMIN:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin role required"
@@ -148,7 +172,10 @@ async def get_current_moderator(
     current_user: User = Depends(get_current_user)
 ) -> User:
     """Get current user with moderator or admin role"""
-    if current_user.role not in [UserRole.MODERATOR, UserRole.ADMIN]:
+    # FIX: Use getattr to safely access Column role value
+    user_role = getattr(current_user, 'role', None)
+    
+    if user_role not in [UserRole.MODERATOR, UserRole.ADMIN]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Moderator or admin role required"
@@ -173,4 +200,3 @@ class PaginationParams:
 def get_pagination() -> PaginationParams:
     """Dependency for pagination parameters"""
     return Depends(PaginationParams)
-

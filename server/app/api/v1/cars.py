@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Query
 from sqlalchemy.orm import Session
-from typing import List, Optional
+from typing import List, Optional, cast
 from app.database import get_db
 from app.schemas.car import (
     CarCreate, CarUpdate, CarResponse, CarDetailResponse,
@@ -31,8 +31,10 @@ async def create_car(
     Checks subscription limits before creating.
     """
     try:
-        car = CarService.create_car(db, current_user.id, car_data.model_dump())
-        return IDResponse(id=car.id, message="Car listing created successfully")
+        # Cast to int to fix type checking
+        user_id = cast(int, current_user.id)
+        car = CarService.create_car(db, user_id, car_data.model_dump())
+        return IDResponse(id=cast(int, car.id), message="Car listing created successfully")
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
@@ -164,7 +166,9 @@ async def get_car(
     - Seller information
     - Location details
     """
-    car = CarService.get_car(db, car_id, current_user.id if current_user else None)
+    # Cast user_id to Optional[int] for type checking
+    user_id: Optional[int] = cast(int, current_user.id) if current_user else None
+    car = CarService.get_car(db, car_id, user_id)
     
     if not car:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Car not found")
@@ -186,8 +190,10 @@ async def update_car(
     Tracks price changes in price history.
     """
     try:
+        # Cast to int to fix type checking
+        user_id = cast(int, current_user.id)
         update_dict = car_data.model_dump(exclude_unset=True)
-        car = CarService.update_car(db, car_id, current_user.id, update_dict)
+        car = CarService.update_car(db, car_id, user_id, update_dict)
         return CarResponse.model_validate(car)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
@@ -206,7 +212,9 @@ async def delete_car(
     Only the car owner can delete their listing.
     """
     try:
-        CarService.delete_car(db, car_id, current_user.id)
+        # Cast to int to fix type checking
+        user_id = cast(int, current_user.id)
+        CarService.delete_car(db, car_id, user_id)
         return MessageResponse(message="Car listing deleted successfully")
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
@@ -227,8 +235,9 @@ async def upload_car_image(
     Automatically creates thumbnail and medium-sized versions.
     Validates file type and size.
     """
-    # Verify car ownership
-    car = db.query(Car).filter(Car.id == car_id, Car.seller_id == current_user.id).first()
+    # Verify car ownership - cast to int for type checking
+    user_id = cast(int, current_user.id)
+    car = db.query(Car).filter(Car.id == car_id, Car.seller_id == user_id).first()
     if not car:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Car not found")
     
@@ -288,8 +297,9 @@ async def delete_car_image(
     
     Removes image file from storage and database record.
     """
-    # Verify car ownership
-    car = db.query(Car).filter(Car.id == car_id, Car.seller_id == current_user.id).first()
+    # Verify car ownership - cast to int for type checking
+    user_id = cast(int, current_user.id)
+    car = db.query(Car).filter(Car.id == car_id, Car.seller_id == user_id).first()
     if not car:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Car not found")
     
@@ -302,10 +312,12 @@ async def delete_car_image(
     if not image:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Image not found")
     
-    # Delete file from storage - FIX: Convert to string explicitly
-    image_url_str = str(image.image_url) if image.image_url else None
-    if image_url_str:
-        FileService.delete_image(image_url_str)
+    # Delete file from storage - FIX: Check if image_url has a value before converting
+    # Use getattr to safely access the attribute value at runtime
+    image_url_value = getattr(image, 'image_url', None)
+    if image_url_value is not None:
+        # Convert to string only if not None
+        FileService.delete_image(str(image_url_value))
     
     # Delete from database
     db.delete(image)
@@ -328,7 +340,9 @@ async def boost_car(
     Increases ranking score and priority in search results.
     """
     try:
-        car = CarService.boost_car(db, car_id, current_user.id, boost_data.duration_hours)
+        # Cast to int to fix type checking
+        user_id = cast(int, current_user.id)
+        car = CarService.boost_car(db, car_id, user_id, boost_data.duration_hours)
         return CarResponse.model_validate(car)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
@@ -349,8 +363,9 @@ async def feature_car(
     """
     from datetime import datetime, timedelta
     
-    # Verify car ownership
-    car = db.query(Car).filter(Car.id == car_id, Car.seller_id == current_user.id).first()
+    # Verify car ownership - cast to int for type checking
+    user_id = cast(int, current_user.id)
+    car = db.query(Car).filter(Car.id == car_id, Car.seller_id == user_id).first()
     if not car:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Car not found")
     
@@ -361,10 +376,13 @@ async def feature_car(
             detail="Featured listings require an active subscription"
         )
     
-    # Set as featured
-    car.is_featured = True
-    car.featured_until = datetime.utcnow() + timedelta(days=duration_days)
-    car.ranking_score += 50
+    # Set as featured - use setattr to avoid type checking issues
+    setattr(car, 'is_featured', True)
+    setattr(car, 'featured_until', datetime.utcnow() + timedelta(days=duration_days))
+    
+    # Update ranking score - get current value first
+    current_ranking = int(car.ranking_score) if car.ranking_score else 0  # type: ignore
+    setattr(car, 'ranking_score', current_ranking + 50)
     
     db.commit()
     db.refresh(car)
@@ -382,122 +400,79 @@ async def get_price_history(
     
     Shows all price changes with dates and reasons.
     """
-    history = db.query(PriceHistory).filter(
+    price_history = db.query(PriceHistory).filter(
         PriceHistory.car_id == car_id
-    ).order_by(PriceHistory.created_at.desc()).all()
+    ).order_by(PriceHistory.changed_at.desc()).all()
     
-    return [PriceHistoryResponse.model_validate(h) for h in history]
+    return [PriceHistoryResponse.model_validate(ph) for ph in price_history]
 
 
-# Metadata endpoints
-@router.get("/meta/brands", response_model=List[BrandResponse])
+@router.get("/brands", response_model=List[BrandResponse])
 async def get_brands(
-    popular_only: bool = False,
+    is_popular: Optional[bool] = None,
     db: Session = Depends(get_db)
 ):
     """
     Get all car brands
     
-    Optionally filter to only popular brands in Philippines.
+    Optionally filter by popular brands in Philippines.
     """
-    brands = CarService.get_brands(db, popular_only)
-    return [BrandResponse.model_validate(b) for b in brands]
+    from app.models.car import Brand
+    
+    query = db.query(Brand).filter(Brand.is_active == True)  # noqa: E712
+    
+    if is_popular is not None:
+        query = query.filter(Brand.is_popular_in_ph == is_popular)
+    
+    brands = query.order_by(Brand.name).all()
+    
+    return [BrandResponse.model_validate(brand) for brand in brands]
 
 
-@router.get("/meta/models", response_model=List[ModelResponse])
-async def get_models(
-    brand_id: Optional[int] = None,
+@router.get("/brands/{brand_id}/models", response_model=List[ModelResponse])
+async def get_models_by_brand(
+    brand_id: int,
+    is_popular: Optional[bool] = None,
     db: Session = Depends(get_db)
 ):
     """
-    Get car models
+    Get all models for a specific brand
     
-    Optionally filtered by brand.
+    Optionally filter by popular models in Philippines.
     """
-    models = CarService.get_models(db, brand_id)
-    return [ModelResponse.model_validate(m) for m in models]
+    from app.models.car import Model
+    
+    query = db.query(Model).filter(Model.brand_id == brand_id, Model.is_active == True)  # noqa: E712
+    
+    if is_popular is not None:
+        query = query.filter(Model.is_popular_in_ph == is_popular)
+    
+    models = query.order_by(Model.name).all()
+    
+    return [ModelResponse.model_validate(model) for model in models]
 
 
-@router.get("/meta/features", response_model=List[FeatureResponse])
+@router.get("/features", response_model=List[FeatureResponse])
 async def get_features(
     category: Optional[str] = None,
+    is_popular: Optional[bool] = None,
     db: Session = Depends(get_db)
 ):
     """
-    Get car features
+    Get all car features
     
-    Optionally filtered by category (safety, comfort, technology, etc).
+    Optionally filter by category or popular features.
     """
-    features = CarService.get_features(db, category)
-    return [FeatureResponse.model_validate(f) for f in features]
-
-
-@router.get("/nearby")
-async def get_nearby_cars(
-    latitude: float,
-    longitude: float,
-    radius_km: int = Query(25, ge=1, le=500),
-    limit: int = Query(20, ge=1, le=100),
-    db: Session = Depends(get_db)
-):
-    """
-    Get cars near a location
+    from app.models.car import Feature
     
-    Uses GPS coordinates to find cars within specified radius.
-    """
-    filters = {
-        "latitude": latitude,
-        "longitude": longitude,
-        "radius_km": radius_km,
-        "sort_by": "created_at",
-        "sort_order": "desc"
-    }
+    query = db.query(Feature)
     
-    cars, total = CarService.search_cars(db, filters, 1, limit)
+    if category:
+        query = query.filter(Feature.category == category)
     
-    return {
-        "cars": [CarResponse.model_validate(car) for car in cars],
-        "total": total,
-        "radius_km": radius_km
-    }
-
-
-@router.get("/similar/{car_id}")
-async def get_similar_cars(
-    car_id: int,
-    limit: int = Query(10, ge=1, le=50),
-    db: Session = Depends(get_db)
-):
-    """
-    Get similar cars based on brand, model, price range
+    if is_popular is not None:
+        query = query.filter(Feature.is_popular == is_popular)
     
-    Useful for "you might also like" features.
-    """
-    # Get reference car
-    car = db.query(Car).filter(Car.id == car_id).first()
-    if not car:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Car not found")
+    features = query.order_by(Feature.name).all()
     
-    # Find similar cars
-    price_min = float(car.price) * 0.8
-    price_max = float(car.price) * 1.2
-    
-    filters = {
-        "brand_id": car.brand_id,
-        "min_price": price_min,
-        "max_price": price_max,
-        "min_year": car.year - 2,
-        "max_year": car.year + 2,
-        "sort_by": "created_at",
-        "sort_order": "desc"
-    }
-    
-    cars, _ = CarService.search_cars(db, filters, 1, limit)
-    
-    # Exclude the original car
-    similar = [c for c in cars if c.id != car_id][:limit]
-    
-    return {
-        "similar_cars": [CarResponse.model_validate(c) for c in similar],
-        "based_on": CarResponse.model_validate(car)
-    }
+    return [FeatureResponse.model_validate(feature) for feature in features]

@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
+from decimal import Decimal
 from app.database import get_db
 from app.schemas.subscription import (
     SubscriptionPlanResponse, SubscriptionCreate, UserSubscriptionResponse,
@@ -92,11 +93,14 @@ async def validate_promo_code(
     discount = SubscriptionService.validate_promo_code(db, promo_data.code, int(current_user.id))  # type: ignore
     
     if discount:
+        # FIX: Convert float to Decimal for type checking
+        discount_decimal = Decimal(str(discount))
+        
         return PromoCodeResponse(
             valid=True,
             code=promo_data.code,
             discount_type="percentage",
-            discount_value=discount,
+            discount_value=discount_decimal,
             message=f"Promo code valid! {discount}% discount applied"
         )
     else:
