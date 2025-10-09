@@ -33,7 +33,8 @@ class UserAction(Base):
     action_type = Column(String(50), nullable=False, index=True)
     target_type = Column(String(50))
     target_id = Column(Integer)
-    metadata = Column(JSON)
+    # FIXED: Renamed 'metadata' to 'action_metadata' to avoid SQLAlchemy reserved word
+    action_metadata = Column(JSON, name="metadata")  # Maps to 'metadata' column in DB
     created_at = Column(TIMESTAMP, default=datetime.utcnow, index=True)
     
     # Relationships

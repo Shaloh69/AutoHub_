@@ -1,4 +1,4 @@
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import List, Optional
 from functools import lru_cache
 import secrets
@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     DEBUG: bool = False
     ALLOWED_HOSTS: List[str] = ["localhost", "127.0.0.1"]
     CORS_ORIGINS: List[str] = ["http://localhost:3000"]
+    ALLOWED_ORIGINS: str = "http://localhost:3000,http://localhost:5173"  # Legacy support
     
     # Database
     DATABASE_URL: str = "mysql+pymysql://root:password@localhost:3306/car_marketplace_ph"
@@ -23,10 +24,13 @@ class Settings(BaseSettings):
     
     # Security - MUST be set in production via environment variables!
     SECRET_KEY: str = "CHANGE_THIS_IN_PRODUCTION_" + secrets.token_urlsafe(32)
-    JWT_SECRET: str = "CHANGE_THIS_IN_PRODUCTION_" + secrets.token_urlsafe(32)
+    JWT_SECRET_KEY: str = "CHANGE_THIS_IN_PRODUCTION_" + secrets.token_urlsafe(32)
+    JWT_SECRET: str = "CHANGE_THIS_IN_PRODUCTION_" + secrets.token_urlsafe(32)  # Alias
     JWT_ALGORITHM: str = "HS256"
     JWT_EXPIRATION_HOURS: int = 24
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440  # 24 hours (legacy support)
     JWT_REFRESH_EXPIRATION_DAYS: int = 30
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 30  # Legacy support
     PASSWORD_MIN_LENGTH: int = 8
     
     # Redis
@@ -58,7 +62,9 @@ class Settings(BaseSettings):
     # Local Storage
     USE_LOCAL_STORAGE: bool = True
     LOCAL_UPLOAD_DIR: str = "uploads"
+    UPLOAD_DIR: str = "uploads"  # Alias for compatibility
     MAX_UPLOAD_SIZE_MB: int = 10
+    MAX_UPLOAD_SIZE: int = 10485760  # 10MB in bytes (legacy support)
     
     # Email
     SMTP_HOST: str = "smtp.gmail.com"
@@ -82,10 +88,14 @@ class Settings(BaseSettings):
     ALLOWED_IMAGE_TYPES: List[str] = ["image/jpeg", "image/png", "image/webp"]
     MAX_IMAGE_SIZE_MB: int = 5
     
-    # Location
+    # Location - Philippines bounds
     DEFAULT_SEARCH_RADIUS_KM: int = 25
     MAX_SEARCH_RADIUS_KM: int = 500
     COORDINATES_PRECISION: int = 6
+    PHILIPPINES_BOUNDS_NORTH: float = 21.5
+    PHILIPPINES_BOUNDS_SOUTH: float = 4.5
+    PHILIPPINES_BOUNDS_EAST: float = 127.0
+    PHILIPPINES_BOUNDS_WEST: float = 116.0
     
     # Pagination
     DEFAULT_PAGE_SIZE: int = 20
@@ -115,15 +125,30 @@ class Settings(BaseSettings):
     MEDIUM_SIZE: tuple = (800, 600)
     LARGE_SIZE: tuple = (1920, 1440)
     
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
+    # Pydantic Settings Configuration
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=True,
+        extra="ignore"  # Ignore extra fields instead of raising error
+    )
     
     def __init__(self, **kwargs):
         """Initialize settings and validate security keys"""
         super().__init__(**kwargs)
         
-        # Warn if using default security keys
+        # Ensure JWT_SECRET is set (use JWT_SECRET_KEY if JWT_SECRET not provided)
+        if "CHANGE_THIS_IN_PRODUCTION" in self.JWT_SECRET:
+            if "CHANGE_THIS_IN_PRODUCTION" not in self.JWT_SECRET_KEY:
+                self.JWT_SECRET = self.JWT_SECRET_KEY
+        
+        # Parse CORS_ORIGINS from ALLOWED_ORIGINS if it's a string
+        if isinstance(self.ALLOWED_ORIGINS, str):
+            origins = [origin.strip() for origin in self.ALLOWED_ORIGINS.split(",")]
+            if origins:
+                self.CORS_ORIGINS = origins
+        
+        # Warn if using default security keys in production
         if not self.DEBUG:
             if "CHANGE_THIS_IN_PRODUCTION" in self.SECRET_KEY:
                 import warnings

@@ -1,8 +1,7 @@
 """
 ===========================================
-FILE: app/schemas/car.py (COMPLETE - MISSING PIECE!)
+FILE: app/schemas/car.py (COMPLETE - FIXED)
 Path: car_marketplace_ph/app/schemas/car.py
-THIS WAS INCOMPLETE BEFORE - NOW COMPLETE
 ===========================================
 """
 from pydantic import BaseModel, Field, ConfigDict
@@ -88,6 +87,10 @@ class CarCreate(BaseModel):
     seo_slug: Optional[str] = Field(None, max_length=255)
     meta_title: Optional[str] = Field(None, max_length=255)
     meta_description: Optional[str] = Field(None, max_length=500)
+    
+    model_config = ConfigDict(
+        protected_namespaces=()  # Allow model_id field
+    )
 
 
 class CarUpdate(BaseModel):
@@ -168,6 +171,10 @@ class CarUpdate(BaseModel):
     seo_slug: Optional[str] = Field(None, max_length=255)
     meta_title: Optional[str] = Field(None, max_length=255)
     meta_description: Optional[str] = Field(None, max_length=500)
+    
+    model_config = ConfigDict(
+        protected_namespaces=()  # Allow model_id field
+    )
 
 
 class CarResponse(BaseModel):
@@ -211,7 +218,10 @@ class CarResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(
+        from_attributes=True,
+        protected_namespaces=()  # Allow model_id field
+    )
 
 
 class CarDetailResponse(CarResponse):
@@ -303,7 +313,10 @@ class ModelResponse(BaseModel):
     year_end: Optional[int] = None
     is_popular_in_ph: bool
     
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(
+        from_attributes=True,
+        protected_namespaces=()  # Allow model_id in parent models
+    )
 
 
 class FeatureResponse(BaseModel):

@@ -10,18 +10,29 @@ from contextlib import asynccontextmanager
 import time
 import logging
 import os
+from typing import List, Any
+
+# Import settings
 from app.config import settings
 from app.database import engine, Base, close_db_connections
 from app.api.v1 import auth, cars, users, subscriptions, inquiries, transactions, analytics
 
-# Configure logging
+# Create required directories BEFORE configuring logging
+os.makedirs(os.path.dirname(settings.LOG_FILE), exist_ok=True)
+os.makedirs(settings.LOCAL_UPLOAD_DIR, exist_ok=True)
+
+# Configure logging - Only log to file in production to avoid reload loop
+# Use List[Any] to avoid type checking issues with handler types
+handlers: List[Any] = [logging.StreamHandler()]
+
+# Only add file handler in production or when explicitly needed
+if not settings.DEBUG or os.environ.get("ENABLE_FILE_LOGGING") == "true":
+    handlers.append(logging.FileHandler(settings.LOG_FILE))
+
 logging.basicConfig(
     level=logging.INFO if not settings.DEBUG else logging.DEBUG,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler(settings.LOG_FILE),
-        logging.StreamHandler()
-    ]
+    handlers=handlers
 )
 logger = logging.getLogger(__name__)
 
@@ -35,7 +46,7 @@ async def lifespan(app: FastAPI):
     logger.info(f"Environment: {'DEBUG' if settings.DEBUG else 'PRODUCTION'}")
     logger.info(f"Version: {settings.APP_VERSION}")
     
-    # Create required directories
+    # Create required directories (double-check)
     os.makedirs(settings.LOCAL_UPLOAD_DIR, exist_ok=True)
     os.makedirs(os.path.dirname(settings.LOG_FILE), exist_ok=True)
     
@@ -95,13 +106,14 @@ async def add_process_time_header(request: Request, call_next):
     response.headers["X-Process-Time"] = f"{process_time:.4f}"
     response.headers["X-Request-ID"] = request_id
     
-    # Log request
-    logger.info(
-        f"Request: {request.method} {request.url.path} | "
-        f"Status: {response.status_code} | "
-        f"Time: {process_time:.4f}s | "
-        f"ID: {request_id}"
-    )
+    # Log request (but not every single one in debug to reduce noise)
+    if not settings.DEBUG or request.url.path not in ["/health", "/favicon.ico"]:
+        logger.info(
+            f"Request: {request.method} {request.url.path} | "
+            f"Status: {response.status_code} | "
+            f"Time: {process_time:.4f}s | "
+            f"ID: {request_id}"
+        )
     
     return response
 
@@ -193,10 +205,13 @@ app.include_router(analytics.router, prefix="/api/v1/analytics", tags=["Analytic
 
 if __name__ == "__main__":
     import uvicorn
+    
+    # Simple approach: just run without file watching on logs
+    # Uvicorn will automatically exclude common patterns
     uvicorn.run(
         "main:app",
         host="0.0.0.0",
         port=8000,
         reload=settings.DEBUG,
-        log_level="debug" if settings.DEBUG else "info"
+        log_level="info"
     )
