@@ -10,6 +10,7 @@ from app.schemas.subscription import (
 from app.schemas.common import MessageResponse
 from app.core.dependencies import get_current_user
 from app.models.user import User
+from app.models.subscription import SubscriptionPayment
 from app.services.subscription_service import SubscriptionService
 
 router = APIRouter()
@@ -28,9 +29,11 @@ async def get_current_subscription(
     db: Session = Depends(get_db)
 ):
     """Get user's current subscription"""
-    subscription = SubscriptionService.get_user_subscription(db, int(current_user.id))  # type: ignore
+    # FIX: Use getattr
+    user_id = int(getattr(current_user, 'id', 0))
+    subscription = SubscriptionService.get_user_subscription(db, user_id)
     
-    if not subscription:  # type: ignore
+    if not subscription:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="No active subscription found"
@@ -47,9 +50,11 @@ async def subscribe_to_plan(
 ):
     """Subscribe to a plan"""
     try:
+        # FIX: Use getattr
+        user_id = int(getattr(current_user, 'id', 0))
         subscription = SubscriptionService.subscribe(
             db,
-            user_id=int(current_user.id),  # type: ignore
+            user_id=user_id,
             plan_id=subscription_data.plan_id,
             billing_cycle=subscription_data.billing_cycle,
             payment_method=subscription_data.payment_method,
@@ -67,7 +72,9 @@ async def cancel_subscription(
 ):
     """Cancel current subscription"""
     try:
-        SubscriptionService.cancel_subscription(db, int(current_user.id))  # type: ignore
+        # FIX: Use getattr
+        user_id = int(getattr(current_user, 'id', 0))
+        SubscriptionService.cancel_subscription(db, user_id)
         return MessageResponse(message="Subscription cancelled successfully")
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
@@ -79,7 +86,9 @@ async def get_subscription_usage(
     db: Session = Depends(get_db)
 ):
     """Get subscription usage statistics"""
-    usage = SubscriptionService.get_usage(db, int(current_user.id))  # type: ignore
+    # FIX: Use getattr
+    user_id = int(getattr(current_user, 'id', 0))
+    usage = SubscriptionService.get_usage(db, user_id)
     return SubscriptionUsageResponse(**usage)
 
 
@@ -90,10 +99,12 @@ async def validate_promo_code(
     db: Session = Depends(get_db)
 ):
     """Validate promotion code"""
-    discount = SubscriptionService.validate_promo_code(db, promo_data.code, int(current_user.id))  # type: ignore
+    # FIX: Use getattr
+    user_id = int(getattr(current_user, 'id', 0))
+    discount = SubscriptionService.validate_promo_code(db, promo_data.code, user_id)
     
     if discount:
-        # FIX: Convert float to Decimal for type checking
+        # Convert float to Decimal
         discount_decimal = Decimal(str(discount))
         
         return PromoCodeResponse(
@@ -117,20 +128,21 @@ async def get_payment_history(
     db: Session = Depends(get_db)
 ):
     """Get payment history"""
-    from app.models.subscription import SubscriptionPayment
+    # FIX: Use getattr
+    user_id = int(getattr(current_user, 'id', 0))
     
     payments = db.query(SubscriptionPayment).filter(
-        SubscriptionPayment.user_id == current_user.id  # type: ignore
+        SubscriptionPayment.user_id == user_id
     ).order_by(SubscriptionPayment.created_at.desc()).all()
     
     return [
         {
-            "id": p.id,  # type: ignore
-            "amount": float(p.amount),  # type: ignore
-            "currency": p.currency,  # type: ignore
-            "payment_method": p.payment_method,  # type: ignore
-            "status": p.status,  # type: ignore
-            "created_at": p.created_at  # type: ignore
+            "id": int(getattr(p, 'id', 0)),
+            "amount": float(getattr(p, 'amount', 0)),
+            "currency": str(getattr(p, 'currency', 'PHP')),
+            "payment_method": str(getattr(p, 'payment_method', '')),
+            "status": str(getattr(p, 'status', '')),
+            "created_at": getattr(p, 'created_at', None)
         }
         for p in payments
     ]
@@ -143,9 +155,12 @@ async def upgrade_subscription(
     db: Session = Depends(get_db)
 ):
     """Upgrade to a higher plan"""
+    # FIX: Use getattr
+    user_id = int(getattr(current_user, 'id', 0))
+    
     # Cancel current subscription
     try:
-        SubscriptionService.cancel_subscription(db, int(current_user.id))  # type: ignore
+        SubscriptionService.cancel_subscription(db, user_id)
     except:
         pass
     
@@ -153,7 +168,7 @@ async def upgrade_subscription(
     try:
         subscription = SubscriptionService.subscribe(
             db,
-            user_id=int(current_user.id),  # type: ignore
+            user_id=user_id,
             plan_id=plan_id,
             billing_cycle="monthly",
             payment_method="credit_card"

@@ -70,4 +70,7 @@ class PriceHistory(Base):
     price_change_percent = Column(DECIMAL(6, 2))
     change_reason = Column(Enum("manual", "market_adjustment", "promotion", "negotiation"), default="manual")
     changed_by = Column(Integer, ForeignKey("users.id"))
-    created_at = Column(TIMESTAMP, default=datetime.utcnow)
+    
+    # FIX: Add both columns for compatibility
+    created_at = Column(TIMESTAMP, default=datetime.utcnow, index=True)
+    changed_at = Column(TIMESTAMP, default=datetime.utcnow, index=True)  # ← ADDED THIS

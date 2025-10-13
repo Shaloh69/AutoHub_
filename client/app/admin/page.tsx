@@ -1,82 +1,88 @@
-"use client";
+// ==========================================
+// app/admin/page.tsx - Complete Admin Dashboard
+// ==========================================
+
+'use client';
 
 import { useState, useEffect } from 'react';
-import { Card, CardBody, CardHeader } from "@heroui/card";
-import { Button } from "@heroui/button";
-import { Chip } from "@heroui/chip";
-import { Image } from "@heroui/image";
-import { Spinner } from "@heroui/spinner";
-import { Tabs, Tab } from "@heroui/tabs";
-import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from "@heroui/table";
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure } from "@heroui/modal";
-import { Textarea } from "@heroui/input";
-import { apiService, Car, User } from '@/services/api';
+import { Card, CardHeader, CardBody } from '@heroui/card';
+import { Button } from '@heroui/button';
+import { Chip } from '@heroui/chip';
+import { Spinner } from '@heroui/spinner';
+import { Tabs, Tab } from '@heroui/tabs';
+import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from '@heroui/table';
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure } from '@heroui/modal';
+import { Textarea } from '@heroui/input';
+import {
+  Users, Car, DollarSign, TrendingUp, CheckCircle,
+  XCircle, AlertCircle, Shield, Eye
+} from 'lucide-react';
+import { apiService } from '@/services/api';
+import { Car as CarType, User as UserType, DashboardStats } from '@/types';
 import { useRequireAdmin } from '@/contexts/AuthContext';
-
-function formatPrice(price: number): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 0,
-  }).format(price);
-}
 
 export default function AdminDashboardPage() {
   const { user, loading: authLoading } = useRequireAdmin();
-  
-  const [pendingCars, setPendingCars] = useState<Car[]>([]);
-  const [users, setUsers] = useState<User[]>([]);
-  const [analytics, setAnalytics] = useState<any>(null);
+
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [pendingCars, setPendingCars] = useState<CarType[]>([]);
+  const [users, setUsers] = useState<UserType[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [selectedCar, setSelectedCar] = useState<Car | null>(null);
-  const [rejectReason, setRejectReason] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
+  const [selectedCar, setSelectedCar] = useState<CarType | null>(null);
+  const [rejectReason, setRejectReason] = useState('');
+  const [error, setError] = useState<string | null>(null);
 
   const { isOpen: isRejectOpen, onOpen: onRejectOpen, onOpenChange: onRejectOpenChange } = useDisclosure();
 
   useEffect(() => {
-    if (user) {
-      fetchData();
+    if (user && !authLoading) {
+      loadAdminData();
     }
-  }, [user]);
+  }, [user, authLoading]);
 
-  const fetchData = async () => {
+  const loadAdminData = async () => {
     try {
       setLoading(true);
       setError(null);
-      
-      const [pendingResponse, usersResponse, analyticsResponse] = await Promise.all([
+
+      const [statsResponse, carsResponse, usersResponse] = await Promise.all([
+        apiService.getAdminAnalytics(),
         apiService.getPendingCars(),
-        apiService.getUsers(),
-        apiService.getAdminAnalytics()
+        apiService.getAllUsers(),
       ]);
 
-      if (pendingResponse.success && Array.isArray(pendingResponse.data)) {
-        setPendingCars(pendingResponse.data);
+      if (statsResponse.success && statsResponse.data) {
+        setStats(statsResponse.data);
       }
 
-      if (usersResponse.success && Array.isArray(usersResponse.data)) {
+      if (carsResponse.success && carsResponse.data) {
+        setPendingCars(carsResponse.data.items || []);
+      }
+
+      if (usersResponse.success && usersResponse.data) {
         setUsers(usersResponse.data);
       }
-
-      if (analyticsResponse.success) {
-        setAnalytics(analyticsResponse.data);
-      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch admin data');
+      setError(err instanceof Error ? err.message : 'Failed to load admin data');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleApproveCar = async (carId: string) => {
+  const handleApproveCar = async (carId: number) => {
     try {
       setActionLoading(true);
-      await apiService.approveCar(carId);
-      setPendingCars(prev => prev.filter(car => car.id !== carId));
+      const response = await apiService.approveCar(carId);
+
+      if (response.success) {
+        setPendingCars(prev => prev.filter(car => car.id !== carId));
+      } else {
+        alert(response.error || 'Failed to approve car');
+      }
     } catch (err) {
       console.error('Failed to approve car:', err);
+      alert('Failed to approve car');
     } finally {
       setActionLoading(false);
     }
@@ -87,37 +93,79 @@ export default function AdminDashboardPage() {
 
     try {
       setActionLoading(true);
-      await apiService.rejectCar(selectedCar.id, rejectReason);
-      setPendingCars(prev => prev.filter(car => car.id !== selectedCar.id));
-      setSelectedCar(null);
-      setRejectReason('');
-      onRejectOpenChange();
+      const response = await apiService.rejectCar(selectedCar.id, rejectReason);
+
+      if (response.success) {
+        setPendingCars(prev => prev.filter(car => car.id !== selectedCar.id));
+        setSelectedCar(null);
+        setRejectReason('');
+        onRejectOpenChange();
+      } else {
+        alert(response.error || 'Failed to reject car');
+      }
     } catch (err) {
       console.error('Failed to reject car:', err);
+      alert('Failed to reject car');
     } finally {
       setActionLoading(false);
     }
   };
 
-  const handleBanUser = async (userId: string, reason: string) => {
+  const handleBanUser = async (userId: number, reason: string) => {
+    const confirmReason = prompt('Enter reason for banning this user:', reason);
+    if (!confirmReason) return;
+
     try {
-      await apiService.banUser(userId, reason);
-      setUsers(prev => prev.map(user => 
-        user.id === userId ? { ...user, isBanned: true } : user
-      ));
+      const response = await apiService.banUser(userId, confirmReason);
+
+      if (response.success) {
+        setUsers(prev =>
+          prev.map(u => (u.id === userId ? { ...u, is_banned: true } : u))
+        );
+      } else {
+        alert(response.error || 'Failed to ban user');
+      }
     } catch (err) {
       console.error('Failed to ban user:', err);
+      alert('Failed to ban user');
     }
   };
 
-  const openRejectModal = (car: Car) => {
+  const handleUnbanUser = async (userId: number) => {
+    if (!confirm('Are you sure you want to unban this user?')) return;
+
+    try {
+      const response = await apiService.unbanUser(userId);
+
+      if (response.success) {
+        setUsers(prev =>
+          prev.map(u => (u.id === userId ? { ...u, is_banned: false } : u))
+        );
+      } else {
+        alert(response.error || 'Failed to unban user');
+      }
+    } catch (err) {
+      console.error('Failed to unban user:', err);
+      alert('Failed to unban user');
+    }
+  };
+
+  const openRejectModal = (car: CarType) => {
     setSelectedCar(car);
     onRejectOpen();
   };
 
+  const formatPrice = (price: number, currency: string = 'PHP') => {
+    return new Intl.NumberFormat('en-PH', {
+      style: 'currency',
+      currency: currency,
+      minimumFractionDigits: 0,
+    }).format(price);
+  };
+
   if (authLoading || loading) {
     return (
-      <div className="flex justify-center items-center min-h-[400px]">
+      <div className="flex justify-center items-center min-h-screen">
         <Spinner size="lg" color="primary" />
       </div>
     );
@@ -125,393 +173,419 @@ export default function AdminDashboardPage() {
 
   if (error) {
     return (
-      <div className="flex justify-center items-center min-h-[400px]">
-        <div className="text-center">
-          <p className="text-autohub-primary-500 text-lg mb-4">Error: {error}</p>
-          <Button 
-            className="bg-autohub-primary-500 hover:bg-autohub-primary-600 text-white" 
-            onPress={fetchData}
-          >
-            Try Again
-          </Button>
-        </div>
+      <div className="flex flex-col justify-center items-center min-h-screen">
+        <AlertCircle size={64} className="text-red-500 mb-4" />
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+          Error Loading Dashboard
+        </h2>
+        <p className="text-gray-600 dark:text-gray-400 mb-4">{error}</p>
+        <Button color="primary" onPress={loadAdminData}>
+          Try Again
+        </Button>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="text-center space-y-4">
-        <div className="inline-flex items-center gap-2 bg-autohub-accent2-500/10 text-autohub-accent2-600 px-4 py-2 rounded-full text-sm font-medium">
-          <span className="w-2 h-2 bg-autohub-accent2-500 rounded-full animate-pulse"></span>
-          Administrative Dashboard
-        </div>
-        <h1 className="text-4xl lg:text-5xl font-bold text-autohub-secondary-900 dark:text-autohub-neutral-50">
-          AutoHub
-          <span className="bg-gradient-to-r from-autohub-primary-500 to-autohub-accent2-500 bg-clip-text text-transparent ml-3">
-            Admin Panel
-          </span>
-        </h1>
-        <p className="text-xl text-autohub-accent1-600">
-          Manage platform operations, users, and premium listings
-        </p>
-      </div>
-
-      {/* Analytics Cards */}
-      {analytics && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <Card className="border border-autohub-accent1-200 hover:border-autohub-primary-500/50 transition-colors bg-gradient-to-br from-autohub-primary-50 to-autohub-primary-100 dark:from-autohub-primary-950 dark:to-autohub-secondary-900">
-            <CardBody className="text-center p-6">
-              <div className="w-12 h-12 bg-autohub-primary-500 rounded-xl flex items-center justify-center mx-auto mb-3">
-                <svg className="text-white" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                </svg>
-              </div>
-              <p className="text-3xl font-bold text-autohub-primary-500">{analytics.totalUsers || 0}</p>
-              <p className="text-sm text-autohub-accent1-600 font-medium">Total Users</p>
-            </CardBody>
-          </Card>
-          
-          <Card className="border border-autohub-accent1-200 hover:border-green-500/50 transition-colors bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-autohub-secondary-900">
-            <CardBody className="text-center p-6">
-              <div className="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center mx-auto mb-3">
-                <svg className="text-white" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M19 7h-3V6a4 4 0 0 0-8 0v1H5a1 1 0 0 0-1 1v11a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3V8a1 1 0 0 0-1-1zM10 6a2 2 0 0 1 4 0v1h-4V6zm2 10a1 1 0 0 1-1-1v-2a1 1 0 0 1 2 0v2a1 1 0 0 1-1 1z"/>
-                </svg>
-              </div>
-              <p className="text-3xl font-bold text-green-500">{analytics.totalCars || 0}</p>
-              <p className="text-sm text-autohub-accent1-600 font-medium">Total Listings</p>
-            </CardBody>
-          </Card>
-          
-          <Card className="border border-autohub-accent1-200 hover:border-amber-500/50 transition-colors bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-950 dark:to-autohub-secondary-900">
-            <CardBody className="text-center p-6">
-              <div className="w-12 h-12 bg-amber-500 rounded-xl flex items-center justify-center mx-auto mb-3">
-                <span className="text-white font-bold text-lg">{pendingCars.length}</span>
-              </div>
-              <p className="text-3xl font-bold text-amber-500">{pendingCars.length}</p>
-              <p className="text-sm text-autohub-accent1-600 font-medium">Pending Review</p>
-            </CardBody>
-          </Card>
-          
-          <Card className="border border-autohub-accent1-200 hover:border-autohub-accent2-500/50 transition-colors bg-gradient-to-br from-autohub-accent2-50 to-autohub-accent2-100 dark:from-autohub-accent2-950 dark:to-autohub-secondary-900">
-            <CardBody className="text-center p-6">
-              <div className="w-12 h-12 bg-autohub-accent2-500 rounded-xl flex items-center justify-center mx-auto mb-3">
-                <span className="text-autohub-secondary-900 font-bold">★</span>
-              </div>
-              <p className="text-3xl font-bold text-autohub-accent2-500">{analytics.activeSubscriptions || 0}</p>
-              <p className="text-sm text-autohub-accent1-600 font-medium">Premium Members</p>
-            </CardBody>
-          </Card>
-        </div>
-      )}
-
-      <Tabs aria-label="Admin sections" color="primary" variant="underlined" size="lg">
-        <Tab key="pending" title={`Pending Cars (${pendingCars.length})`}>
-          <div className="space-y-6">
-            {pendingCars.length === 0 ? (
-              <Card className="border border-autohub-accent1-200">
-                <CardBody className="text-center py-16">
-                  <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <svg className="text-green-500" width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
-                    </svg>
-                  </div>
-                  <h3 className="text-2xl font-semibold text-autohub-secondary-900 dark:text-autohub-neutral-50 mb-2">
-                    All listings reviewed
-                  </h3>
-                  <p className="text-autohub-accent1-600">No vehicles are currently pending approval</p>
-                </CardBody>
-              </Card>
-            ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {pendingCars.map((car) => (
-                  <Card 
-                    key={car.id} 
-                    className="border border-autohub-accent1-200 hover:border-autohub-primary-500/50 hover:shadow-autohub transition-all duration-300"
-                  >
-                    <CardBody className="space-y-6 p-6">
-                      <div className="flex gap-4">
-                        <Image
-                          src={car.images[0] || '/placeholder-car.jpg'}
-                          alt={`${car.year} ${car.make} ${car.model}`}
-                          className="w-32 h-24 object-cover rounded-lg"
-                        />
-                        <div className="flex-1 space-y-2">
-                          <h3 className="font-bold text-lg text-autohub-secondary-900 dark:text-autohub-neutral-50">
-                            {car.year} {car.make} {car.model}
-                          </h3>
-                          <p className="text-2xl font-bold text-autohub-primary-500">
-                            {formatPrice(car.price)}
-                          </p>
-                          <div className="space-y-1 text-sm text-autohub-accent1-600">
-                            <p>{new Intl.NumberFormat().format(car.mileage)} miles • {car.location}</p>
-                            <p>Listed by: <span className="font-medium">{car.user?.firstName} {car.user?.lastName}</span></p>
-                            <p>Submitted: <span className="font-medium">{new Date(car.createdAt).toLocaleDateString()}</span></p>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <p className="text-sm text-autohub-accent1-700 line-clamp-3 bg-autohub-neutral-100 dark:bg-autohub-secondary-800 p-3 rounded-lg">
-                        {car.description}
-                      </p>
-                      
-                      <div className="flex gap-3">
-                        <Button
-                          className="bg-green-500 hover:bg-green-600 text-white font-semibold flex-1"
-                          onPress={() => handleApproveCar(car.id)}
-                          isLoading={actionLoading}
-                          size="lg"
-                        >
-                          Approve Listing
-                        </Button>
-                        <Button
-                          variant="bordered"
-                          onPress={() => openRejectModal(car)}
-                          isLoading={actionLoading}
-                          className="border-autohub-primary-500 text-autohub-primary-500 hover:bg-autohub-primary-500 hover:text-white flex-1"
-                          size="lg"
-                        >
-                          Reject
-                        </Button>
-                        <Button
-                          variant="light"
-                          onPress={() => window.open(`/cars/${car.id}`, '_blank')}
-                          className="text-autohub-accent1-600 hover:text-autohub-primary-500"
-                          size="lg"
-                        >
-                          View Details
-                        </Button>
-                      </div>
-                    </CardBody>
-                  </Card>
-                ))}
-              </div>
-            )}
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 px-4">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="inline-flex items-center gap-2 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-4 py-2 rounded-full text-sm font-medium mb-4">
+            <Shield size={16} />
+            <span>Administrative Dashboard</span>
           </div>
-        </Tab>
+          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
+            AutoHub
+            <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent ml-3">
+              Admin Panel
+            </span>
+          </h1>
+          <p className="text-xl text-gray-600 dark:text-gray-400">
+            Manage platform operations, users, and listings
+          </p>
+        </div>
 
-        <Tab key="users" title={`Users (${users.length})`}>
-          <Card className="border border-autohub-accent1-200">
-            <CardBody className="p-0">
-              <Table aria-label="Users table" className="min-h-[400px]">
-                <TableHeader>
-                  <TableColumn className="bg-autohub-neutral-100 dark:bg-autohub-secondary-800">USER</TableColumn>
-                  <TableColumn className="bg-autohub-neutral-100 dark:bg-autohub-secondary-800">EMAIL</TableColumn>
-                  <TableColumn className="bg-autohub-neutral-100 dark:bg-autohub-secondary-800">ROLE</TableColumn>
-                  <TableColumn className="bg-autohub-neutral-100 dark:bg-autohub-secondary-800">JOINED</TableColumn>
-                  <TableColumn className="bg-autohub-neutral-100 dark:bg-autohub-secondary-800">STATUS</TableColumn>
-                  <TableColumn className="bg-autohub-neutral-100 dark:bg-autohub-secondary-800">ACTIONS</TableColumn>
-                </TableHeader>
-                <TableBody>
-                  {users.map((user) => (
-                    <TableRow key={user.id} className="hover:bg-autohub-neutral-50 dark:hover:bg-autohub-secondary-800">
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-autohub-primary-500 rounded-full flex items-center justify-center">
-                            <span className="text-white font-semibold">
-                              {user.firstName?.charAt(0)}{user.lastName?.charAt(0)}
-                            </span>
-                          </div>
-                          <div>
-                            <p className="font-medium text-autohub-secondary-900 dark:text-autohub-neutral-50">
-                              {user.firstName} {user.lastName}
-                            </p>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-autohub-accent1-600">{user.email}</TableCell>
-                      <TableCell>
-                        <Chip
-                          size="sm"
-                          className={`${
-                            user.role === 'ADMIN' 
-                              ? 'bg-autohub-primary-500 text-white' 
-                              : user.role === 'MODERATOR' 
-                              ? 'bg-autohub-accent2-500 text-autohub-secondary-900' 
-                              : 'bg-autohub-accent1-500 text-white'
-                          }`}
-                        >
-                          {user.role}
-                        </Chip>
-                      </TableCell>
-                      <TableCell className="text-autohub-accent1-600">
-                        {new Date(user.createdAt).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell>
-                        <Chip
-                          size="sm"
-                          className={`${
-                            user.isVerified 
-                              ? 'bg-green-500 text-white' 
-                              : 'bg-amber-500 text-white'
-                          }`}
-                        >
-                          {user.isVerified ? 'Verified' : 'Unverified'}
-                        </Chip>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          {user.role === 'USER' && (
-                            <Button
-                              size="sm"
-                              variant="bordered"
-                              onPress={() => handleBanUser(user.id, 'Banned by admin')}
-                              className="border-autohub-primary-500 text-autohub-primary-500 hover:bg-autohub-primary-500 hover:text-white"
-                            >
-                              Ban User
-                            </Button>
-                          )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardBody>
-          </Card>
-        </Tab>
+        {/* Stats Cards */}
+        {stats && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <Card className="border-l-4 border-blue-500">
+              <CardBody>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                      Total Users
+                    </p>
+                    <p className="text-3xl font-bold text-gray-900 dark:text-white">
+                      {stats.totalUsers || 0}
+                    </p>
+                    <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+                      +{stats.newUsersToday || 0} today
+                    </p>
+                  </div>
+                  <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-full">
+                    <Users className="text-blue-600 dark:text-blue-400" size={24} />
+                  </div>
+                </div>
+              </CardBody>
+            </Card>
 
-        <Tab key="analytics" title="Analytics">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <Card className="border border-autohub-accent1-200">
-              <CardHeader className="bg-autohub-neutral-100 dark:bg-autohub-secondary-800">
-                <h3 className="text-lg font-semibold text-autohub-secondary-900 dark:text-autohub-neutral-50">
-                  Platform Statistics
-                </h3>
+            <Card className="border-l-4 border-green-500">
+              <CardBody>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                      Active Listings
+                    </p>
+                    <p className="text-3xl font-bold text-gray-900 dark:text-white">
+                      {stats.activeListings || 0}
+                    </p>
+                  </div>
+                  <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-full">
+                    <Car className="text-green-600 dark:text-green-400" size={24} />
+                  </div>
+                </div>
+              </CardBody>
+            </Card>
+
+            <Card className="border-l-4 border-yellow-500">
+              <CardBody>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                      Pending Approvals
+                    </p>
+                    <p className="text-3xl font-bold text-gray-900 dark:text-white">
+                      {stats.pendingApprovals || 0}
+                    </p>
+                  </div>
+                  <div className="p-3 bg-yellow-100 dark:bg-yellow-900/30 rounded-full">
+                    <AlertCircle className="text-yellow-600 dark:text-yellow-400" size={24} />
+                  </div>
+                </div>
+              </CardBody>
+            </Card>
+
+            <Card className="border-l-4 border-purple-500">
+              <CardBody>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                      Total Revenue
+                    </p>
+                    <p className="text-3xl font-bold text-gray-900 dark:text-white">
+                      {formatPrice(stats.totalRevenue || 0)}
+                    </p>
+                    <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+                      {formatPrice(stats.revenueToday || 0)} today
+                    </p>
+                  </div>
+                  <div className="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-full">
+                    <DollarSign className="text-purple-600 dark:text-purple-400" size={24} />
+                  </div>
+                </div>
+              </CardBody>
+            </Card>
+          </div>
+        )}
+
+        {/* Main Content */}
+        <Tabs aria-label="Admin sections" className="mb-6">
+          <Tab key="pending" title={`Pending Approvals (${pendingCars.length})`}>
+            <Card>
+              <CardHeader>
+                <h2 className="text-2xl font-bold">Pending Car Listings</h2>
               </CardHeader>
-              <CardBody className="space-y-4">
-                {analytics ? (
-                  <>
-                    <div className="flex justify-between items-center py-2 border-b border-autohub-accent1-200">
-                      <span className="text-autohub-accent1-600">Total Revenue:</span>
-                      <span className="font-bold text-autohub-primary-500 text-lg">
-                        {formatPrice(analytics.totalRevenue || 0)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center py-2 border-b border-autohub-accent1-200">
-                      <span className="text-autohub-accent1-600">Active Listings:</span>
-                      <span className="font-bold text-autohub-secondary-900 dark:text-autohub-neutral-50">
-                        {analytics.activeListings || 0}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center py-2 border-b border-autohub-accent1-200">
-                      <span className="text-autohub-accent1-600">Vehicles Sold:</span>
-                      <span className="font-bold text-green-500">
-                        {analytics.soldCars || 0}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center py-2">
-                      <span className="text-autohub-accent1-600">Conversion Rate:</span>
-                      <span className="font-bold text-autohub-accent2-500">
-                        {analytics.conversionRate || 0}%
-                      </span>
-                    </div>
-                  </>
+              <CardBody>
+                {pendingCars.length === 0 ? (
+                  <div className="text-center py-12">
+                    <CheckCircle className="mx-auto text-green-500 mb-4" size={64} />
+                    <h3 className="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                      All caught up!
+                    </h3>
+                    <p className="text-gray-600 dark:text-gray-400">
+                      No pending listings to review
+                    </p>
+                  </div>
                 ) : (
-                  <div className="text-center py-8">
-                    <Spinner color="primary" />
-                    <p className="text-autohub-accent1-600 mt-2">Loading analytics...</p>
+                  <div className="space-y-4">
+                    {pendingCars.map(car => (
+                      <Card key={car.id} className="bg-yellow-50 dark:bg-yellow-900/10">
+                        <CardBody>
+                          <div className="flex flex-col md:flex-row gap-4">
+                            {/* Image */}
+                            <div className="w-full md:w-48 h-32 bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden flex-shrink-0">
+                              {car.images?.[0] ? (
+                                <img
+                                  src={car.images[0].image_url}
+                                  alt={car.title}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center">
+                                  <Car className="text-gray-400" size={48} />
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Content */}
+                            <div className="flex-1">
+                              <div className="flex items-start justify-between mb-2">
+                                <div>
+                                  <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                                    {car.title}
+                                  </h3>
+                                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                                    {car.brand?.name} {car.model?.name} • {car.year}
+                                  </p>
+                                  {car.seller && (
+                                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                                      Seller: {car.seller.first_name} {car.seller.last_name}
+                                    </p>
+                                  )}
+                                </div>
+                                <Chip color="warning" variant="flat">
+                                  Pending
+                                </Chip>
+                              </div>
+
+                              <div className="flex items-center gap-4 mb-3 text-sm text-gray-600 dark:text-gray-400">
+                                <span>{formatPrice(car.price, car.currency)}</span>
+                                <span>•</span>
+                                <span>{car.mileage.toLocaleString()} km</span>
+                                <span>•</span>
+                                <span className="capitalize">{car.fuel_type}</span>
+                              </div>
+
+                              <div className="flex flex-wrap gap-2">
+                                <Button
+                                  size="sm"
+                                  color="success"
+                                  onPress={() => handleApproveCar(car.id)}
+                                  isLoading={actionLoading}
+                                  startContent={<CheckCircle size={16} />}
+                                >
+                                  Approve
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  color="danger"
+                                  variant="flat"
+                                  onPress={() => openRejectModal(car)}
+                                  isLoading={actionLoading}
+                                  startContent={<XCircle size={16} />}
+                                >
+                                  Reject
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="flat"
+                                  as="a"
+                                  href={`/cars/${car.id}`}
+                                  target="_blank"
+                                  startContent={<Eye size={16} />}
+                                >
+                                  View Details
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        </CardBody>
+                      </Card>
+                    ))}
                   </div>
                 )}
               </CardBody>
             </Card>
+          </Tab>
 
-            <Card className="border border-autohub-accent1-200">
-              <CardHeader className="bg-autohub-neutral-100 dark:bg-autohub-secondary-800">
-                <h3 className="text-lg font-semibold text-autohub-secondary-900 dark:text-autohub-neutral-50">
-                  Recent Activity
-                </h3>
+          <Tab key="users" title={`Users (${users.length})`}>
+            <Card>
+              <CardHeader>
+                <h2 className="text-2xl font-bold">User Management</h2>
               </CardHeader>
-              <CardBody className="space-y-4">
-                <div className="flex justify-between items-center py-2 border-b border-autohub-accent1-200">
-                  <span className="text-autohub-accent1-600">New registrations today:</span>
-                  <span className="font-bold text-autohub-primary-500">
-                    {analytics?.newUsersToday || 0}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center py-2 border-b border-autohub-accent1-200">
-                  <span className="text-autohub-accent1-600">New listings today:</span>
-                  <span className="font-bold text-autohub-accent2-500">
-                    {analytics?.newListingsToday || 0}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center py-2 border-b border-autohub-accent1-200">
-                  <span className="text-autohub-accent1-600">Cars sold today:</span>
-                  <span className="font-bold text-green-500">
-                    {analytics?.carsSoldToday || 0}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center py-2">
-                  <span className="text-autohub-accent1-600">Revenue today:</span>
-                  <span className="font-bold text-autohub-primary-500">
-                    {formatPrice(analytics?.revenueToday || 0)}
-                  </span>
-                </div>
+              <CardBody className="p-0">
+                <Table aria-label="Users table">
+                  <TableHeader>
+                    <TableColumn>USER</TableColumn>
+                    <TableColumn>EMAIL</TableColumn>
+                    <TableColumn>ROLE</TableColumn>
+                    <TableColumn>STATUS</TableColumn>
+                    <TableColumn>LISTINGS</TableColumn>
+                    <TableColumn>ACTIONS</TableColumn>
+                  </TableHeader>
+                  <TableBody>
+                    {users.map(user => (
+                      <TableRow key={user.id}>
+                        <TableCell>
+                          <div>
+                            <p className="font-semibold">
+                              {user.first_name} {user.last_name}
+                            </p>
+                            {user.business_name && (
+                              <p className="text-xs text-gray-500">
+                                {user.business_name}
+                              </p>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>{user.email}</TableCell>
+                        <TableCell>
+                          <Chip size="sm" variant="flat" className="capitalize">
+                            {user.role}
+                          </Chip>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-wrap gap-1">
+                            {user.is_banned ? (
+                              <Chip size="sm" color="danger">
+                                Banned
+                              </Chip>
+                            ) : user.is_active ? (
+                              <Chip size="sm" color="success">
+                                Active
+                              </Chip>
+                            ) : (
+                              <Chip size="sm" color="default">
+                                Inactive
+                              </Chip>
+                            )}
+                            {user.email_verified && (
+                              <Chip size="sm" color="primary" variant="flat">
+                                Verified
+                              </Chip>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>{user.total_listings || 0}</TableCell>
+                        <TableCell>
+                          <div className="flex gap-2">
+                            {user.is_banned ? (
+                              <Button
+                                size="sm"
+                                color="success"
+                                variant="flat"
+                                onPress={() => handleUnbanUser(user.id)}
+                              >
+                                Unban
+                              </Button>
+                            ) : (
+                              <Button
+                                size="sm"
+                                color="danger"
+                                variant="flat"
+                                onPress={() => handleBanUser(user.id, '')}
+                              >
+                                Ban
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </CardBody>
             </Card>
-          </div>
-        </Tab>
-      </Tabs>
+          </Tab>
+
+          <Tab key="analytics" title="Analytics">
+            <Card>
+              <CardHeader>
+                <h2 className="text-2xl font-bold">Platform Analytics</h2>
+              </CardHeader>
+              <CardBody>
+                {stats && (
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                          New Users Today
+                        </p>
+                        <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                          {stats.newUsersToday || 0}
+                        </p>
+                      </div>
+
+                      <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                          Cars Sold Today
+                        </p>
+                        <p className="text-2xl font-bold text-green-600 dark:text-green-400">
+                          {stats.carsSoldToday || 0}
+                        </p>
+                      </div>
+
+                      <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                          Revenue Today
+                        </p>
+                        <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+                          {formatPrice(stats.revenueToday || 0)}
+                        </p>
+                      </div>
+
+                      <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                          Pending Reviews
+                        </p>
+                        <p className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
+                          {stats.pendingApprovals || 0}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="text-center py-8 text-gray-500">
+                      More detailed analytics coming soon...
+                    </div>
+                  </div>
+                )}
+              </CardBody>
+            </Card>
+          </Tab>
+        </Tabs>
+      </div>
 
       {/* Reject Car Modal */}
-      <Modal 
-        isOpen={isRejectOpen} 
-        onOpenChange={onRejectOpenChange}
-        classNames={{
-          base: "border border-autohub-accent1-300",
-          header: "border-b border-autohub-accent1-200",
-          footer: "border-t border-autohub-accent1-200",
-        }}
-      >
+      <Modal isOpen={isRejectOpen} onOpenChange={onRejectOpenChange}>
         <ModalContent>
-          {(onClose) => (
-            <>
-              <ModalHeader className="text-autohub-secondary-900 dark:text-autohub-neutral-50">
-                Reject Vehicle Listing
-              </ModalHeader>
-              <ModalBody>
-                <p className="mb-4 text-autohub-accent1-700">
-                  Why are you rejecting the listing for{' '}
-                  <strong className="text-autohub-secondary-900 dark:text-autohub-neutral-50">
-                    {selectedCar?.year} {selectedCar?.make} {selectedCar?.model}
-                  </strong>?
-                </p>
-                <Textarea
-                  label="Rejection Reason"
-                  placeholder="Please provide a detailed reason for rejection..."
-                  value={rejectReason}
-                  onChange={(e) => setRejectReason(e.target.value)}
-                  minRows={4}
-                  isRequired
-                  variant="bordered"
-                  classNames={{
-                    inputWrapper: "border-autohub-accent1-300 focus-within:border-autohub-primary-500",
-                    input: "text-autohub-secondary-900 placeholder:text-autohub-accent1-500",
-                    label: "text-autohub-accent1-700",
-                  }}
-                />
-              </ModalBody>
-              <ModalFooter>
-                <Button 
-                  variant="light" 
-                  onPress={onClose}
-                  className="text-autohub-accent1-600"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  className="bg-autohub-primary-500 hover:bg-autohub-primary-600 text-white"
-                  onPress={handleRejectCar}
-                  isLoading={actionLoading}
-                  disabled={!rejectReason.trim()}
-                >
-                  Reject Listing
-                </Button>
-              </ModalFooter>
-            </>
-          )}
+          <ModalHeader>
+            <h3 className="text-xl font-bold">Reject Listing</h3>
+          </ModalHeader>
+          <ModalBody>
+            <p className="mb-4 text-gray-600 dark:text-gray-400">
+              Why are you rejecting the listing for{' '}
+              <strong className="text-gray-900 dark:text-white">
+                {selectedCar?.title}
+              </strong>
+              ?
+            </p>
+            <Textarea
+              label="Reason for Rejection"
+              placeholder="Enter the reason for rejection..."
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              minRows={4}
+              isRequired
+            />
+          </ModalBody>
+          <ModalFooter>
+            <Button
+              variant="flat"
+              onPress={() => onRejectOpenChange()}
+              isDisabled={actionLoading}
+            >
+              Cancel
+            </Button>
+            <Button
+              color="danger"
+              onPress={handleRejectCar}
+              isLoading={actionLoading}
+              isDisabled={!rejectReason.trim()}
+            >
+              Reject Listing
+            </Button>
+          </ModalFooter>
         </ModalContent>
       </Modal>
     </div>

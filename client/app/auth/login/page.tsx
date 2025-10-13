@@ -1,148 +1,185 @@
-"use client";
+// ==========================================
+// app/auth/login/page.tsx - Login Page
+// ==========================================
 
-import { useState } from 'react';
-import { Card, CardBody, CardHeader } from "@heroui/card";
-import { Input } from "@heroui/input";
-import { Button } from "@heroui/button";
-import { Link } from "@heroui/link";
-import { EyeIcon } from "@/components/icons";
-import { AutoHubLogo } from "@/components/AutoHubLogo";
-import { useAuth } from '@/contexts/AuthContext';
+'use client';
+
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { Card, CardHeader, CardBody, CardFooter } from '@heroui/card';
+import { Button } from '@heroui/button';
+import { Input } from '@heroui/input';
+import { Divider } from '@heroui/divider';
+import { Eye, EyeOff, Mail, Lock, LogIn } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
-  const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  
-  const { login } = useAuth();
   const router = useRouter();
+  const { login, isAuthenticated, loading: authLoading } = useAuth();
+
+  const [formData, setFormData] = useState({
+    email: '',
+    password: '',
+  });
+
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated && !authLoading) {
+      const redirectTo = sessionStorage.getItem('redirectAfterLogin') || '/';
+      sessionStorage.removeItem('redirectAfterLogin');
+      router.push(redirectTo);
+    }
+  }, [isAuthenticated, authLoading, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-    setIsLoading(true);
+    
+    if (!formData.email || !formData.password) {
+      setError('Please fill in all fields');
+      return;
+    }
 
     try {
-      const result = await login(email, password);
-      
-      if (result.success) {
-        router.push('/dashboard');
+      setLoading(true);
+      setError(null);
+
+      const response = await login(formData.email, formData.password);
+
+      if (response.success) {
+        // Redirect will be handled by useEffect
+        const redirectTo = sessionStorage.getItem('redirectAfterLogin') || '/';
+        sessionStorage.removeItem('redirectAfterLogin');
+        router.push(redirectTo);
       } else {
-        setError(result.error || 'Login failed');
+        setError(response.error || 'Login failed. Please check your credentials.');
       }
     } catch (err) {
-      setError('An unexpected error occurred');
+      setError('An unexpected error occurred. Please try again.');
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
+  if (authLoading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-luxury relative overflow-hidden">
-      {/* Background Elements */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(225,6,0,0.1),transparent_50%)]"></div>
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,rgba(255,209,102,0.1),transparent_50%)]"></div>
-      
-      <div className="relative z-10 w-full max-w-md p-6">
-        <Card className="bg-autohub-neutral-50/95 dark:bg-autohub-secondary-800/95 backdrop-blur-md border border-autohub-accent1-300/50 shadow-luxury">
-          <CardHeader className="pb-0 pt-8 px-8 flex-col items-center">
-            <div className="flex items-center gap-3 mb-6">
-              <AutoHubLogo size={40} />
-              <div>
-                <h1 className="text-2xl font-bold text-autohub-secondary-900 dark:text-autohub-neutral-50">AutoHub</h1>
-                <p className="text-sm text-autohub-accent2-600">Premium Automotive</p>
-              </div>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
+            Welcome Back
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400">
+            Sign in to continue to AutoHub
+          </p>
+        </div>
+
+        <Card className="shadow-xl">
+          <CardHeader className="flex flex-col gap-3 px-6 pt-6">
+            <div className="flex items-center justify-center w-full">
+              <LogIn className="text-blue-600" size={32} />
             </div>
-            <div className="text-center">
-              <h2 className="text-2xl font-bold text-autohub-secondary-900 dark:text-autohub-neutral-50">Welcome Back</h2>
-              <p className="text-autohub-accent1-600 mt-2">Sign in to your premium account</p>
-            </div>
+            <h2 className="text-2xl font-bold text-center">Sign In</h2>
           </CardHeader>
-          <CardBody className="overflow-hidden px-8 py-6">
-            <form onSubmit={handleSubmit} className="space-y-6">
+
+          <form onSubmit={handleSubmit}>
+            <CardBody className="gap-4 px-6">
               {error && (
-                <div className="bg-autohub-primary-50 border-l-4 border-autohub-primary-500 text-autohub-primary-700 px-4 py-3 rounded">
-                  <p className="font-medium">{error}</p>
+                <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                  <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
                 </div>
               )}
-              
+
               <Input
                 type="email"
-                label="Email Address"
-                placeholder="Enter your email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                variant="bordered"
-                classNames={{
-                  inputWrapper: "border-autohub-accent1-300 focus-within:border-autohub-primary-500 hover:border-autohub-primary-500/70",
-                  input: "text-autohub-secondary-900 placeholder:text-autohub-accent1-500",
-                  label: "text-autohub-accent1-700 font-medium",
-                }}
+                label="Email"
+                placeholder="your.email@example.com"
+                value={formData.email}
+                onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                startContent={<Mail size={18} className="text-gray-400" />}
+                isRequired
+                autoComplete="email"
               />
-              
+
               <Input
-                type={isPasswordVisible ? "text" : "password"}
+                type={showPassword ? 'text' : 'password'}
                 label="Password"
                 placeholder="Enter your password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                variant="bordered"
-                classNames={{
-                  inputWrapper: "border-autohub-accent1-300 focus-within:border-autohub-primary-500 hover:border-autohub-primary-500/70",
-                  input: "text-autohub-secondary-900 placeholder:text-autohub-accent1-500",
-                  label: "text-autohub-accent1-700 font-medium",
-                }}
+                value={formData.password}
+                onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+                startContent={<Lock size={18} className="text-gray-400" />}
                 endContent={
                   <button
-                    className="focus:outline-none"
                     type="button"
-                    onClick={() => setIsPasswordVisible(!isPasswordVisible)}
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="focus:outline-none"
                   >
-                    <EyeIcon className="text-2xl text-autohub-accent1-500 pointer-events-none hover:text-autohub-primary-500 transition-colors" />
+                    {showPassword ? (
+                      <EyeOff size={18} className="text-gray-400" />
+                    ) : (
+                      <Eye size={18} className="text-gray-400" />
+                    )}
                   </button>
                 }
+                isRequired
+                autoComplete="current-password"
               />
-              
+
               <div className="flex justify-end">
-                <Link 
-                  href="/auth/forgot-password" 
-                  size="sm"
-                  className="text-autohub-accent1-600 hover:text-autohub-primary-500 transition-colors"
+                <Link
+                  href="/auth/forgot-password"
+                  className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400"
                 >
                   Forgot password?
                 </Link>
               </div>
-              
+            </CardBody>
+
+            <CardFooter className="flex flex-col gap-3 px-6 pb-6">
               <Button
                 type="submit"
-                className="w-full bg-autohub-primary-500 hover:bg-autohub-primary-600 text-white font-semibold shadow-autohub transition-all duration-200 hover:shadow-lg hover:scale-[1.02]"
+                color="primary"
                 size="lg"
-                isLoading={isLoading}
-                disabled={isLoading}
+                className="w-full"
+                isLoading={loading}
               >
-                {isLoading ? 'Signing In...' : 'Sign In to AutoHub'}
+                Sign In
               </Button>
-              
-              <div className="text-center pt-4">
-                <span className="text-autohub-accent1-600">
-                  New to AutoHub?{' '}
-                  <Link 
-                    href="/auth/register" 
-                    size="sm"
-                    className="text-autohub-primary-500 hover:text-autohub-primary-600 font-semibold transition-colors"
-                  >
-                    Create Account
-                  </Link>
-                </span>
-              </div>
-            </form>
-          </CardBody>
+
+              <Divider />
+
+              <p className="text-center text-sm text-gray-600 dark:text-gray-400">
+                Don't have an account?{' '}
+                <Link
+                  href="/auth/register"
+                  className="text-blue-600 hover:text-blue-700 dark:text-blue-400 font-semibold"
+                >
+                  Sign Up
+                </Link>
+              </p>
+            </CardFooter>
+          </form>
         </Card>
+
+        <div className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
+          <Link href="/" className="hover:text-blue-600">
+            ← Back to Home
+          </Link>
+        </div>
       </div>
     </div>
   );

@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Query
 from sqlalchemy.orm import Session
-from typing import List, Optional, cast
+from typing import List, Optional
+from datetime import datetime, timedelta
 from app.database import get_db
 from app.schemas.car import (
     CarCreate, CarUpdate, CarResponse, CarDetailResponse,
@@ -12,7 +13,7 @@ from app.services.car_service import CarService
 from app.services.file_service import FileService
 from app.core.dependencies import get_current_user, get_current_seller, get_optional_user
 from app.models.user import User
-from app.models.car import CarImage, Car
+from app.models.car import CarImage, Car, Brand, Model, Feature
 from app.models.transaction import PriceHistory
 
 router = APIRouter()
@@ -31,10 +32,12 @@ async def create_car(
     Checks subscription limits before creating.
     """
     try:
-        # Cast to int to fix type checking
-        user_id = cast(int, current_user.id)
+        # FIX: Use getattr for user.id
+        user_id = int(getattr(current_user, 'id', 0))
         car = CarService.create_car(db, user_id, car_data.model_dump())
-        return IDResponse(id=cast(int, car.id), message="Car listing created successfully")
+        # FIX: Use getattr for car.id
+        car_id = int(getattr(car, 'id', 0))
+        return IDResponse(id=car_id, message="Car listing created successfully")
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
@@ -166,8 +169,8 @@ async def get_car(
     - Seller information
     - Location details
     """
-    # Cast user_id to Optional[int] for type checking
-    user_id: Optional[int] = cast(int, current_user.id) if current_user else None
+    # FIX: Use getattr for user_id
+    user_id: Optional[int] = int(getattr(current_user, 'id', 0)) if current_user else None
     car = CarService.get_car(db, car_id, user_id)
     
     if not car:
@@ -190,8 +193,8 @@ async def update_car(
     Tracks price changes in price history.
     """
     try:
-        # Cast to int to fix type checking
-        user_id = cast(int, current_user.id)
+        # FIX: Use getattr
+        user_id = int(getattr(current_user, 'id', 0))
         update_dict = car_data.model_dump(exclude_unset=True)
         car = CarService.update_car(db, car_id, user_id, update_dict)
         return CarResponse.model_validate(car)
@@ -212,8 +215,8 @@ async def delete_car(
     Only the car owner can delete their listing.
     """
     try:
-        # Cast to int to fix type checking
-        user_id = cast(int, current_user.id)
+        # FIX: Use getattr
+        user_id = int(getattr(current_user, 'id', 0))
         CarService.delete_car(db, car_id, user_id)
         return MessageResponse(message="Car listing deleted successfully")
     except ValueError as e:
@@ -235,16 +238,22 @@ async def upload_car_image(
     Automatically creates thumbnail and medium-sized versions.
     Validates file type and size.
     """
-    # Verify car ownership - cast to int for type checking
-    user_id = cast(int, current_user.id)
+    # Verify car ownership - FIX: use getattr
+    user_id = int(getattr(current_user, 'id', 0))
     car = db.query(Car).filter(Car.id == car_id, Car.seller_id == user_id).first()
     if not car:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Car not found")
     
     # Check image limit
     image_count = db.query(CarImage).filter(CarImage.car_id == car_id).count()
-    subscription = current_user.current_subscription
-    max_images = subscription.plan.max_images_per_listing if subscription else 5
+    
+    # FIX: Use getattr for subscription
+    subscription = getattr(current_user, 'current_subscription', None)
+    if subscription:
+        plan = getattr(subscription, 'plan', None)
+        max_images = int(getattr(plan, 'max_images_per_listing', 5)) if plan else 5
+    else:
+        max_images = 5
     
     if image_count >= max_images:
         raise HTTPException(
@@ -267,12 +276,12 @@ async def upload_car_image(
             thumbnail_url=result.get("thumbnail_url"),
             medium_url=result.get("medium_url"),
             file_name=result["file_name"],
-            file_size=result["file_size"],
+            file_size=int(result["file_size"]),
             image_type=image_type,
-            is_primary=is_primary or image_count == 0,  # First image is always primary
+            is_primary=is_primary or image_count == 0,
             display_order=image_count,
-            width=result.get("width"),
-            height=result.get("height")
+            width=int(result.get("width", 0)) if result.get("width") else None,
+            height=int(result.get("height", 0)) if result.get("height") else None
         )
         
         db.add(car_image)
@@ -297,8 +306,8 @@ async def delete_car_image(
     
     Removes image file from storage and database record.
     """
-    # Verify car ownership - cast to int for type checking
-    user_id = cast(int, current_user.id)
+    # Verify car ownership - FIX: use getattr
+    user_id = int(getattr(current_user, 'id', 0))
     car = db.query(Car).filter(Car.id == car_id, Car.seller_id == user_id).first()
     if not car:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Car not found")
@@ -312,11 +321,9 @@ async def delete_car_image(
     if not image:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Image not found")
     
-    # Delete file from storage - FIX: Check if image_url has a value before converting
-    # Use getattr to safely access the attribute value at runtime
+    # Delete file from storage - FIX: Use getattr
     image_url_value = getattr(image, 'image_url', None)
     if image_url_value is not None:
-        # Convert to string only if not None
         FileService.delete_image(str(image_url_value))
     
     # Delete from database
@@ -340,8 +347,8 @@ async def boost_car(
     Increases ranking score and priority in search results.
     """
     try:
-        # Cast to int to fix type checking
-        user_id = cast(int, current_user.id)
+        # FIX: Use getattr
+        user_id = int(getattr(current_user, 'id', 0))
         car = CarService.boost_car(db, car_id, user_id, boost_data.duration_hours)
         return CarResponse.model_validate(car)
     except ValueError as e:
@@ -361,27 +368,26 @@ async def feature_car(
     Featured listings appear at the top of search results.
     Requires subscription with featured listing slots.
     """
-    from datetime import datetime, timedelta
-    
-    # Verify car ownership - cast to int for type checking
-    user_id = cast(int, current_user.id)
+    # Verify car ownership - FIX: use getattr
+    user_id = int(getattr(current_user, 'id', 0))
     car = db.query(Car).filter(Car.id == car_id, Car.seller_id == user_id).first()
     if not car:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Car not found")
     
-    # Check subscription
-    if not current_user.current_subscription:
+    # Check subscription - FIX: use getattr
+    current_subscription = getattr(current_user, 'current_subscription', None)
+    if not current_subscription:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Featured listings require an active subscription"
         )
     
-    # Set as featured - use setattr to avoid type checking issues
+    # Set as featured - use setattr
     setattr(car, 'is_featured', True)
     setattr(car, 'featured_until', datetime.utcnow() + timedelta(days=duration_days))
     
-    # Update ranking score - get current value first
-    current_ranking = int(car.ranking_score) if car.ranking_score else 0  # type: ignore
+    # Update ranking score - FIX: use getattr
+    current_ranking = int(getattr(car, 'ranking_score', 0))
     setattr(car, 'ranking_score', current_ranking + 50)
     
     db.commit()
@@ -402,12 +408,12 @@ async def get_price_history(
     """
     price_history = db.query(PriceHistory).filter(
         PriceHistory.car_id == car_id
-    ).order_by(PriceHistory.changed_at.desc()).all()
+    ).order_by(PriceHistory.created_at.desc()).all()
     
     return [PriceHistoryResponse.model_validate(ph) for ph in price_history]
 
 
-@router.get("/brands", response_model=List[BrandResponse])
+@router.get("/brands/all", response_model=List[BrandResponse])
 async def get_brands(
     is_popular: Optional[bool] = None,
     db: Session = Depends(get_db)
@@ -417,9 +423,7 @@ async def get_brands(
     
     Optionally filter by popular brands in Philippines.
     """
-    from app.models.car import Brand
-    
-    query = db.query(Brand).filter(Brand.is_active == True)  # noqa: E712
+    query = db.query(Brand)
     
     if is_popular is not None:
         query = query.filter(Brand.is_popular_in_ph == is_popular)
@@ -440,9 +444,7 @@ async def get_models_by_brand(
     
     Optionally filter by popular models in Philippines.
     """
-    from app.models.car import Model
-    
-    query = db.query(Model).filter(Model.brand_id == brand_id, Model.is_active == True)  # noqa: E712
+    query = db.query(Model).filter(Model.brand_id == brand_id)
     
     if is_popular is not None:
         query = query.filter(Model.is_popular_in_ph == is_popular)
@@ -452,7 +454,7 @@ async def get_models_by_brand(
     return [ModelResponse.model_validate(model) for model in models]
 
 
-@router.get("/features", response_model=List[FeatureResponse])
+@router.get("/features/all", response_model=List[FeatureResponse])
 async def get_features(
     category: Optional[str] = None,
     is_popular: Optional[bool] = None,
@@ -463,8 +465,6 @@ async def get_features(
     
     Optionally filter by category or popular features.
     """
-    from app.models.car import Feature
-    
     query = db.query(Feature)
     
     if category:

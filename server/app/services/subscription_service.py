@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
-from typing import List, Optional, Dict, cast
+from typing import List, Optional, Dict
 from decimal import Decimal
 from app.models.subscription import (
     SubscriptionPlan, UserSubscription, SubscriptionUsage,
@@ -10,7 +10,7 @@ from app.models.user import User
 
 
 class SubscriptionService:
-    """Subscription management service"""
+    """Subscription management service - FIXED VERSION"""
     
     @staticmethod
     def get_all_plans(db: Session) -> List[SubscriptionPlan]:
@@ -51,9 +51,8 @@ class SubscriptionService:
         if existing:
             raise ValueError("User already has an active subscription")
         
-        # Calculate price - FIX: Safely handle yearly_price Column type
+        # Calculate price - FIX: Use getattr for plan attributes
         if billing_cycle == "yearly":
-            # Get yearly_price value, checking if it exists
             yearly_price_value = getattr(plan, 'yearly_price', None)
             if yearly_price_value is not None:
                 amount = Decimal(str(yearly_price_value))
@@ -65,11 +64,10 @@ class SubscriptionService:
             monthly_price_value = getattr(plan, 'monthly_price', 0)
             amount = Decimal(str(monthly_price_value))
         
-        # Apply promo code - FIX: Convert discount to Decimal
+        # Apply promo code
         if promo_code:
             discount_percent = SubscriptionService.validate_promo_code(db, promo_code, user_id)
             if discount_percent:
-                # Convert float to Decimal for calculation
                 discount_decimal = Decimal(str(discount_percent))
                 amount = amount * (Decimal('1') - discount_decimal / Decimal('100'))
         
@@ -88,8 +86,10 @@ class SubscriptionService:
         db.add(subscription)
         db.flush()
         
-        # Create payment record - FIX: Cast subscription.id to int
-        subscription_id = cast(int, subscription.id)
+        # FIX: Safely get subscription.id
+        subscription_id = int(getattr(subscription, 'id', 0))
+        
+        # Create payment record
         payment = SubscriptionPayment(
             subscription_id=subscription_id,
             user_id=user_id,
@@ -99,14 +99,14 @@ class SubscriptionService:
         )
         db.add(payment)
         
-        # Update user - FIX: Use setattr for SQLAlchemy model attributes
+        # Update user - FIX: Use setattr
         user = db.query(User).filter(User.id == user_id).first()
         if user:
             setattr(user, 'current_subscription_id', subscription_id)
             setattr(user, 'subscription_status', "active")
-            setattr(user, 'subscription_expires_at', subscription.current_period_end)
+            setattr(user, 'subscription_expires_at', getattr(subscription, 'current_period_end', None))
         
-        # Record promo code usage - FIX: Cast subscription.id to int
+        # Record promo code usage
         if promo_code:
             SubscriptionService.record_promo_usage(db, promo_code, user_id, subscription_id)
         
@@ -126,7 +126,7 @@ class SubscriptionService:
         if not subscription:
             raise ValueError("No active subscription found")
         
-        # FIX: Use setattr for SQLAlchemy model attributes
+        # FIX: Use setattr
         setattr(subscription, 'status', "cancelled")
         setattr(subscription, 'cancelled_at', datetime.utcnow())
         setattr(subscription, 'auto_renew', False)
@@ -155,38 +155,44 @@ class SubscriptionService:
                 "period_end": datetime.utcnow() + timedelta(days=30)
             }
         
-        # Cast subscription.id for type checking
-        subscription_id = cast(int, subscription.id)
+        # FIX: Use getattr for subscription.id
+        subscription_id = int(getattr(subscription, 'id', 0))
         
         usage = db.query(SubscriptionUsage).filter(
             SubscriptionUsage.subscription_id == subscription_id
         ).first()
         
         if not usage:
-            # Create initial usage record
+            # Create initial usage record - FIX: Use getattr
+            period_start = getattr(subscription, 'current_period_start', datetime.utcnow())
+            period_end = getattr(subscription, 'current_period_end', datetime.utcnow() + timedelta(days=30))
+            
             usage = SubscriptionUsage(
                 user_id=user_id,
                 subscription_id=subscription_id,
-                period_start=subscription.current_period_start,
-                period_end=subscription.current_period_end
+                period_start=period_start,
+                period_end=period_end
             )
             db.add(usage)
             db.commit()
             db.refresh(usage)
         
+        # FIX: Use getattr for all attributes
+        plan = getattr(subscription, 'plan', None)
+        
         return {
-            "active_listings": usage.active_listings,  # type: ignore
-            "max_active_listings": subscription.plan.max_active_listings,  # type: ignore
-            "featured_listings": usage.featured_listings,  # type: ignore
-            "max_featured_listings": subscription.plan.max_featured_listings,  # type: ignore
-            "premium_listings": usage.premium_listings,  # type: ignore
-            "max_premium_listings": subscription.plan.max_premium_listings,  # type: ignore
-            "boost_credits_used": usage.boost_credits_used,  # type: ignore
-            "boost_credits_monthly": subscription.plan.boost_credits_monthly,  # type: ignore
-            "storage_used_mb": usage.storage_used_mb,  # type: ignore
-            "storage_mb": subscription.plan.storage_mb,  # type: ignore
-            "period_start": usage.period_start,  # type: ignore
-            "period_end": usage.period_end  # type: ignore
+            "active_listings": int(getattr(usage, 'active_listings', 0)),
+            "max_active_listings": int(getattr(plan, 'max_active_listings', 3)) if plan else 3,
+            "featured_listings": int(getattr(usage, 'featured_listings', 0)),
+            "max_featured_listings": int(getattr(plan, 'max_featured_listings', 0)) if plan else 0,
+            "premium_listings": int(getattr(usage, 'premium_listings', 0)),
+            "max_premium_listings": int(getattr(plan, 'max_premium_listings', 0)) if plan else 0,
+            "boost_credits_used": int(getattr(usage, 'boost_credits_used', 0)),
+            "boost_credits_monthly": int(getattr(plan, 'boost_credits_monthly', 0)) if plan else 0,
+            "storage_used_mb": int(getattr(usage, 'storage_used_mb', 0)),
+            "storage_mb": int(getattr(plan, 'storage_mb', 100)) if plan else 100,
+            "period_start": getattr(usage, 'period_start', datetime.utcnow()),
+            "period_end": getattr(usage, 'period_end', datetime.utcnow() + timedelta(days=30))
         }
     
     @staticmethod
@@ -200,7 +206,7 @@ class SubscriptionService:
         if not promo:
             return None
         
-        # Check validity period - FIX: Use getattr to safely access Column values
+        # Check validity period - FIX: Use getattr
         now = datetime.utcnow()
         valid_from = getattr(promo, 'valid_from', None)
         valid_until = getattr(promo, 'valid_until', None)
@@ -210,15 +216,15 @@ class SubscriptionService:
         if valid_until is not None and now > valid_until:
             return None
         
-        # Check usage limits - FIX: Use getattr to safely access Column values
+        # Check usage limits - FIX: Use getattr
         max_uses = getattr(promo, 'max_uses', None)
-        times_used = getattr(promo, 'times_used', 0)
+        times_used = int(getattr(promo, 'times_used', 0))
         
         if max_uses is not None and times_used >= max_uses:
             return None
         
-        # Check if user already used this code - FIX: Cast promo.id to int
-        promo_id = cast(int, promo.id)
+        # Check if user already used this code - FIX: Use getattr
+        promo_id = int(getattr(promo, 'id', 0))
         existing = db.query(PromotionCodeUsage).filter(
             PromotionCodeUsage.code_id == promo_id,
             PromotionCodeUsage.user_id == user_id
@@ -227,7 +233,7 @@ class SubscriptionService:
         if existing:
             return None
         
-        # FIX: Safely get discount_value
+        # FIX: Use getattr for discount_value
         discount_value = getattr(promo, 'discount_value', 0)
         return float(discount_value)
     
@@ -238,8 +244,8 @@ class SubscriptionService:
         if not promo:
             return
         
-        # Cast promo.id to int for type checking
-        promo_id = cast(int, promo.id)
+        # FIX: Use getattr for promo.id
+        promo_id = int(getattr(promo, 'id', 0))
         
         usage = PromotionCodeUsage(
             code_id=promo_id,
@@ -248,8 +254,8 @@ class SubscriptionService:
         )
         db.add(usage)
         
-        # FIX: Use setattr to increment times_used
-        current_times_used = getattr(promo, 'times_used', 0)
+        # FIX: Use getattr to increment times_used
+        current_times_used = int(getattr(promo, 'times_used', 0))
         setattr(promo, 'times_used', current_times_used + 1)
         
         db.commit()

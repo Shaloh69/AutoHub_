@@ -140,6 +140,14 @@ class User(Base):
     region = relationship("PhRegion", foreign_keys=[region_id], backref="users")
     currency = relationship("Currency", foreign_keys=[preferred_currency], backref="users")
     
+    # FIX: Add missing current_subscription relationship
+    current_subscription = relationship(
+        "UserSubscription",
+        foreign_keys=[current_subscription_id],
+        post_update=True,  # Avoid circular dependency
+        uselist=False
+    )
+    
     # Car relationships
     cars = relationship("Car", foreign_keys="Car.seller_id", back_populates="seller")
     
@@ -168,12 +176,12 @@ class User(Base):
     
     @property
     def is_verified(self):
-        return self.email_verified and self.phone_verified  # type: ignore
+        return self.email_verified and self.phone_verified
     
     @property
     def is_dealer_verified(self):
-        return self.role == UserRole.DEALER and self.business_verified  # type: ignore
+        return self.role == UserRole.DEALER and self.business_verified
     
     @property
     def can_list_cars(self):
-        return self.is_active and not self.is_banned and self.is_verified  # type: ignore
+        return self.is_active and not self.is_banned and self.is_verified # type: ignore

@@ -1,3 +1,7 @@
+// ==========================================
+// app/layout.tsx - Root Layout with Premium Styling
+// ==========================================
+
 import "@/styles/globals.css";
 import { Metadata, Viewport } from "next";
 import { Link } from "@heroui/link";
@@ -8,7 +12,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 
 import { siteConfig } from "@/config/site";
 import { fontSans } from "@/config/fonts";
-import { Navbar } from "@/components/navbar";
+import Navigation from "@/components/Navigation";
 
 export const metadata: Metadata = {
   title: {
@@ -99,7 +103,7 @@ export default function RootLayout({
           <AuthProvider>
             <div className="relative flex flex-col min-h-screen">
               {/* Navigation */}
-              <Navbar />
+              <Navigation />
               
               {/* Main Content */}
               <main className="container mx-auto pt-6 px-6 flex-grow max-w-7xl">
@@ -193,7 +197,7 @@ export default function RootLayout({
                         </li>
                         <li>
                           <Link 
-                            href="/dashboard/create-listing" 
+                            href="/seller/cars/new" 
                             className="text-autohub-neutral-300 hover:text-autohub-accent2-400 transition-colors duration-300 font-medium text-lg group flex items-center gap-2"
                           >
                             <span className="group-hover:translate-x-1 transition-transform duration-300">Sell Your Vehicle</span>

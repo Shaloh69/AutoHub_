@@ -28,26 +28,37 @@ async def create_inquiry(
     """Create new inquiry for a car (authenticated or guest)"""
     # Get car
     car = db.query(Car).filter(Car.id == inquiry_data.car_id).first()
-    if not car:  # type: ignore
+    if not car:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Car not found")
     
+    # FIX: Use getattr for seller_id
+    seller_id_value = int(getattr(car, 'seller_id', 0))
+    
     # Cannot inquire about own car
-    if current_user and car.seller_id == current_user.id:  # type: ignore
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Cannot inquire about your own listing"
-        )
+    if current_user:
+        user_id_value = int(getattr(current_user, 'id', 0))
+        if seller_id_value == user_id_value:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Cannot inquire about your own listing"
+            )
+    
+    # FIX: Use getattr for buyer info
+    buyer_id = int(getattr(current_user, 'id', 0)) if current_user else None
+    buyer_full_name = getattr(current_user, 'full_name', None) if current_user else None
+    buyer_email = getattr(current_user, 'email', None) if current_user else None
+    buyer_phone = getattr(current_user, 'phone', None) if current_user else None
     
     # Create inquiry
     inquiry = Inquiry(
         car_id=inquiry_data.car_id,
-        buyer_id=int(current_user.id) if current_user else None,  # type: ignore
-        seller_id=car.seller_id,  # type: ignore
+        buyer_id=buyer_id,
+        seller_id=seller_id_value,
         subject=inquiry_data.subject,
         message=inquiry_data.message,
-        buyer_name=inquiry_data.buyer_name or (current_user.full_name if current_user else None),  # type: ignore
-        buyer_email=inquiry_data.buyer_email or (current_user.email if current_user else None),  # type: ignore
-        buyer_phone=inquiry_data.buyer_phone or (current_user.phone if current_user else None),  # type: ignore
+        buyer_name=inquiry_data.buyer_name or buyer_full_name,
+        buyer_email=inquiry_data.buyer_email or buyer_email,
+        buyer_phone=inquiry_data.buyer_phone or buyer_phone,
         inquiry_type=inquiry_data.inquiry_type,
         offered_price=inquiry_data.offered_price,
         test_drive_requested=inquiry_data.test_drive_requested,
@@ -60,21 +71,27 @@ async def create_inquiry(
     
     db.add(inquiry)
     
-    # Update car contact count
-    car.contact_count += 1  # type: ignore
+    # Update car contact count - FIX: Use getattr and setattr
+    contact_count = int(getattr(car, 'contact_count', 0))
+    setattr(car, 'contact_count', contact_count + 1)
     
     db.commit()
     db.refresh(inquiry)
     
-    # Send notification to seller
+    # Send notification to seller - FIX: Use getattr
+    car_id_value = int(getattr(car, 'id', 0))
+    buyer_name_value = str(getattr(inquiry, 'buyer_name', 'A buyer'))
+    
     NotificationService.notify_new_inquiry(
         db,
-        seller_id=car.seller_id,  # type: ignore
-        car_id=car.id,  # type: ignore
-        buyer_name=inquiry.buyer_name or "A buyer"  # type: ignore
+        seller_id=seller_id_value,
+        car_id=car_id_value,
+        buyer_name=buyer_name_value
     )
     
-    return IDResponse(id=inquiry.id, message="Inquiry sent successfully")  # type: ignore
+    # FIX: Use getattr for inquiry.id
+    inquiry_id = int(getattr(inquiry, 'id', 0))
+    return IDResponse(id=inquiry_id, message="Inquiry sent successfully")
 
 
 @router.get("", response_model=List[InquiryResponse])
@@ -85,13 +102,16 @@ async def get_inquiries(
     db: Session = Depends(get_db)
 ):
     """Get user's inquiries (sent or received)"""
+    # FIX: Use getattr
+    user_id = int(getattr(current_user, 'id', 0))
+    
     if role == "sent":
-        query = db.query(Inquiry).filter(Inquiry.buyer_id == current_user.id)  # type: ignore
+        query = db.query(Inquiry).filter(Inquiry.buyer_id == user_id)
     else:
-        query = db.query(Inquiry).filter(Inquiry.seller_id == current_user.id)  # type: ignore
+        query = db.query(Inquiry).filter(Inquiry.seller_id == user_id)
     
     if status:
-        query = query.filter(Inquiry.status == status)  # type: ignore
+        query = query.filter(Inquiry.status == status)
     
     inquiries = query.order_by(Inquiry.created_at.desc()).all()
     
@@ -105,6 +125,9 @@ async def get_inquiry(
     db: Session = Depends(get_db)
 ):
     """Get inquiry details with responses"""
+    # FIX: Use getattr
+    user_id = int(getattr(current_user, 'id', 0))
+    
     inquiry = db.query(Inquiry).options(
         joinedload(Inquiry.responses),
         joinedload(Inquiry.car),
@@ -112,17 +135,20 @@ async def get_inquiry(
     ).filter(
         Inquiry.id == inquiry_id,
         or_(
-            Inquiry.buyer_id == current_user.id,  # type: ignore
-            Inquiry.seller_id == current_user.id  # type: ignore
+            Inquiry.buyer_id == user_id,
+            Inquiry.seller_id == user_id
         )
     ).first()
     
-    if not inquiry:  # type: ignore
+    if not inquiry:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Inquiry not found")
     
-    # Mark as read if seller is viewing
-    if inquiry.seller_id == current_user.id and not inquiry.is_read:  # type: ignore
-        inquiry.is_read = True  # type: ignore
+    # Mark as read if seller is viewing - FIX: Use getattr and setattr
+    seller_id = int(getattr(inquiry, 'seller_id', 0))
+    is_read = getattr(inquiry, 'is_read', False)
+    
+    if seller_id == user_id and not is_read:
+        setattr(inquiry, 'is_read', True)
         db.commit()
     
     return InquiryDetailResponse.model_validate(inquiry)
@@ -138,17 +164,21 @@ async def respond_to_inquiry(
     """Respond to an inquiry"""
     # Get inquiry
     inquiry = db.query(Inquiry).filter(Inquiry.id == inquiry_id).first()
-    if not inquiry:  # type: ignore
+    if not inquiry:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Inquiry not found")
     
-    # Verify user can respond
-    if inquiry.buyer_id != current_user.id and inquiry.seller_id != current_user.id:  # type: ignore
+    # Verify user can respond - FIX: Use getattr
+    user_id = int(getattr(current_user, 'id', 0))
+    buyer_id = getattr(inquiry, 'buyer_id', None)
+    seller_id = int(getattr(inquiry, 'seller_id', 0))
+    
+    if buyer_id != user_id and seller_id != user_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Unauthorized")
     
     # Create response
     response = InquiryResponseModel(
         inquiry_id=inquiry_id,
-        user_id=int(current_user.id),  # type: ignore
+        user_id=user_id,
         message=response_data.message,
         response_type=response_data.response_type,
         counter_offer_price=response_data.counter_offer_price,
@@ -157,18 +187,20 @@ async def respond_to_inquiry(
     
     db.add(response)
     
-    # Update inquiry
-    inquiry.response_count += 1  # type: ignore
-    inquiry.last_response_at = datetime.utcnow()  # type: ignore
-    inquiry.last_response_by = int(current_user.id)  # type: ignore
-    inquiry.status = "replied"  # type: ignore
+    # Update inquiry - FIX: Use getattr and setattr
+    response_count = int(getattr(inquiry, 'response_count', 0))
+    setattr(inquiry, 'response_count', response_count + 1)
+    setattr(inquiry, 'last_response_at', datetime.utcnow())
+    setattr(inquiry, 'last_response_by', user_id)
+    setattr(inquiry, 'status', 'replied')
     
     db.commit()
     db.refresh(response)
     
-    # Send notification
-    if inquiry.seller_id == current_user.id and inquiry.buyer_id:  # type: ignore
-        NotificationService.notify_inquiry_response(db, inquiry.buyer_id, inquiry.car_id)  # type: ignore
+    # Send notification - FIX: Use getattr
+    car_id = int(getattr(inquiry, 'car_id', 0))
+    if seller_id == user_id and buyer_id:
+        NotificationService.notify_inquiry_response(db, buyer_id, car_id)
     
     return InquiryResponseResponse.model_validate(response)
 
@@ -181,23 +213,26 @@ async def update_inquiry(
     db: Session = Depends(get_db)
 ):
     """Update inquiry status"""
+    # FIX: Use getattr
+    user_id = int(getattr(current_user, 'id', 0))
+    
     inquiry = db.query(Inquiry).filter(
         Inquiry.id == inquiry_id,
-        Inquiry.seller_id == current_user.id  # type: ignore
+        Inquiry.seller_id == user_id
     ).first()
     
-    if not inquiry:  # type: ignore
+    if not inquiry:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Inquiry not found")
     
     # Update fields
     update_dict = update_data.model_dump(exclude_unset=True)
     for key, value in update_dict.items():
-        setattr(inquiry, key, value)  # type: ignore
+        setattr(inquiry, key, value)
     
-    inquiry.updated_at = datetime.utcnow()  # type: ignore
+    setattr(inquiry, 'updated_at', datetime.utcnow())
     
     if update_data.status == "closed":
-        inquiry.closed_at = datetime.utcnow()  # type: ignore
+        setattr(inquiry, 'closed_at', datetime.utcnow())
     
     db.commit()
     db.refresh(inquiry)
@@ -215,14 +250,19 @@ async def rate_inquiry(
     """Rate inquiry interaction"""
     inquiry = db.query(Inquiry).filter(Inquiry.id == inquiry_id).first()
     
-    if not inquiry:  # type: ignore
+    if not inquiry:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Inquiry not found")
     
+    # FIX: Use getattr
+    user_id = int(getattr(current_user, 'id', 0))
+    buyer_id = getattr(inquiry, 'buyer_id', None)
+    seller_id = int(getattr(inquiry, 'seller_id', 0))
+    
     # Buyer rates seller, seller rates buyer
-    if inquiry.buyer_id == current_user.id:  # type: ignore
-        inquiry.seller_rating = rating_data.rating  # type: ignore
-    elif inquiry.seller_id == current_user.id:  # type: ignore
-        inquiry.buyer_rating = rating_data.rating  # type: ignore
+    if buyer_id == user_id:
+        setattr(inquiry, 'seller_rating', rating_data.rating)
+    elif seller_id == user_id:
+        setattr(inquiry, 'buyer_rating', rating_data.rating)
     else:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Unauthorized")
     
@@ -238,19 +278,22 @@ async def delete_inquiry(
     db: Session = Depends(get_db)
 ):
     """Delete inquiry (soft delete)"""
+    # FIX: Use getattr
+    user_id = int(getattr(current_user, 'id', 0))
+    
     inquiry = db.query(Inquiry).filter(
         Inquiry.id == inquiry_id,
         or_(
-            Inquiry.buyer_id == current_user.id,  # type: ignore
-            Inquiry.seller_id == current_user.id  # type: ignore
+            Inquiry.buyer_id == user_id,
+            Inquiry.seller_id == user_id
         )
     ).first()
     
-    if not inquiry:  # type: ignore
+    if not inquiry:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Inquiry not found")
     
-    inquiry.status = "closed"  # type: ignore
-    inquiry.closed_at = datetime.utcnow()  # type: ignore
+    setattr(inquiry, 'status', 'closed')
+    setattr(inquiry, 'closed_at', datetime.utcnow())
     
     db.commit()
     

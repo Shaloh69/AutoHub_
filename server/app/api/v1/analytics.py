@@ -4,7 +4,7 @@ from sqlalchemy import func, desc
 from typing import Optional
 from datetime import datetime, timedelta
 from app.database import get_db
-from app.core.dependencies import get_current_user, get_current_seller
+from app.core.dependencies import get_current_user
 from app.models.user import User
 from app.models.car import Car
 from app.models.analytics import CarView, UserAction
@@ -19,27 +19,30 @@ async def get_dashboard(
     db: Session = Depends(get_db)
 ):
     """Get dashboard statistics"""
+    # FIX: Use getattr
+    user_id = int(getattr(current_user, 'id', 0))
+    
     # Get user's cars
-    total_listings = db.query(Car).filter(Car.seller_id == current_user.id).count()  # type: ignore
+    total_listings = db.query(Car).filter(Car.seller_id == user_id).count()
     active_listings = db.query(Car).filter(
-        Car.seller_id == current_user.id,  # type: ignore
-        Car.status == "active"  # type: ignore
+        Car.seller_id == user_id,
+        Car.status == "active"
     ).count()
     
     # Get total views
     total_views = db.query(func.sum(Car.views_count)).filter(
-        Car.seller_id == current_user.id  # type: ignore
+        Car.seller_id == user_id
     ).scalar() or 0
     
     # Get inquiries
     total_inquiries = db.query(Inquiry).filter(
-        Inquiry.seller_id == current_user.id  # type: ignore
+        Inquiry.seller_id == user_id
     ).count()
     
     return {
         "total_listings": total_listings,
         "active_listings": active_listings,
-        "total_views": total_views,
+        "total_views": int(total_views),
         "total_inquiries": total_inquiries
     }
 
@@ -52,9 +55,10 @@ async def get_car_analytics(
     db: Session = Depends(get_db)
 ):
     """Get car view analytics"""
-    # Verify ownership
-    car = db.query(Car).filter(Car.id == car_id, Car.seller_id == current_user.id).first()  # type: ignore
-    if not car:  # type: ignore
+    # Verify ownership - FIX: Use getattr
+    user_id = int(getattr(current_user, 'id', 0))
+    car = db.query(Car).filter(Car.id == car_id, Car.seller_id == user_id).first()
+    if not car:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Car not found")
     
     # Get views for the past N days
@@ -68,9 +72,12 @@ async def get_car_analytics(
         CarView.viewed_at >= since_date
     ).group_by(func.date(CarView.viewed_at)).all()
     
+    # FIX: Use getattr for views_count
+    total_views = int(getattr(car, 'views_count', 0))
+    
     return {
         "car_id": car_id,
-        "total_views": car.views_count,  # type: ignore
+        "total_views": total_views,
         "period_days": days,
         "daily_views": [{"date": str(v.date), "count": v.count} for v in views]
     }
@@ -88,7 +95,7 @@ async def get_market_insights(
         func.min(Car.price).label("min_price"),
         func.max(Car.price).label("max_price"),
         func.count(Car.id).label("listing_count")
-    ).filter(Car.status == "active")  # type: ignore
+    ).filter(Car.status == "active")
     
     if brand_id:
         query = query.filter(Car.brand_id == brand_id)
@@ -106,9 +113,15 @@ async def get_market_insights(
             "listing_count": 0
         }
     
+    # FIX: Safe conversion of aggregate results
+    avg_price = result.avg_price
+    min_price = result.min_price
+    max_price = result.max_price
+    listing_count = result.listing_count
+    
     return {
-        "avg_price": float(result.avg_price) if result.avg_price else 0.0,
-        "min_price": float(result.min_price) if result.min_price else 0.0,
-        "max_price": float(result.max_price) if result.max_price else 0.0,
-        "listing_count": result.listing_count if result.listing_count else 0
+        "avg_price": float(avg_price) if avg_price is not None else 0.0,
+        "min_price": float(min_price) if min_price is not None else 0.0,
+        "max_price": float(max_price) if max_price is not None else 0.0,
+        "listing_count": int(listing_count) if listing_count is not None else 0
     }
