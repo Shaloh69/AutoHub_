@@ -1,3 +1,8 @@
+"""
+FIXED VERSION - subscription.py
+Replace your server/app/models/subscription.py with this file
+"""
+
 from sqlalchemy import Column, Integer, String, Boolean, DECIMAL, Text, TIMESTAMP, ForeignKey, Enum, JSON
 from sqlalchemy.orm import relationship
 from datetime import datetime
@@ -46,6 +51,9 @@ class SubscriptionPlan(Base):
     homepage_featured = Column(Boolean, default=False)
     verified_badge = Column(Boolean, default=False)
     priority_support = Column(Boolean, default=False)
+    custom_branding = Column(Boolean, default=False)
+    api_access = Column(Boolean, default=False)
+    bulk_upload = Column(Boolean, default=False)
     
     # Status
     is_active = Column(Boolean, default=True)
@@ -77,7 +85,13 @@ class UserSubscription(Base):
     cancelled_at = Column(TIMESTAMP)
     
     # Relationships
-    user = relationship("User", back_populates="subscriptions")
+    # FIX: Explicitly specify foreign_keys to avoid ambiguity
+    # This tells SQLAlchemy to use user_id column for this relationship
+    user = relationship(
+        "User",
+        foreign_keys=[user_id],  # ← CRITICAL FIX: Specify which foreign key to use
+        back_populates="subscriptions"
+    )
     plan = relationship("SubscriptionPlan", back_populates="subscriptions")
     payments = relationship("SubscriptionPayment", back_populates="subscription")
     feature_usage = relationship("SubscriptionFeatureUsage", back_populates="subscription")
