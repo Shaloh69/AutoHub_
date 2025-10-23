@@ -2,7 +2,7 @@
 ===========================================
 FILE: app/schemas/auth.py
 Path: car_marketplace_ph/app/schemas/auth.py
-100% COMPLETE - ALL AUTH SCHEMAS
+FIXED VERSION - Case-insensitive role validation
 ===========================================
 """
 from pydantic import BaseModel, EmailStr, Field, field_validator, ConfigDict
@@ -20,13 +20,30 @@ class UserRegister(BaseModel):
     city_id: int
     province_id: Optional[int] = None
     region_id: Optional[int] = None
-    role: Optional[str] = Field("buyer", pattern="^(buyer|seller|dealer)$")
+    role: Optional[str] = "buyer"  # Removed pattern, validated below
     
     # Business info (for dealers)
     business_name: Optional[str] = Field(None, max_length=200)
     business_permit_number: Optional[str] = Field(None, max_length=100)
     tin_number: Optional[str] = Field(None, max_length=20)
     dti_registration: Optional[str] = Field(None, max_length=100)
+    
+    @field_validator('role')
+    @classmethod
+    def validate_and_normalize_role(cls, v):
+        """Validate and normalize role to lowercase (accepts any case)"""
+        if v is None:
+            return "buyer"
+        
+        # Convert to lowercase for comparison and storage
+        v_lower = v.lower()
+        
+        # Validate allowed values
+        allowed_roles = ['buyer', 'seller', 'dealer']
+        if v_lower not in allowed_roles:
+            raise ValueError(f'Role must be one of: {", ".join(allowed_roles)}. Got: {v}')
+        
+        return v_lower  # Always return lowercase
     
     @field_validator('password')
     @classmethod
