@@ -2,10 +2,10 @@
 ===========================================
 FILE: app/schemas/auth.py
 Path: car_marketplace_ph/app/schemas/auth.py
-FIXED VERSION - Case-insensitive role validation
+COMPLETE FIXED VERSION - Enum handling corrected
 ===========================================
 """
-from pydantic import BaseModel, EmailStr, Field, field_validator, ConfigDict
+from pydantic import BaseModel, EmailStr, Field, field_validator, field_serializer, ConfigDict
 from typing import Optional
 from datetime import datetime
 
@@ -20,7 +20,7 @@ class UserRegister(BaseModel):
     city_id: int
     province_id: Optional[int] = None
     region_id: Optional[int] = None
-    role: Optional[str] = "buyer"  # Removed pattern, validated below
+    role: Optional[str] = "buyer"  # String field, validated and normalized below
     
     # Business info (for dealers)
     business_name: Optional[str] = Field(None, max_length=200)
@@ -43,7 +43,8 @@ class UserRegister(BaseModel):
         if v_lower not in allowed_roles:
             raise ValueError(f'Role must be one of: {", ".join(allowed_roles)}. Got: {v}')
         
-        return v_lower  # Always return lowercase
+        # Return lowercase value
+        return v_lower
     
     @field_validator('password')
     @classmethod
@@ -67,18 +68,15 @@ class UserLogin(BaseModel):
 
 
 class TokenResponse(BaseModel):
-    """Token response schema with all fields"""
+    """JWT token response"""
     access_token: str
     refresh_token: str
     token_type: str = "bearer"
-    expires_in: int = 86400  # 24 hours in seconds
-    user_id: int
-    email: str
-    role: str
+    expires_in: int  # seconds
 
 
 class TokenRefresh(BaseModel):
-    """Token refresh request"""
+    """Refresh token request"""
     refresh_token: str
 
 
@@ -88,7 +86,7 @@ class PasswordReset(BaseModel):
 
 
 class PasswordResetConfirm(BaseModel):
-    """Password reset confirmation with new password"""
+    """Password reset confirmation with token"""
     token: str
     new_password: str = Field(..., min_length=8, max_length=100)
     
@@ -150,7 +148,7 @@ class UserProfile(BaseModel):
     first_name: str
     last_name: str
     phone: Optional[str] = None
-    role: str
+    role: str  # Will be serialized from enum
     profile_image: Optional[str] = None
     bio: Optional[str] = None
     
@@ -196,7 +194,25 @@ class UserProfile(BaseModel):
     created_at: datetime
     last_login_at: Optional[datetime] = None
     
-    model_config = ConfigDict(from_attributes=True)
+    # CRITICAL FIX: Add field serializer to handle enum conversion
+    @field_serializer('role')
+    def serialize_role(self, role, _info):
+        """Convert UserRole enum to string value"""
+        if role is None:
+            return "buyer"
+        # If it's already a string, return it
+        if isinstance(role, str):
+            return role
+        # If it's an enum, get its value
+        if hasattr(role, 'value'):
+            return role.value
+        # Fallback to string conversion
+        return str(role).lower()
+    
+    model_config = ConfigDict(
+        from_attributes=True,
+        use_enum_values=True  # CRITICAL: Use enum values instead of names
+    )
 
 
 class UserUpdate(BaseModel):
@@ -205,40 +221,22 @@ class UserUpdate(BaseModel):
     last_name: Optional[str] = Field(None, min_length=1, max_length=100)
     phone: Optional[str] = Field(None, max_length=20)
     bio: Optional[str] = Field(None, max_length=1000)
-    
-    # Location
-    address: Optional[str] = None
     city_id: Optional[int] = None
-    province_id: Optional[int] = None
-    region_id: Optional[int] = None
-    postal_code: Optional[str] = Field(None, max_length=10)
+    address: Optional[str] = Field(None, max_length=500)
     barangay: Optional[str] = Field(None, max_length=100)
+    postal_code: Optional[str] = Field(None, max_length=10)
     
-    # Business info
+    # Business info updates (for dealers)
     business_name: Optional[str] = Field(None, max_length=200)
     business_permit_number: Optional[str] = Field(None, max_length=100)
     tin_number: Optional[str] = Field(None, max_length=20)
-    
-    # Preferences
-    email_notifications: Optional[bool] = None
-    sms_notifications: Optional[bool] = None
-    push_notifications: Optional[bool] = None
-    language: Optional[str] = Field(None, max_length=10)
+    dti_registration: Optional[str] = Field(None, max_length=100)
 
 
 class IdentityVerificationRequest(BaseModel):
     """Identity verification request"""
-    id_type: str = Field(..., pattern="^(drivers_license|passport|national_id|voters_id)$")
-    id_number: str = Field(..., max_length=50)
-    id_expiry_date: Optional[str] = None  # Format: YYYY-MM-DD
-
-
-class BusinessVerificationRequest(BaseModel):
-    """Business verification request (for dealers)"""
-    business_name: str = Field(..., max_length=200)
-    business_permit_number: str = Field(..., max_length=100)
-    tin_number: str = Field(..., max_length=20)
-    dti_registration: Optional[str] = Field(None, max_length=100)
-    business_address: Optional[str] = None
-    business_phone: Optional[str] = Field(None, max_length=20)
-    business_email: Optional[EmailStr] = None
+    id_type: str = Field(..., pattern="^(passport|drivers_license|national_id|voters_id)$")
+    id_number: str = Field(..., min_length=5, max_length=50)
+    id_front_image: Optional[str] = None  # Base64 or URL
+    id_back_image: Optional[str] = None  # Base64 or URL
+    selfie_image: Optional[str] = None  # Base64 or URL

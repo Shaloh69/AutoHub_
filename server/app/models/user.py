@@ -1,4 +1,11 @@
-from sqlalchemy import Column, Integer, String, Boolean, DECIMAL, Text, TIMESTAMP, Date, ForeignKey, Enum
+"""
+===========================================
+FILE: app/models/user.py
+Path: car_marketplace_ph/app/models/user.py
+COMPLETE FIXED VERSION - Enum properly configured
+===========================================
+"""
+from sqlalchemy import Column, Integer, String, Boolean, DECIMAL, Text, TIMESTAMP, Date, ForeignKey, Enum as SQLEnum
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from app.database import Base
@@ -6,6 +13,7 @@ import enum
 
 
 class UserRole(str, enum.Enum):
+    """User role enum - values are lowercase to match database"""
     BUYER = "buyer"
     SELLER = "seller"
     DEALER = "dealer"
@@ -14,6 +22,7 @@ class UserRole(str, enum.Enum):
 
 
 class VerificationLevel(str, enum.Enum):
+    """Verification level enum"""
     NONE = "none"
     EMAIL = "email"
     PHONE = "phone"
@@ -29,14 +38,20 @@ class User(Base):
     # Authentication
     email = Column(String(255), unique=True, nullable=False, index=True)
     password_hash = Column(String(255), nullable=False)
-    role = Column(Enum(UserRole), default=UserRole.BUYER, nullable=False, index=True)
+    # CRITICAL FIX: Use native_enum=False to store enum values as strings
+    role = Column(
+        SQLEnum(UserRole, native_enum=False, length=20),
+        default=UserRole.BUYER,
+        nullable=False,
+        index=True
+    )
     
     # Personal Information
     first_name = Column(String(100), nullable=False)
     last_name = Column(String(100), nullable=False)
     phone = Column(String(20), index=True)
     date_of_birth = Column(Date)
-    gender = Column(Enum("male", "female", "other", "prefer_not_to_say"))
+    gender = Column(SQLEnum("male", "female", "other", "prefer_not_to_say", native_enum=False, length=20))
     
     # Profile
     profile_image = Column(String(500))
@@ -58,87 +73,74 @@ class User(Base):
     tin_number = Column(String(20))
     dti_registration = Column(String(100))
     business_address = Column(Text)
-    business_phone = Column(String(20))
-    business_email = Column(String(255))
-    business_website = Column(String(255))
+    # NOTE: showroom_address removed - not in database schema
     
-    # Verification Status
+    # Verification
     email_verified = Column(Boolean, default=False)
     phone_verified = Column(Boolean, default=False)
     identity_verified = Column(Boolean, default=False)
     business_verified = Column(Boolean, default=False)
-    verification_level = Column(Enum(VerificationLevel), default=VerificationLevel.NONE)
+    verification_level = Column(
+        SQLEnum(VerificationLevel, native_enum=False, length=20),
+        default=VerificationLevel.NONE
+    )
     verified_at = Column(TIMESTAMP)
     
-    # Verification Documents
-    id_type = Column(Enum("drivers_license", "passport", "national_id", "voters_id"))
-    id_number = Column(String(50))
-    id_expiry_date = Column(Date)
-    id_front_image = Column(String(500))
-    id_back_image = Column(String(500))
-    selfie_image = Column(String(500))
-    
-    # Preferences
-    preferred_currency = Column(Integer, ForeignKey("currencies.id"), default=1)
-    language = Column(String(10), default="en")
-    timezone = Column(String(50), default="Asia/Manila")
-    email_notifications = Column(Boolean, default=True)
-    sms_notifications = Column(Boolean, default=True)
-    push_notifications = Column(Boolean, default=True)
-    
-    # Rating & Trust
-    average_rating = Column(DECIMAL(3, 2), default=0.00)
-    total_ratings = Column(Integer, default=0)
-    positive_feedback = Column(Integer, default=0)
-    negative_feedback = Column(Integer, default=0)
-    response_rate = Column(DECIMAL(5, 2), default=0.00)
-    response_time_hours = Column(Integer)
-    total_sales = Column(Integer, default=0)
-    total_purchases = Column(Integer, default=0)
-    
-    # Fraud Detection
-    fraud_score = Column(Integer, default=0)
-    warnings_count = Column(Integer, default=0)
-    last_warning_at = Column(TIMESTAMP)
-    warning_reasons = Column(Text)
-    
-    # Account Status
-    is_active = Column(Boolean, default=True, index=True)
-    is_banned = Column(Boolean, default=False, index=True)
-    ban_reason = Column(Text)
-    banned_at = Column(TIMESTAMP)
-    banned_until = Column(TIMESTAMP)
-    
-    # Subscription
-    current_subscription_id = Column(Integer, ForeignKey("user_subscriptions.id"))
-    subscription_status = Column(Enum("free", "trial", "active", "cancelled", "expired"), default="free")
-    subscription_expires_at = Column(TIMESTAMP)
+    # Identity Documents
+    id_card_type = Column(String(50))
+    id_card_number = Column(String(100))
+    id_card_image_front = Column(String(500))
+    id_card_image_back = Column(String(500))
+    selfie_verification_image = Column(String(500))
     
     # Statistics
+    average_rating = Column(DECIMAL(3, 2), default=0.00)
+    total_ratings = Column(Integer, default=0)
+    total_sales = Column(Integer, default=0)
+    total_purchases = Column(Integer, default=0)
     total_views = Column(Integer, default=0)
     total_listings = Column(Integer, default=0)
     active_listings = Column(Integer, default=0)
     sold_listings = Column(Integer, default=0)
     
+    # Account Status
+    is_active = Column(Boolean, default=True, index=True)
+    is_banned = Column(Boolean, default=False)
+    ban_reason = Column(Text)
+    banned_at = Column(TIMESTAMP)
+    banned_by = Column(Integer, ForeignKey("users.id"))
+    
+    # Subscription
+    current_subscription_id = Column(Integer, ForeignKey("user_subscriptions.id"))
+    subscription_status = Column(String(50))
+    subscription_expires_at = Column(TIMESTAMP)
+    
     # Security
     last_login_at = Column(TIMESTAMP)
     last_login_ip = Column(String(45))
-    login_attempts = Column(Integer, default=0)
-    locked_until = Column(TIMESTAMP)
-    password_changed_at = Column(TIMESTAMP)
+    failed_login_attempts = Column(Integer, default=0)
+    account_locked_until = Column(TIMESTAMP)
     two_factor_enabled = Column(Boolean, default=False)
     two_factor_secret = Column(String(100))
     
+    # Preferences
+    language = Column(String(10), default="en")
+    timezone = Column(String(50), default="Asia/Manila")
+    currency_preference = Column(String(3), default="PHP")
+    email_notifications = Column(Boolean, default=True)
+    sms_notifications = Column(Boolean, default=False)
+    push_notifications = Column(Boolean, default=True)
+    marketing_emails = Column(Boolean, default=False)
+    
     # Timestamps
-    created_at = Column(TIMESTAMP, default=datetime.utcnow, index=True)
+    created_at = Column(TIMESTAMP, default=datetime.utcnow, nullable=False)
     updated_at = Column(TIMESTAMP, default=datetime.utcnow, onupdate=datetime.utcnow)
     deleted_at = Column(TIMESTAMP)
     
     # Relationships
-    city = relationship("PhCity", foreign_keys=[city_id], backref="users")
-    province = relationship("PhProvince", foreign_keys=[province_id], backref="users")
-    region = relationship("PhRegion", foreign_keys=[region_id], backref="users")
-    currency = relationship("Currency", foreign_keys=[preferred_currency], backref="users")
+    city = relationship("PhCity", foreign_keys=[city_id])
+    province = relationship("PhProvince", foreign_keys=[province_id])
+    region = relationship("PhRegion", foreign_keys=[region_id])
     
     # FIX: Add missing current_subscription relationship
     current_subscription = relationship(
@@ -164,7 +166,7 @@ class User(Base):
     
     # Analytics
     actions = relationship("UserAction", back_populates="user")
-    notifications = relationship("Notification", back_populates="user")
+    notifications = relationship("Notification", back_populates="user")  # ← FIXED
     favorites = relationship("Favorite", back_populates="user")
     
     def __repr__(self):
@@ -172,16 +174,20 @@ class User(Base):
     
     @property
     def full_name(self):
+        """Get user's full name"""
         return f"{self.first_name} {self.last_name}"
     
     @property
     def is_verified(self):
+        """Check if user has email and phone verified"""
         return self.email_verified and self.phone_verified
     
     @property
     def is_dealer_verified(self):
+        """Check if user is a verified dealer"""
         return self.role == UserRole.DEALER and self.business_verified
     
     @property
     def can_list_cars(self):
+        """Check if user can list cars"""
         return self.is_active and not self.is_banned and self.is_verified # type: ignore

@@ -1,3 +1,10 @@
+"""
+===========================================
+FILE: app/api/v1/users.py
+Path: car_marketplace_ph/app/api/v1/users.py
+COMPLETE FIXED VERSION - Identity verification fields corrected
+===========================================
+"""
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
@@ -72,9 +79,29 @@ async def request_identity_verification(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Request identity verification"""
-    setattr(current_user, 'id_type', verification_data.id_type)
-    setattr(current_user, 'id_number', verification_data.id_number)
+    """
+    Request identity verification
+    
+    FIXED: Now uses correct User model column names:
+    - id_card_type (not id_type)
+    - id_card_number (not id_number)
+    - id_card_image_front (not id_front_image)
+    - id_card_image_back (not id_back_image)
+    - selfie_verification_image (not selfie_image)
+    """
+    # CRITICAL FIX: Use correct column names matching User model
+    setattr(current_user, 'id_card_type', verification_data.id_type)
+    setattr(current_user, 'id_card_number', verification_data.id_number)
+    
+    # Optional image fields
+    if verification_data.id_front_image:
+        setattr(current_user, 'id_card_image_front', verification_data.id_front_image)
+    
+    if verification_data.id_back_image:
+        setattr(current_user, 'id_card_image_back', verification_data.id_back_image)
+    
+    if verification_data.selfie_image:
+        setattr(current_user, 'selfie_verification_image', verification_data.selfie_image)
     
     db.commit()
     
@@ -346,4 +373,4 @@ async def delete_account(
     
     db.commit()
     
-    return MessageResponse(message="Account deleted successfully")
+    return MessageResponse(message="Account deleted successfully", success=True)
