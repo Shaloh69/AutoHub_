@@ -2,7 +2,7 @@
 ===========================================
 FILE: app/models/user.py
 Path: car_marketplace_ph/app/models/user.py
-COMPLETE FIXED VERSION - Enum properly configured
+COMPLETE FIXED VERSION - Column names match database schema
 ===========================================
 """
 from sqlalchemy import Column, Integer, String, Boolean, DECIMAL, Text, TIMESTAMP, Date, ForeignKey, Enum as SQLEnum
@@ -72,8 +72,11 @@ class User(Base):
     business_permit_number = Column(String(100))
     tin_number = Column(String(20))
     dti_registration = Column(String(100))
+    # FIXED: Added via ALTER statements
     business_address = Column(Text)
-    # NOTE: showroom_address removed - not in database schema
+    business_phone = Column(String(20))
+    business_email = Column(String(255), index=True)
+    business_website = Column(String(255))
     
     # Verification
     email_verified = Column(Boolean, default=False)
@@ -84,18 +87,38 @@ class User(Base):
         SQLEnum(VerificationLevel, native_enum=False, length=20),
         default=VerificationLevel.NONE
     )
+    # FIXED: Added via ALTER statements
     verified_at = Column(TIMESTAMP)
     
     # Identity Documents
-    id_card_type = Column(String(50))
-    id_card_number = Column(String(100))
-    id_card_image_front = Column(String(500))
-    id_card_image_back = Column(String(500))
-    selfie_verification_image = Column(String(500))
+    # CRITICAL FIX: Use actual database column names
+    id_type = Column(SQLEnum("drivers_license", "passport", "national_id", "voters_id", native_enum=False, length=50))
+    id_number = Column(String(50))
+    # FIXED: Added via ALTER statements
+    id_expiry_date = Column(Date)
+    id_front_image = Column(String(500))
+    id_back_image = Column(String(500))
+    # FIXED: Added via ALTER statements - note DB uses 'selfie_image' not 'selfie_verification_image'
+    selfie_image = Column(String(500))
+    
+    # Preferences
+    preferred_currency = Column(Integer, ForeignKey("currencies.id"), default=1)
+    language = Column(String(10), default='en')
+    # FIXED: Added via ALTER statements
+    timezone = Column(String(50), default='Asia/Manila', index=True)
+    email_notifications = Column(Boolean, default=True)
+    sms_notifications = Column(Boolean, default=True)
+    # FIXED: Added via ALTER statements
+    push_notifications = Column(Boolean, default=True)
     
     # Statistics
     average_rating = Column(DECIMAL(3, 2), default=0.00)
     total_ratings = Column(Integer, default=0)
+    # FIXED: Added via ALTER statements
+    positive_feedback = Column(Integer, default=0)
+    negative_feedback = Column(Integer, default=0)
+    response_rate = Column(DECIMAL(5, 2), default=0.00, index=True)
+    response_time_hours = Column(Integer)
     total_sales = Column(Integer, default=0)
     total_purchases = Column(Integer, default=0)
     total_views = Column(Integer, default=0)
@@ -103,37 +126,40 @@ class User(Base):
     active_listings = Column(Integer, default=0)
     sold_listings = Column(Integer, default=0)
     
-    # Account Status
-    is_active = Column(Boolean, default=True, index=True)
+    # Security
+    fraud_score = Column(Integer, default=0)
+    warnings_count = Column(Integer, default=0)
+    # FIXED: Added via ALTER statements
+    last_warning_at = Column(TIMESTAMP)
+    warning_reasons = Column(Text)
+    is_active = Column(Boolean, default=True)
     is_banned = Column(Boolean, default=False)
     ban_reason = Column(Text)
     banned_at = Column(TIMESTAMP)
-    banned_by = Column(Integer, ForeignKey("users.id"))
+    # FIXED: Added via ALTER statements
+    banned_until = Column(TIMESTAMP)
     
     # Subscription
-    current_subscription_id = Column(Integer, ForeignKey("user_subscriptions.id"))
-    subscription_status = Column(String(50))
+    # NOTE: No ForeignKey in database schema - it's just an INT column
+    current_subscription_id = Column(Integer, nullable=True)
+    subscription_status = Column(
+        SQLEnum('free', 'trial', 'active', 'cancelled', 'expired', native_enum=False, length=20),
+        default='free'
+    )
     subscription_expires_at = Column(TIMESTAMP)
     
-    # Security
+    # Session & Security
+    # FIXED: Added via ALTER statements
     last_login_at = Column(TIMESTAMP)
-    last_login_ip = Column(String(45))
-    failed_login_attempts = Column(Integer, default=0)
-    account_locked_until = Column(TIMESTAMP)
-    two_factor_enabled = Column(Boolean, default=False)
+    last_login_ip = Column(String(45), index=True)
+    login_attempts = Column(Integer, default=0)
+    locked_until = Column(TIMESTAMP)
+    password_changed_at = Column(TIMESTAMP)
+    two_factor_enabled = Column(Boolean, default=False, index=True)
     two_factor_secret = Column(String(100))
     
-    # Preferences
-    language = Column(String(10), default="en")
-    timezone = Column(String(50), default="Asia/Manila")
-    currency_preference = Column(String(3), default="PHP")
-    email_notifications = Column(Boolean, default=True)
-    sms_notifications = Column(Boolean, default=False)
-    push_notifications = Column(Boolean, default=True)
-    marketing_emails = Column(Boolean, default=False)
-    
     # Timestamps
-    created_at = Column(TIMESTAMP, default=datetime.utcnow, nullable=False)
+    created_at = Column(TIMESTAMP, default=datetime.utcnow)
     updated_at = Column(TIMESTAMP, default=datetime.utcnow, onupdate=datetime.utcnow)
     deleted_at = Column(TIMESTAMP)
     
@@ -142,12 +168,16 @@ class User(Base):
     province = relationship("PhProvince", foreign_keys=[province_id])
     region = relationship("PhRegion", foreign_keys=[region_id])
     
-    # FIX: Add missing current_subscription relationship
+    # FIXED: Use explicit primaryjoin since there's no FK constraint in database
+    # This avoids circular dependency issues
     current_subscription = relationship(
         "UserSubscription",
+        primaryjoin="User.current_subscription_id == UserSubscription.id",
         foreign_keys=[current_subscription_id],
-        post_update=True,  # Avoid circular dependency
-        uselist=False
+        lazy="joined",
+        post_update=True,
+        uselist=False,
+        viewonly=True  # Read-only to avoid update issues
     )
     
     # Car relationships
@@ -166,7 +196,7 @@ class User(Base):
     
     # Analytics
     actions = relationship("UserAction", back_populates="user")
-    notifications = relationship("Notification", back_populates="user")  # ← FIXED
+    notifications = relationship("Notification", back_populates="user")
     favorites = relationship("Favorite", back_populates="user")
     
     def __repr__(self):
