@@ -428,6 +428,8 @@ class CarService:
             "poor": 5
         }
         condition = str(getattr(car, 'condition_rating', 'fair'))
+        
+
         score += condition_scores.get(condition, 10)
         
         # Mileage (lower is better)

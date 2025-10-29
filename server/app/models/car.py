@@ -139,7 +139,7 @@ class Car(Base):
     price = Column(DECIMAL(12, 2), nullable=False, index=True)
     currency = Column(String(3), default="PHP")
     original_price = Column(DECIMAL(12, 2))
-    discount_percentage = Column(DECIMAL(5, 2))
+    discount_percentage = Column(DECIMAL(5, 2))  # ← VERIFY THIS EXISTS
     negotiable = Column(Boolean, default=True)
     
     # Vehicle Details
@@ -215,7 +215,7 @@ class Car(Base):
     meta_title = Column(String(255))
     meta_description = Column(Text)
     keywords = Column(Text)
-    search_keywords = Column(Text)
+    search_keywords = Column(Text)  # ← VERIFY THIS EXISTS
     
     # Metrics & Analytics
     views_count = Column(Integer, default=0)

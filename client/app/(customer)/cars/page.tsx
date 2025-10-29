@@ -54,7 +54,7 @@ export default function SearchCarsPage() {
   const [yearRange, setYearRange] = useState<[number, number]>([2000, new Date().getFullYear()]);
 
   useEffect(() => {
-    loadBrands();
+    loadBrands(); 
   }, []);
 
   useEffect(() => {
@@ -195,7 +195,7 @@ export default function SearchCarsPage() {
                 />
 
                 {/* Brand */}
-                <Select
+                <Select 
                   label="Brand"
                   placeholder="All Brands"
                   selectedKeys={filters.brand_id ? [String(filters.brand_id)] : []}
