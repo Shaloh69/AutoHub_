@@ -160,12 +160,60 @@ class User(Base):
         foreign_keys=[current_subscription_id],
         post_update=True
     )
-    
-    # Additional relationships (if needed by your app)
+
+    # Car relationships
     cars = relationship("Car", foreign_keys="Car.seller_id", back_populates="seller")
-    sales = relationship("Transaction", foreign_keys="Transaction.seller_id", back_populates="seller")
-    purchases = relationship("Transaction", foreign_keys="Transaction.buyer_id", back_populates="buyer")
-    
+
+    # Inquiry relationships (ADDED - THIS FIXES YOUR ERROR)
+    sent_inquiries = relationship(
+        "Inquiry",
+        foreign_keys="Inquiry.buyer_id",
+        back_populates="buyer",
+        cascade="all, delete-orphan"
+    )
+    received_inquiries = relationship(
+        "Inquiry",
+        foreign_keys="Inquiry.seller_id",
+        back_populates="seller",
+        cascade="all, delete-orphan"
+    )
+
+    # Transaction relationships
+    sales = relationship(
+        "Transaction",
+        foreign_keys="Transaction.seller_id",
+        back_populates="seller"
+    )
+    purchases = relationship(
+        "Transaction",
+        foreign_keys="Transaction.buyer_id",
+        back_populates="buyer"
+    )
+
+    # Subscription relationships (ADDED)
+    subscriptions = relationship(
+        "UserSubscription",
+        foreign_keys="UserSubscription.user_id",
+        back_populates="user"
+    )
+
+    # Favorite relationships (ADDED)
+    favorites = relationship(
+        "Favorite",
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )
+
+    # Analytics relationships (ADDED)
+    actions = relationship(
+        "UserAction",
+        back_populates="user"
+    )
+    notifications = relationship(
+        "Notification",
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )
     def __repr__(self):
         return f"<User {self.id}: {self.email}>"
     
