@@ -129,6 +129,7 @@ class Car(Base):
     brand_id = Column(Integer, ForeignKey("brands.id"), nullable=False, index=True)
     model_id = Column(Integer, ForeignKey("models.id"), nullable=False, index=True)
     category_id = Column(Integer, ForeignKey("categories.id"), index=True)
+    color_id = Column(Integer, ForeignKey("standard_colors.id", ondelete="SET NULL"), index=True)
     
     # Basic Information
     title = Column(String(255), nullable=False, index=True)

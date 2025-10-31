@@ -1,11 +1,9 @@
 """
-===========================================
-FILE: app/models/location.py - COMPLETELY FIXED
-Path: car_marketplace_ph/app/models/location.py
-FIXED - All Column type errors resolved (bool, str, DECIMAL)
-===========================================
+Location Models - COMPLETE VERSION WITH StandardColor
+Path: server/app/models/location.py
+Fixed: Added missing StandardColor model
 """
-from sqlalchemy import Column, Integer, String, Boolean, DECIMAL, ForeignKey, TIMESTAMP
+from sqlalchemy import Column, Integer, String, Boolean, DECIMAL, ForeignKey, TIMESTAMP, Enum as SQLEnum
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from typing import Optional, Tuple, cast
@@ -14,6 +12,7 @@ from app.database import Base
 
 
 class Currency(Base):
+    """Currency model for multi-currency support"""
     __tablename__ = "currencies"
     
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -29,6 +28,7 @@ class Currency(Base):
 
 
 class PhRegion(Base):
+    """Philippine Regions model"""
     __tablename__ = "ph_regions"
     
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -45,6 +45,7 @@ class PhRegion(Base):
 
 
 class PhProvince(Base):
+    """Philippine Provinces model"""
     __tablename__ = "ph_provinces"
     
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -63,20 +64,20 @@ class PhProvince(Base):
 
 
 class PhCity(Base):
-    """Philippine Cities/Municipalities Model - COMPLETELY FIXED"""
+    """Philippine Cities/Municipalities Model"""
     __tablename__ = "ph_cities"
     
     id = Column(Integer, primary_key=True, autoincrement=True)
     province_id = Column(Integer, ForeignKey("ph_provinces.id"), nullable=False, index=True)
     city_code = Column(String(10), index=True)
     name = Column(String(100), nullable=False, index=True)
-    city_type = Column(String(20), default="city")  # city, municipality, district
+    city_type = Column(SQLEnum('city', 'municipality', 'district', name='city_type_enum'), default='city')
     is_highly_urbanized = Column(Boolean, default=False)
-    latitude = Column(DECIMAL(10, 8), nullable=False, default=14.5995, index=True)
-    longitude = Column(DECIMAL(11, 8), nullable=False, default=120.9842, index=True)
-    population = Column(Integer, index=True)
-    is_capital = Column(Boolean, default=False, index=True)
+    latitude = Column(DECIMAL(10, 8), nullable=False, default=14.5995)
+    longitude = Column(DECIMAL(11, 8), nullable=False, default=120.9842)
     zip_code = Column(String(10))
+    population = Column(Integer, default=0)
+    is_capital = Column(Boolean, default=False)
     is_active = Column(Boolean, default=True)
     
     # Relationships
@@ -87,12 +88,7 @@ class PhCity(Base):
     
     @property
     def full_name(self) -> str:
-        """Get full city name with province
-        
-        Note: At runtime, Column[str] resolves to str values.
-        We use cast() to tell Pylance the runtime type.
-        """
-        # Cast string columns to str to avoid Column[str] error
+        """Get full city name with province"""
         city_name = cast(str, self.name)
         
         if self.province:
@@ -102,67 +98,39 @@ class PhCity(Base):
     
     @property
     def coordinates(self) -> Optional[Tuple[float, float]]:
-        """Get coordinates as tuple
-        
-        Note: At runtime, Column[DECIMAL] resolves to Decimal values.
-        We use cast() to tell Pylance the runtime type.
-        """
-        # Cast DECIMAL columns to Optional[Decimal] to avoid Column[Unknown] error
+        """Get coordinates as tuple (latitude, longitude)"""
         latitude = cast(Optional[Decimal], self.latitude)
         longitude = cast(Optional[Decimal], self.longitude)
         
-        # Check if both coordinates exist
         if latitude is not None and longitude is not None:
             return (float(latitude), float(longitude))
         return None
 
 
-# ===========================================
-# CHANGES MADE IN THIS VERSION:
-# ===========================================
-# 
-# ✅ FIXED ALL COLUMN TYPE ERRORS:
-# - Fixed Column[str] errors using cast(str, ...) in full_name property
-# - Fixed Column[Unknown] errors using cast(Optional[Decimal], ...) for latitude/longitude
-# - Properly typed all property return values
-# - Fixed all conditional checks on Column types
-#
-# ✅ ADDED COLUMNS (2):
-# 1. population: INT with index
-# 2. is_capital: BOOLEAN with index, default=False
-#
-# ✅ FIXED Currency.updated_at:
-# - Changed from Integer to TIMESTAMP
-# - Added onupdate parameter
-#
-# ✅ HELPER PROPERTIES (All Fixed):
-# 1. full_name - returns "City, Province" (FIXED Column[str])
-# 2. coordinates - returns (lat, lng) tuple (FIXED Column[Unknown])
-#
-# ===========================================
-# EXPLANATION OF FIXES:
-# ===========================================
-#
-# All Column type errors occur because Pylance analyzes at class level:
-# - At class level: self.name is Column[str]
-# - At runtime (instances): city.name is actual str value
-# - Solution: Use typing.cast() to tell Pylance the runtime type
-#
-# Examples:
-# 1. String columns: cast(str, self.name)
-# 2. DECIMAL columns: cast(Optional[Decimal], self.latitude)
-# 3. Boolean columns: cast(bool, self.is_active)
-# 4. Datetime columns: cast(Optional[datetime], self.created_at)
-#
-# The cast() function:
-# - Is a type hint only (zero runtime cost)
-# - Returns the value unchanged at runtime
-# - Tells Pylance "trust me, at runtime this is type X"
-# - Is the proper, official way to handle SQLAlchemy typing
-#
-# ===========================================
-# PERFECTLY ALIGNED WITH DATABASE SCHEMA
-# Expected: 13 columns ✓
-# All type errors resolved ✓
-# Zero runtime overhead ✓
-# ===========================================
+class StandardColor(Base):
+    """Standard color options for cars"""
+    __tablename__ = "standard_colors"
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String(50), unique=True, nullable=False, index=True)
+    hex_code = Column(String(7))
+    category = Column(
+        SQLEnum('primary', 'neutral', 'metallic', 'special', name='color_category_enum'),
+        default='primary'
+    )
+    is_popular = Column(Boolean, default=True)
+    display_order = Column(Integer, default=0)
+    
+    def __repr__(self):
+        return f"<StandardColor {self.name}>"
+    
+    @property
+    def color_info(self) -> dict:
+        """Get color information as dictionary"""
+        return {
+            'id': self.id,
+            'name': cast(str, self.name),
+            'hex_code': cast(Optional[str], self.hex_code),
+            'category': cast(str, self.category),
+            'is_popular': cast(bool, self.is_popular)
+        }
