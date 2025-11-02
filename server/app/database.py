@@ -1,8 +1,13 @@
+"""
+Car Marketplace Philippines - Database Configuration - COMPLETE FIXED VERSION v2
+Path: server/app/database.py
+FIXED: Improved cache string handling + Pylance type errors resolved
+"""
 from sqlalchemy import create_engine, event
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.pool import QueuePool
-from typing import Generator, Optional
+from typing import Generator, Optional, Union
 import redis
 import json
 from app.config import settings
@@ -32,13 +37,14 @@ try:
     redis_client = redis.from_url(
         settings.REDIS_URL,
         password=settings.REDIS_PASSWORD,
-        decode_responses=True,
+        decode_responses=True,  # This ensures strings are returned, not bytes
         socket_connect_timeout=5,
         socket_timeout=5,
     )
     redis_available = True
+    print("✅ Redis connection established successfully")
 except Exception as e:
-    print(f"Redis connection failed: {e}")
+    print(f"❌ Redis connection failed: {e}")
     redis_client = None
     redis_available = False
 
@@ -86,34 +92,80 @@ def set_timezone(dbapi_conn, connection_record):
 
 # Cache utilities
 class CacheManager:
-    """Redis cache manager with common operations"""
+    """Redis cache manager with common operations - COMPLETE FIXED VERSION v2"""
     
     def __init__(self, redis_client: Optional[redis.Redis] = None):
         self.redis = redis_client
         self.enabled = redis_available and self.redis is not None
     
     def get(self, key: str) -> Optional[str]:
-        """Get value from cache"""
-        if not self.enabled:
+        """Get value from cache - FIXED: Proper type handling for Pylance"""
+        if not self.enabled or self.redis is None:
+            print(f"DEBUG: Cache disabled, cannot get key: {key}")
             return None
+        
         try:
-            return self.redis.get(key)  # type: ignore
+            # Redis with decode_responses=True returns str | None
+            value: Union[str, bytes, None] = self.redis.get(key)  # type: ignore
+            
+            if value is None:
+                return None
+            
+            # FIX: Handle both string and bytes properly with type guards
+            if isinstance(value, bytes):
+                # Only decode if it's actually bytes
+                decoded_value: str = value.decode('utf-8')
+                return decoded_value.strip()
+            elif isinstance(value, str):
+                # Already a string, just strip
+                return value.strip()
+            else:
+                # Fallback: convert to string
+                return str(value).strip()
+                
         except Exception as e:
-            print(f"Redis GET error: {e}")
+            print(f"❌ Redis GET error for key '{key}': {e}")
             return None
     
     def set(self, key: str, value: str, ttl: Optional[int] = None) -> bool:
-        """Set value in cache with optional TTL"""
-        if not self.enabled:
+        """Set value in cache with optional TTL - FIXED: Proper type handling"""
+        if not self.enabled or self.redis is None:
+            print(f"DEBUG: Cache disabled, cannot set key: {key}")
             return False
+        
         try:
+            # FIX: Ensure value is a clean string before storage
+            clean_value: str = str(value).strip()
+            
+            # Set value with or without TTL
             if ttl:
-                self.redis.setex(key, ttl, value)  # type: ignore
+                result = self.redis.setex(key, ttl, clean_value)  # type: ignore
             else:
-                self.redis.set(key, value)  # type: ignore
-            return True
+                result = self.redis.set(key, clean_value)  # type: ignore
+            
+            # Verify the value was stored correctly
+            if result:
+                stored_value: Union[str, bytes, None] = self.redis.get(key)  # type: ignore
+                
+                if stored_value is not None:
+                    # Normalize stored value to string
+                    if isinstance(stored_value, bytes):
+                        stored_str: str = stored_value.decode('utf-8')
+                    else:
+                        stored_str: str = str(stored_value)
+                    
+                    # Verify match
+                    if stored_str.strip() == clean_value:
+                        print(f"✅ Successfully stored key '{key}' (length: {len(clean_value)})")
+                        return True
+                    else:
+                        print(f"⚠️ WARNING: Stored value differs from input for key '{key}'")
+                        return False
+            
+            return bool(result)
+            
         except Exception as e:
-            print(f"Redis SET error: {e}")
+            print(f"❌ Redis SET error for key '{key}': {e}")
             return False
     
     def get_json(self, key: str) -> Optional[dict]:
@@ -122,7 +174,8 @@ class CacheManager:
         if value:
             try:
                 return json.loads(value)
-            except:
+            except Exception as e:
+                print(f"❌ JSON parse error for key '{key}': {e}")
                 return None
         return None
     
@@ -130,48 +183,57 @@ class CacheManager:
         """Set JSON value in cache"""
         try:
             return self.set(key, json.dumps(value), ttl)
-        except:
+        except Exception as e:
+            print(f"❌ JSON stringify error for key '{key}': {e}")
             return False
     
     def delete(self, key: str) -> bool:
         """Delete key from cache"""
-        if not self.enabled:
+        if not self.enabled or self.redis is None:
             return False
+        
         try:
             self.redis.delete(key)  # type: ignore
+            print(f"✅ Deleted key '{key}'")
             return True
         except Exception as e:
-            print(f"Redis DELETE error: {e}")
+            print(f"❌ Redis DELETE error for key '{key}': {e}")
             return False
     
     def exists(self, key: str) -> bool:
         """Check if key exists in cache"""
-        if not self.enabled:
+        if not self.enabled or self.redis is None:
             return False
+        
         try:
-            return self.redis.exists(key) > 0  # type: ignore
+            result: int = self.redis.exists(key)  # type: ignore
+            return result > 0
         except Exception as e:
-            print(f"Redis EXISTS error: {e}")
+            print(f"❌ Redis EXISTS error for key '{key}': {e}")
             return False
     
     def incr(self, key: str, amount: int = 1) -> Optional[int]:
         """Increment value in cache"""
-        if not self.enabled:
+        if not self.enabled or self.redis is None:
             return None
+        
         try:
-            return self.redis.incrby(key, amount)  # type: ignore
+            result: int = self.redis.incrby(key, amount)  # type: ignore
+            return result
         except Exception as e:
-            print(f"Redis INCR error: {e}")
+            print(f"❌ Redis INCR error for key '{key}': {e}")
             return None
     
     def expire(self, key: str, seconds: int) -> bool:
         """Set expiration on key"""
-        if not self.enabled:
+        if not self.enabled or self.redis is None:
             return False
+        
         try:
-            return self.redis.expire(key, seconds)  # type: ignore
+            result: bool = self.redis.expire(key, seconds)  # type: ignore
+            return result
         except Exception as e:
-            print(f"Redis EXPIRE error: {e}")
+            print(f"❌ Redis EXPIRE error for key '{key}': {e}")
             return False
 
 

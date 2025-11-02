@@ -1,8 +1,8 @@
 """
 ===========================================
-FILE: app/services/auth_service.py - FIXED VERSION
+FILE: app/services/auth_service.py - COMPLETE FIXED VERSION
 Path: car_marketplace_ph/app/services/auth_service.py
-FIXED: Removed references to password_changed_at column that doesn't exist
+FIXED: Refresh token whitespace handling + all original functionality preserved
 ===========================================
 """
 from sqlalchemy.orm import Session
@@ -21,7 +21,7 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 class AuthService:
-    """Authentication service - FIXED VERSION"""
+    """Authentication service - COMPLETE FIXED VERSION"""
     
     @staticmethod
     def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -57,16 +57,19 @@ class AuthService:
     
     @staticmethod
     def decode_token(token: str) -> Optional[dict]:
-        """Decode JWT token"""
+        """Decode JWT token - FIXED: Strip whitespace"""
         try:
+            # FIX: Strip whitespace from token
+            token = token.strip()
             payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
             return payload
-        except JWTError:
+        except JWTError as e:
+            print(f"Token decode error: {e}")
             return None
     
     @staticmethod
     def generate_tokens(user: User) -> Dict[str, Any]:
-        """Generate access and refresh tokens"""
+        """Generate access and refresh tokens - FIXED: Clean token before storage"""
         # FIX: Use getattr for all user attributes
         user_id = int(getattr(user, 'id', 0))
         user_email = str(getattr(user, 'email', ''))
@@ -76,8 +79,17 @@ class AuthService:
         access_token = AuthService.create_access_token({"sub": str(user_id)})
         refresh_token = AuthService.create_refresh_token({"sub": str(user_id)})
         
-        # Store refresh token in cache
-        cache.set(f"refresh_token:{user_id}", refresh_token, ttl=settings.JWT_REFRESH_EXPIRATION_DAYS * 86400)
+        # FIX: Strip and validate token before storage
+        refresh_token = refresh_token.strip()
+        
+        # Store refresh token in cache with proper TTL
+        ttl_seconds = settings.JWT_REFRESH_EXPIRATION_DAYS * 86400
+        success = cache.set(f"refresh_token:{user_id}", refresh_token, ttl=ttl_seconds)
+        
+        if not success:
+            print(f"WARNING: Failed to store refresh token in cache for user {user_id}")
+        else:
+            print(f"DEBUG: Stored refresh token for user {user_id}, length: {len(refresh_token)}")
         
         return {
             "access_token": access_token,
@@ -151,26 +163,54 @@ class AuthService:
     
     @staticmethod
     def refresh_access_token(db: Session, refresh_token: str) -> Optional[Dict[str, Any]]:
-        """Refresh access token using refresh token"""
+        """Refresh access token using refresh token - COMPLETE FIX"""
+        # FIX: Strip whitespace from incoming token
+        refresh_token = refresh_token.strip()
+        
+        print(f"DEBUG: Attempting to refresh token, length: {len(refresh_token)}")
+        
+        # Decode and validate token
         payload = AuthService.decode_token(refresh_token)
         if not payload or payload.get("type") != "refresh":
+            print("ERROR: Token decode failed or invalid token type")
             return None
         
         user_id = payload.get("sub")
         if not user_id:
+            print("ERROR: No user_id in token payload")
             return None
+        
+        print(f"DEBUG: Token decoded successfully for user_id: {user_id}")
         
         # Verify refresh token in cache
         cached_token = cache.get(f"refresh_token:{user_id}")
-        if not cached_token or cached_token != refresh_token:
+        
+        if not cached_token:
+            print(f"ERROR: No cached token found for user {user_id}")
+            return None
+        
+        # FIX: Strip whitespace from cached token and normalize comparison
+        cached_token = str(cached_token).strip()
+        
+        print(f"DEBUG: Cached token length: {len(cached_token)}")
+        print(f"DEBUG: Input token length: {len(refresh_token)}")
+        print(f"DEBUG: Tokens match: {cached_token == refresh_token}")
+        
+        if cached_token != refresh_token:
+            print(f"ERROR: Token mismatch for user {user_id}")
+            if len(cached_token) != len(refresh_token):
+                print(f"ERROR: Length mismatch - cached: {len(cached_token)}, input: {len(refresh_token)}")
             return None
         
         # Generate new access token
         user = db.query(User).filter(User.id == int(user_id)).first()
         if not user:
+            print(f"ERROR: User {user_id} not found in database")
             return None
         
         access_token = AuthService.create_access_token({"sub": user_id})
+        
+        print(f"DEBUG: Successfully generated new access token for user {user_id}")
         
         return {
             "access_token": access_token,
@@ -182,6 +222,7 @@ class AuthService:
     def revoke_refresh_token(user_id: int):
         """Revoke refresh token"""
         cache.delete(f"refresh_token:{user_id}")
+        print(f"DEBUG: Revoked refresh token for user {user_id}")
     
     @staticmethod
     def send_verification_email(user: User):
@@ -244,7 +285,7 @@ class AuthService:
         if not user:
             return False
         
-        # FIX: Use setattr - REMOVED password_changed_at (column doesn't exist)
+        # FIX: Use setattr
         setattr(user, 'password_hash', AuthService.hash_password(new_password))
         db.commit()
         
@@ -264,7 +305,7 @@ class AuthService:
         if not AuthService.verify_password(old_password, password_hash):
             raise ValueError("Current password is incorrect")
         
-        # FIX: Use setattr - REMOVED password_changed_at (column doesn't exist)
+        # FIX: Use setattr
         setattr(user, 'password_hash', AuthService.hash_password(new_password))
         db.commit()
         
@@ -306,23 +347,3 @@ class AuthService:
         
         cache.delete(f"phone_otp:{user_id}:{phone}")
         return True
-
-
-# ===========================================
-# FIXES APPLIED IN THIS VERSION:
-# ===========================================
-# 
-# ✅ REMOVED REFERENCES TO NON-EXISTENT COLUMNS:
-# 1. In reset_password(): Removed setattr(user, 'password_changed_at', datetime.utcnow())
-# 2. In change_password(): Removed setattr(user, 'password_changed_at', datetime.utcnow())
-#
-# ✅ PRESERVED ALL ORIGINAL FUNCTIONALITY:
-# - All authentication methods work correctly
-# - Password reset functionality intact
-# - Password change functionality intact
-# - Email verification working
-# - Phone verification working
-# - Token generation and refresh working
-# - All other methods preserved
-#
-# ===========================================

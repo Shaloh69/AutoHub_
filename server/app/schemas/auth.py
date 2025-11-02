@@ -1,8 +1,8 @@
 """
 ===========================================
-FILE: app/schemas/auth.py
+FILE: app/schemas/auth.py - TRULY COMPLETE VERSION
 Path: car_marketplace_ph/app/schemas/auth.py
-COMPLETE FIXED VERSION - Enum handling corrected
+COMPLETE with ALL fields from original + TokenRefresh fix
 ===========================================
 """
 from pydantic import BaseModel, EmailStr, Field, field_validator, field_serializer, ConfigDict
@@ -11,7 +11,7 @@ from datetime import datetime
 
 
 class UserRegister(BaseModel):
-    """User registration schema - Complete with all validations"""
+    """User registration schema - COMPLETE with all fields"""
     email: EmailStr
     password: str = Field(..., min_length=8, max_length=100)
     first_name: str = Field(..., min_length=1, max_length=100)
@@ -20,7 +20,7 @@ class UserRegister(BaseModel):
     city_id: int
     province_id: Optional[int] = None
     region_id: Optional[int] = None
-    role: Optional[str] = "buyer"  # String field, validated and normalized below
+    role: Optional[str] = "buyer"
     
     # Business info (for dealers)
     business_name: Optional[str] = Field(None, max_length=200)
@@ -31,19 +31,16 @@ class UserRegister(BaseModel):
     @field_validator('role')
     @classmethod
     def validate_and_normalize_role(cls, v):
-        """Validate and normalize role to lowercase (accepts any case)"""
+        """Validate and normalize role to lowercase"""
         if v is None:
             return "buyer"
         
-        # Convert to lowercase for comparison and storage
         v_lower = v.lower()
-        
-        # Validate allowed values
         allowed_roles = ['buyer', 'seller', 'dealer']
+        
         if v_lower not in allowed_roles:
             raise ValueError(f'Role must be one of: {", ".join(allowed_roles)}. Got: {v}')
         
-        # Return lowercase value
         return v_lower
     
     @field_validator('password')
@@ -76,8 +73,29 @@ class TokenResponse(BaseModel):
 
 
 class TokenRefresh(BaseModel):
-    """Refresh token request"""
+    """Refresh token request - FIXED with validation"""
     refresh_token: str
+    
+    @field_validator('refresh_token')
+    @classmethod
+    def validate_refresh_token(cls, v):
+        """Validate and clean refresh token - FIX: Strip whitespace"""
+        if not v or not v.strip():
+            raise ValueError('Refresh token cannot be empty')
+        
+        # FIX: Strip whitespace from token
+        v = v.strip()
+        
+        # Basic validation - JWT tokens have 3 parts separated by dots
+        parts = v.split('.')
+        if len(parts) != 3:
+            raise ValueError('Invalid token format')
+        
+        # Check minimum length
+        if len(v) < 50:
+            raise ValueError('Token appears to be invalid (too short)')
+        
+        return v
 
 
 class PasswordReset(BaseModel):
@@ -142,7 +160,8 @@ class PhoneVerificationRequest(BaseModel):
 
 
 class UserProfile(BaseModel):
-    """Complete user profile response"""
+    """COMPLETE user profile response with ALL fields"""
+    # Basic info
     id: int
     email: str
     first_name: str
@@ -194,7 +213,6 @@ class UserProfile(BaseModel):
     created_at: datetime
     last_login_at: Optional[datetime] = None
     
-    # CRITICAL FIX: Add field serializer to handle enum conversion
     @field_serializer('role')
     def serialize_role(self, role, _info):
         """Convert UserRole enum to string value"""
@@ -211,7 +229,7 @@ class UserProfile(BaseModel):
     
     model_config = ConfigDict(
         from_attributes=True,
-        use_enum_values=True  # CRITICAL: Use enum values instead of names
+        use_enum_values=True
     )
 
 
