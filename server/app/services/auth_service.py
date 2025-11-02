@@ -2,6 +2,7 @@
 ===========================================
 FILE: app/services/auth_service.py - COMPLETE FIXED VERSION
 Path: car_marketplace_ph/app/services/auth_service.py
+FIXED: Role handling to support both string and enum types
 FIXED: Refresh token whitespace handling + all original functionality preserved
 ===========================================
 """
@@ -56,7 +57,7 @@ class AuthService:
         return encoded_jwt
     
     @staticmethod
-    def decode_token(token: str) -> Optional[dict]:
+    def decode_token(token: str) -> Optional[Dict]:
         """Decode JWT token - FIXED: Strip whitespace"""
         try:
             # FIX: Strip whitespace from token
@@ -69,12 +70,24 @@ class AuthService:
     
     @staticmethod
     def generate_tokens(user: User) -> Dict[str, Any]:
-        """Generate access and refresh tokens - FIXED: Clean token before storage"""
+        """Generate access and refresh tokens - FIXED: Handle both string and enum role types"""
         # FIX: Use getattr for all user attributes
         user_id = int(getattr(user, 'id', 0))
         user_email = str(getattr(user, 'email', ''))
         user_role_obj = getattr(user, 'role', None)
-        user_role = user_role_obj.value if user_role_obj else 'buyer'
+        
+        # FIX: Handle both string and enum cases for role
+        if user_role_obj is None:
+            user_role = 'buyer'
+        elif isinstance(user_role_obj, str):
+            # Role is already a string (from database)
+            user_role = user_role_obj
+        elif hasattr(user_role_obj, 'value'):
+            # Role is an enum object
+            user_role = user_role_obj.value
+        else:
+            # Fallback: convert to string
+            user_role = str(user_role_obj).lower()
         
         access_token = AuthService.create_access_token({"sub": str(user_id)})
         refresh_token = AuthService.create_refresh_token({"sub": str(user_id)})
@@ -108,7 +121,7 @@ class AuthService:
         existing_user = db.query(User).filter(User.email == user_data["email"]).first()
         if existing_user:
             raise ValueError("Email already registered")
-        
+    
         # Verify city exists
         city = db.query(PhCity).filter(PhCity.id == user_data["city_id"]).first()
         if not city:
@@ -212,8 +225,10 @@ class AuthService:
         
         print(f"DEBUG: Successfully generated new access token for user {user_id}")
         
+        # FIX: Return the same refresh token (it's still valid)
         return {
             "access_token": access_token,
+            "refresh_token": refresh_token,  # Return the same refresh token
             "token_type": "bearer",
             "expires_in": settings.JWT_EXPIRATION_HOURS * 3600
         }
