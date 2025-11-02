@@ -58,7 +58,7 @@ class EmailService:
                 username=settings.SMTP_USERNAME,
                 password=settings.SMTP_PASSWORD,
                 use_tls=settings.SMTP_USE_TLS,
-                start_tls=settings.SMTP_USE_TLS
+                start_tls=settings.SMTP_START_TLS
             )
             
             print(f"✅ Email sent successfully to {to_email}")

@@ -1,7 +1,7 @@
 """
 Car Marketplace Philippines - Configuration Settings
 Path: server/app/config.py
-Fixed: Proper handling of empty environment variables for all field types
+FIXED: Added FRONTEND_URL and BACKEND_URL fields + proper handling of empty environment variables
 """
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field, field_validator, model_validator
@@ -20,6 +20,11 @@ class Settings(BaseSettings):
     ALLOWED_HOSTS: List[str] = ["localhost", "127.0.0.1"]
     CORS_ORIGINS: List[str] = ["http://localhost:3000"]
     ALLOWED_ORIGINS: str = "http://localhost:3000,http://localhost:5173"  # Legacy support
+    
+    # URLs - FIXED: Added missing URL configurations
+    FRONTEND_URL: str = "http://localhost:3000"  # Frontend application URL
+    BACKEND_URL: str = "http://localhost:8000"   # Backend API URL
+    API_BASE_URL: str = "http://localhost:8000/api/v1"  # API base URL (optional)
     
     # Database
     DATABASE_URL: str = "mysql+pymysql://root:password@localhost:3306/car_marketplace_ph"
@@ -72,33 +77,41 @@ class Settings(BaseSettings):
     MAX_UPLOAD_SIZE_MB: int = 10
     MAX_UPLOAD_SIZE: int = 10485760  # 10MB in bytes (legacy support)
     
-    # Email - FIXED: Proper handling of empty SMTP_PORT
+    # Email - FIXED: Proper empty string handling for all fields
     SMTP_HOST: str = "smtp.gmail.com"
-    SMTP_PORT: Optional[int] = Field(default=587)
+    SMTP_PORT: Optional[int] = 587
     SMTP_USERNAME: Optional[str] = None
     SMTP_PASSWORD: Optional[str] = None
     SMTP_FROM_EMAIL: str = "noreply@carmarketplace.ph"
-    SMTP_FROM_NAME: str = "CarMarket Philippines"
-    SMTP_USE_TLS: bool = True
+    SMTP_FROM_NAME: str = "Car Marketplace Philippines"
+    SMTP_START_TLS: bool = True
+    SMTP_USE_TLS: bool = False
+    EMAIL_VERIFICATION_EXPIRY_HOURS: int = 24
+    PASSWORD_RESET_EXPIRY_HOURS: int = 1
     
-    # SMS
-    SMS_PROVIDER: str = "twilio"
+    # SMS (Semaphore/Twilio)
+    SMS_PROVIDER: str = "semaphore"
+    SEMAPHORE_API_KEY: Optional[str] = None
     TWILIO_ACCOUNT_SID: Optional[str] = None
     TWILIO_AUTH_TOKEN: Optional[str] = None
     TWILIO_PHONE_NUMBER: Optional[str] = None
-    SEMAPHORE_API_KEY: Optional[str] = None
-    MOVIDER_API_KEY: Optional[str] = None
+    SMS_OTP_EXPIRY_MINUTES: int = 5
     
-    # File Upload
-    MAX_CAR_IMAGES: int = 20
-    ALLOWED_IMAGE_TYPES: List[str] = ["image/jpeg", "image/png", "image/webp"]
+    # File Upload Settings
+    ALLOWED_IMAGE_TYPES: List[str] = ["image/jpeg", "image/jpg", "image/png", "image/webp"]
     MAX_IMAGE_SIZE_MB: int = 5
+    MAX_CAR_IMAGES: int = 20
+    THUMBNAIL_SIZE: tuple = (300, 225)
+    MEDIUM_SIZE: tuple = (800, 600)
+    LARGE_SIZE: tuple = (1920, 1440)
     
-    # Location - Philippines bounds
-    DEFAULT_SEARCH_RADIUS_KM: int = 25
+    # Search & Location Settings
+    DEFAULT_SEARCH_RADIUS_KM: int = 50
     MAX_SEARCH_RADIUS_KM: int = 500
     COORDINATES_PRECISION: int = 6
-    PHILIPPINES_BOUNDS_NORTH: float = 21.5
+    
+    # Philippines geographic bounds
+    PHILIPPINES_BOUNDS_NORTH: float = 21.0
     PHILIPPINES_BOUNDS_SOUTH: float = 4.5
     PHILIPPINES_BOUNDS_EAST: float = 127.0
     PHILIPPINES_BOUNDS_WEST: float = 116.0
@@ -111,25 +124,19 @@ class Settings(BaseSettings):
     RATE_LIMIT_PER_MINUTE: int = 60
     RATE_LIMIT_PER_HOUR: int = 1000
     
-    # Session
-    SESSION_COOKIE_NAME: str = "car_marketplace_session"
-    SESSION_MAX_AGE: int = 86400
+    # Session Management
+    SESSION_MAX_AGE: int = 86400  # 24 hours in seconds
+    
+    # Subscription Limits
+    FREE_MAX_LISTINGS: int = 3
+    BASIC_MAX_LISTINGS: int = 10
+    PREMIUM_MAX_LISTINGS: int = 50
+    PRO_MAX_LISTINGS: int = 100
+    ENTERPRISE_MAX_LISTINGS: int = -1  # Unlimited
     
     # Logging
     LOG_LEVEL: str = "INFO"
     LOG_FILE: str = "logs/app.log"
-    
-    # Subscription Plans
-    FREE_MAX_LISTINGS: int = 3
-    BASIC_MAX_LISTINGS: int = 10
-    PREMIUM_MAX_LISTINGS: int = 25
-    PRO_MAX_LISTINGS: int = 100
-    ENTERPRISE_MAX_LISTINGS: int = 999999
-    
-    # Image Processing
-    THUMBNAIL_SIZE: tuple = (150, 150)
-    MEDIUM_SIZE: tuple = (800, 600)
-    LARGE_SIZE: tuple = (1920, 1440)
     
     # Pydantic Settings Configuration
     model_config = SettingsConfigDict(
@@ -167,6 +174,9 @@ class Settings(BaseSettings):
         'PREMIUM_MAX_LISTINGS',
         'PRO_MAX_LISTINGS',
         'ENTERPRISE_MAX_LISTINGS',
+        'EMAIL_VERIFICATION_EXPIRY_HOURS',
+        'PASSWORD_RESET_EXPIRY_HOURS',
+        'SMS_OTP_EXPIRY_MINUTES',
         mode='before'
     )
     @classmethod
@@ -200,7 +210,7 @@ class Settings(BaseSettings):
                 return None
         return v
     
-    @field_validator('DEBUG', mode='before')
+    @field_validator('DEBUG', 'SMTP_USE_TLS', 'USE_LOCAL_STORAGE', mode='before')
     @classmethod
     def validate_bool_fields(cls, v: Any) -> bool:
         """Convert various string representations to boolean"""
