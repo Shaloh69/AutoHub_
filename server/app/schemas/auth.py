@@ -1,8 +1,9 @@
 """
 ===========================================
-FILE: app/schemas/auth.py - TRULY COMPLETE VERSION
+FILE: app/schemas/auth.py - FIXED VERSION
 Path: car_marketplace_ph/app/schemas/auth.py
-COMPLETE with ALL fields from original + TokenRefresh fix
+REMOVED: PhoneVerification and PhoneVerificationRequest schemas
+PRESERVED: All other authentication schemas
 ===========================================
 """
 from pydantic import BaseModel, EmailStr, Field, field_validator, field_serializer, ConfigDict
@@ -148,15 +149,8 @@ class EmailVerification(BaseModel):
     token: str
 
 
-class PhoneVerification(BaseModel):
-    """Phone verification with OTP"""
-    phone: str = Field(..., max_length=20)
-    otp: str = Field(..., min_length=4, max_length=6)
-
-
-class PhoneVerificationRequest(BaseModel):
-    """Request phone verification OTP"""
-    phone: str = Field(..., max_length=20)
+# NOTE: PhoneVerification and PhoneVerificationRequest schemas removed
+# Phone OTP verification feature has been removed from the system
 
 
 class UserProfile(BaseModel):
@@ -186,7 +180,7 @@ class UserProfile(BaseModel):
     
     # Verification status
     email_verified: bool = False
-    phone_verified: bool = False
+    phone_verified: bool = False  # Kept for backward compatibility but OTP feature removed
     identity_verified: bool = False
     business_verified: bool = False
     verification_level: Optional[str] = None

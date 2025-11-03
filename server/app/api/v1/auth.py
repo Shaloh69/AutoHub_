@@ -1,8 +1,9 @@
 """
 ===========================================
-FILE: app/api/v1/auth.py
+FILE: app/api/v1/auth.py - FIXED VERSION
 Path: car_marketplace_ph/app/api/v1/auth.py
-100% COMPLETE - EVERY ENDPOINT IMPLEMENTED
+REMOVED: Phone OTP verification endpoints
+PRESERVED: All other authentication endpoints
 ===========================================
 """
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -11,7 +12,7 @@ from app.database import get_db
 from app.schemas.auth import (
     UserRegister, UserLogin, TokenResponse, TokenRefresh,
     PasswordReset, PasswordResetConfirm, PasswordChange,
-    EmailVerification, PhoneVerification, PhoneVerificationRequest,
+    EmailVerification,
     UserProfile
 )
 from app.schemas.common import MessageResponse
@@ -133,53 +134,6 @@ async def verify_email(verification: EmailVerification, db: Session = Depends(ge
         )
     
     return MessageResponse(message="Email verified successfully", success=True)
-
-
-@router.post("/request-phone-verification", response_model=MessageResponse)
-async def request_phone_verification(
-    phone_data: PhoneVerificationRequest,
-    current_user: User = Depends(get_current_user)
-):
-    """
-    Request phone number verification
-    
-    - Generates 6-digit OTP
-    - Stores in cache for 10 minutes
-    - Sends OTP via SMS
-    - Returns success message
-    """
-    AuthService.generate_phone_otp(int(current_user.id), phone_data.phone)  # type: ignore
-    return MessageResponse(
-        message=f"OTP sent to {phone_data.phone}. Valid for 10 minutes.",
-        success=True
-    )
-
-
-@router.post("/verify-phone", response_model=MessageResponse)
-async def verify_phone(
-    verification: PhoneVerification,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
-    """
-    Verify phone number with OTP
-    
-    - Validates OTP code
-    - Marks phone as verified
-    - Updates user phone number
-    - Deletes OTP from cache
-    """
-    success = AuthService.verify_phone_otp(
-        db, int(current_user.id), verification.phone, verification.otp  # type: ignore
-    )
-    
-    if not success:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid OTP code"
-        )
-    
-    return MessageResponse(message="Phone number verified successfully", success=True)
 
 
 @router.post("/forgot-password", response_model=MessageResponse)
@@ -308,6 +262,7 @@ async def get_verification_status(current_user: User = Depends(get_current_user)
     - Returns all verification statuses
     - Email, phone, identity, business
     - Used for onboarding flow
+    - NOTE: phone_verified kept for backward compatibility but OTP feature removed
     """
     return {
         "user_id": current_user.id,  # type: ignore
@@ -319,7 +274,6 @@ async def get_verification_status(current_user: User = Depends(get_current_user)
         "can_list_cars": current_user.can_list_cars,  # type: ignore
         "is_fully_verified": (
             current_user.email_verified and   # type: ignore
-            current_user.phone_verified and   # type: ignore
             current_user.identity_verified  # type: ignore
         )
     }

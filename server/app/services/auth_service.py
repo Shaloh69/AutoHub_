@@ -1,17 +1,9 @@
 """
 ===========================================
-FILE: app/services/auth_service.py - IMPROVED VERSION
+FILE: app/services/auth_service.py - FIXED VERSION
 Path: server/app/services/auth_service.py
-IMPROVEMENTS:
-- ✅ Replaced print statements with actual email sending
-- ✅ Integrated EmailService for verification and password reset
-- ✅ Added async email support
-- ✅ Added comprehensive error handling
-- ✅ Added logging instead of print statements
-- ✅ Improved security measures
-- ✅ Added SMS sending preparation
-- ✅ Better token management
-- ✅ All original functionality preserved
+REMOVED: Phone OTP verification feature
+PRESERVED: All other authentication functionality
 ===========================================
 """
 from sqlalchemy.orm import Session
@@ -36,7 +28,7 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 class AuthService:
-    """Authentication service with email integration - IMPROVED VERSION"""
+    """Authentication service with email integration - Phone OTP Removed"""
     
     @staticmethod
     def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -75,53 +67,28 @@ class AuthService:
         return encoded_jwt
     
     @staticmethod
-    def decode_token(token: str) -> Optional[Dict]:
-        """Decode JWT token with proper error handling"""
+    def decode_token(token: str) -> Optional[Dict[str, Any]]:
+        """Decode JWT token"""
         try:
-            # Strip whitespace from token
-            token = token.strip()
             payload = jwt.decode(token, settings.JWT_SECRET, algorithms=[settings.JWT_ALGORITHM])
             return payload
         except JWTError as e:
-            logger.warning(f"Token decode error: {e}")
-            return None
-        except Exception as e:
-            logger.error(f"Unexpected token decode error: {e}")
+            logger.error(f"Token decode error: {e}")
             return None
     
     @staticmethod
     def generate_tokens(user: User) -> Dict[str, Any]:
-        """Generate access and refresh tokens with proper role handling"""
-        # Use getattr for all user attributes
-        user_id = int(getattr(user, 'id', 0))
+        """Generate access and refresh tokens for user"""
+        user_id = str(getattr(user, 'id', ''))
         user_email = str(getattr(user, 'email', ''))
-        user_role_obj = getattr(user, 'role', None)
+        user_role = str(getattr(user, 'role', 'buyer'))
         
-        # Handle both string and enum cases for role
-        if user_role_obj is None:
-            user_role = 'buyer'
-        elif isinstance(user_role_obj, str):
-            user_role = user_role_obj
-        elif hasattr(user_role_obj, 'value'):
-            user_role = user_role_obj.value
-        else:
-            user_role = str(user_role_obj).lower()
+        # Create tokens
+        access_token = AuthService.create_access_token({"sub": user_id})
+        refresh_token = AuthService.create_refresh_token({"sub": user_id})
         
-        # Generate tokens
-        access_token = AuthService.create_access_token({"sub": str(user_id)})
-        refresh_token = AuthService.create_refresh_token({"sub": str(user_id)})
-        
-        # Strip and validate token before storage
-        refresh_token = refresh_token.strip()
-        
-        # Store refresh token in cache with proper TTL
-        ttl_seconds = settings.JWT_REFRESH_EXPIRATION_DAYS * 86400
-        success = cache.set(f"refresh_token:{user_id}", refresh_token, ttl=ttl_seconds)
-        
-        if not success:
-            logger.error(f"Failed to store refresh token in cache for user {user_id}")
-        else:
-            logger.info(f"Stored refresh token for user {user_id}")
+        # Store refresh token in cache (30 days)
+        cache.set(f"refresh_token:{user_id}", refresh_token, ttl=2592000)
         
         return {
             "access_token": access_token,
@@ -500,53 +467,4 @@ class AuthService:
         AuthService.revoke_refresh_token(user_id)
         
         logger.info(f"Password changed successfully for {user.email}")
-        return True
-    
-    @staticmethod
-    def generate_phone_otp(user_id: int, phone: str) -> str:
-        """
-        Generate phone verification OTP
-        
-        IMPROVED: Prepared for SMS integration
-        """
-        import random
-        otp = ''.join([str(random.randint(0, 9)) for _ in range(6)])
-        
-        # Store OTP in cache (10 minutes)
-        cache.set(f"phone_otp:{user_id}:{phone}", otp, ttl=600)
-        
-        # TODO: Integrate SMS service (Semaphore/Twilio)
-        # For now, log the OTP
-        logger.info(f"OTP generated for {phone}: {otp} (SMS integration pending)")
-        
-        # In production, you would send SMS here:
-        # if settings.SMS_PROVIDER == "semaphore":
-        #     send_semaphore_sms(phone, f"Your verification code is: {otp}")
-        # elif settings.SMS_PROVIDER == "twilio":
-        #     send_twilio_sms(phone, f"Your verification code is: {otp}")
-        
-        return otp
-    
-    @staticmethod
-    def verify_phone_otp(db: Session, user_id: int, phone: str, otp: str) -> bool:
-        """Verify phone OTP"""
-        cached_otp = cache.get(f"phone_otp:{user_id}:{phone}")
-        if not cached_otp or cached_otp != otp:
-            logger.warning(f"Invalid OTP for phone {phone}")
-            return False
-        
-        user = db.query(User).filter(User.id == user_id).first()
-        if not user:
-            logger.error(f"User {user_id} not found")
-            return False
-        
-        # Update phone and mark as verified
-        setattr(user, 'phone', phone)
-        setattr(user, 'phone_verified', True)
-        db.commit()
-        
-        # Delete OTP from cache
-        cache.delete(f"phone_otp:{user_id}:{phone}")
-        
-        logger.info(f"Phone {phone} verified successfully for user {user_id}")
         return True

@@ -1,4 +1,4 @@
-"""Pydantic Schemas Package"""
+"""Pydantic Schemas Package - FIXED VERSION (Phone OTP Removed)"""
 from app.schemas.common import (
     ResponseBase,
     MessageResponse,
@@ -16,8 +16,8 @@ from app.schemas.auth import (
     PasswordResetConfirm,
     PasswordChange,
     EmailVerification,
-    PhoneVerification,
-    PhoneVerificationRequest,
+    # PhoneVerification - REMOVED
+    # PhoneVerificationRequest - REMOVED
     UserProfile,
     UserUpdate,
     IdentityVerificationRequest
@@ -66,10 +66,10 @@ __all__ = [
     # Common
     "ResponseBase", "MessageResponse", "IDResponse", "ErrorResponse",
     "PaginatedResponse", "PaginationParams",
-    # Auth
+    # Auth (Phone verification schemas removed)
     "UserRegister", "UserLogin", "TokenResponse", "TokenRefresh",
     "PasswordReset", "PasswordResetConfirm", "PasswordChange",
-    "EmailVerification", "PhoneVerification", "PhoneVerificationRequest",
+    "EmailVerification",
     "UserProfile", "UserUpdate", "IdentityVerificationRequest",
     # Car
     "CarCreate", "CarUpdate", "CarResponse", "CarDetailResponse",
