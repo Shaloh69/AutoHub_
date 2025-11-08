@@ -1,4 +1,4 @@
-"""Pydantic Schemas Package - FIXED VERSION (Phone OTP Removed)"""
+"""Pydantic Schemas Package - COMPLETE WITH ROLE UPGRADE"""
 from app.schemas.common import (
     ResponseBase,
     MessageResponse,
@@ -16,11 +16,11 @@ from app.schemas.auth import (
     PasswordResetConfirm,
     PasswordChange,
     EmailVerification,
-    # PhoneVerification - REMOVED
-    # PhoneVerificationRequest - REMOVED
     UserProfile,
     UserUpdate,
-    IdentityVerificationRequest
+    IdentityVerificationRequest,
+    RoleUpgradeRequest,  # NEW
+    RoleUpgradeResponse  # NEW
 )
 from app.schemas.car import (
     CarCreate,
@@ -66,11 +66,12 @@ __all__ = [
     # Common
     "ResponseBase", "MessageResponse", "IDResponse", "ErrorResponse",
     "PaginatedResponse", "PaginationParams",
-    # Auth (Phone verification schemas removed)
+    # Auth (NEW: Role upgrade schemas added)
     "UserRegister", "UserLogin", "TokenResponse", "TokenRefresh",
     "PasswordReset", "PasswordResetConfirm", "PasswordChange",
     "EmailVerification",
     "UserProfile", "UserUpdate", "IdentityVerificationRequest",
+    "RoleUpgradeRequest", "RoleUpgradeResponse",  # NEW
     # Car
     "CarCreate", "CarUpdate", "CarResponse", "CarDetailResponse",
     "CarImageUpload", "CarBoost", "BrandResponse", "ModelResponse",
