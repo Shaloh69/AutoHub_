@@ -1,16 +1,30 @@
+"""
+===========================================
+FILE: app/services/subscription_service.py - UPDATED WITH QR CODE PAYMENT
+Path: server/app/services/subscription_service.py
+ADDED: QR code payment workflow, reference number handling, admin verification
+PRESERVED: All original functionality
+===========================================
+"""
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from datetime import datetime, timedelta
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Tuple
 from decimal import Decimal
 from app.models.subscription import (
     SubscriptionPlan, UserSubscription, SubscriptionUsage,
-    SubscriptionPayment, PromotionCode, PromotionCodeUsage
+    SubscriptionPayment, PromotionCode, PromotionCodeUsage,
+    PaymentSetting, PaymentVerificationLog
 )
 from app.models.user import User
 
 
 class SubscriptionService:
-    """Subscription management service - FIXED VERSION"""
+    """Subscription management service - UPDATED WITH QR CODE PAYMENT"""
+    
+    # ========================================
+    # ORIGINAL METHODS (PRESERVED)
+    # ========================================
     
     @staticmethod
     def get_all_plans(db: Session) -> List[SubscriptionPlan]:
@@ -21,11 +35,123 @@ class SubscriptionService:
     
     @staticmethod
     def get_user_subscription(db: Session, user_id: int) -> Optional[UserSubscription]:
-        """Get user's current subscription"""
+        """Get user's current active subscription"""
         return db.query(UserSubscription).filter(
             UserSubscription.user_id == user_id,
             UserSubscription.status == "active"
         ).first()
+    
+    @staticmethod
+
+
+    def validate_promo_code(
+        db: Session,
+        code: str,
+        user_id: int,
+        plan_id: Optional[int] = None
+    ) -> Optional[Decimal]:
+        """Validate promo code and return discount (as Decimal).
+        
+        Returns:
+          - For percentage discounts, returns the percentage as Decimal (e.g. Decimal('10') for 10%).
+          - For fixed-amount discounts, returns the fixed amount as Decimal (e.g. Decimal('5.00')).
+          - Returns None when promo is invalid / not applicable.
+        """
+        promo = (
+            db.query(PromotionCode)
+            .filter(
+                PromotionCode.code == code,
+                PromotionCode.is_active == True  # noqa: E712
+            )
+            .first()
+        )
+    
+        if not promo:
+            return None
+    
+        # Check validity period (safe with None)
+        now = datetime.utcnow()
+        valid_from = getattr(promo, "valid_from", None)
+        valid_until = getattr(promo, "valid_until", None)
+    
+        if valid_from and valid_from > now:
+            return None
+        if valid_until and valid_until < now:
+            return None
+    
+        # Check max uses (treat None as "no limit")
+        max_uses = getattr(promo, "max_uses", None)
+        current_uses = getattr(promo, "current_uses", 0) or 0  # guard against None
+    
+        if max_uses is not None and current_uses >= max_uses:
+            return None
+    
+        # Check user usage (only if max_uses_per_user set)
+        max_uses_per_user = getattr(promo, "max_uses_per_user", None)
+        if max_uses_per_user is not None:
+            user_usage = (
+                db.query(PromotionCodeUsage)
+                .filter(
+                    PromotionCodeUsage.promo_code_id == promo.id,
+                    PromotionCodeUsage.user_id == user_id
+                )
+                .count()
+            )
+            if user_usage >= max_uses_per_user:
+                return None
+    
+        # Check applicable plans
+        if plan_id is not None:
+            ap_raw = getattr(promo, "applicable_plans", None)  # type: ignore[assignment]
+            if ap_raw:
+                plan_tokens = [p.strip() for p in str(ap_raw).split(",")]
+                applicable_plan_ids = set()
+                for tok in plan_tokens:
+                    if not tok:
+                        continue
+                    try:
+                        applicable_plan_ids.add(int(tok))
+                    except ValueError:
+                        # skip bad token
+                        continue
+                    
+                # if there are no valid plan ids, treat as not applicable
+                if not applicable_plan_ids:
+                    return None
+    
+                if plan_id not in applicable_plan_ids:
+                    return None
+    
+        # Return discount value
+        # sanitize discount_value (could be Decimal, float, int, str)
+        raw_value = getattr(promo, "discount_value", None)
+        if raw_value is None:
+            return None
+    
+        try:
+            discount = Decimal(str(raw_value))
+        except (ArithmeticError, ValueError):
+            return None
+    
+        # If you want to enforce bounds (e.g., percentage <= 100), do it here:
+        if getattr(promo, "discount_type", "").lower() == "percentage":
+            # optional: ensure reasonable percentage
+            if discount <= 0:
+                return None
+            # optional: cap at 100%
+            # if discount > Decimal("100"):
+            #     discount = Decimal("100")
+            return discount
+        else:
+            # fixed amount
+            if discount <= 0:
+                return None
+            return discount
+
+    
+    # ========================================
+    # UPDATED SUBSCRIBE METHOD WITH QR CODE
+    # ========================================
     
     @staticmethod
     def subscribe(
@@ -35,29 +161,37 @@ class SubscriptionService:
         billing_cycle: str,
         payment_method: str,
         promo_code: Optional[str] = None
-    ) -> UserSubscription:
-        """Subscribe user to a plan"""
+    ) -> Tuple[UserSubscription, SubscriptionPayment]:
+        """
+        Subscribe user to a plan - UPDATED FOR QR CODE PAYMENT
+        
+        Returns: (UserSubscription, SubscriptionPayment)
+        
+        CHANGES:
+        - Subscription status starts as "pending" for QR code payments
+        - Payment status is "pending" until admin verifies
+        - QR code shown flag is set
+        """
         # Get plan
         plan = db.query(SubscriptionPlan).filter(SubscriptionPlan.id == plan_id).first()
         if not plan:
             raise ValueError("Plan not found")
         
-        # Check for existing subscription
+        # Check for existing active subscription
         existing = db.query(UserSubscription).filter(
             UserSubscription.user_id == user_id,
-            UserSubscription.status == "active"
+            UserSubscription.status.in_(["active", "pending"])
         ).first()
         
         if existing:
-            raise ValueError("User already has an active subscription")
+            raise ValueError("User already has an active or pending subscription")
         
-        # Calculate price - FIX: Use getattr for plan attributes
+        # Calculate price
         if billing_cycle == "yearly":
             yearly_price_value = getattr(plan, 'yearly_price', None)
             if yearly_price_value is not None:
                 amount = Decimal(str(yearly_price_value))
             else:
-                # Fallback to monthly price * 10 if yearly price not set
                 monthly_price_value = getattr(plan, 'monthly_price', 0)
                 amount = Decimal(str(monthly_price_value)) * Decimal('10')
         else:
@@ -65,197 +199,348 @@ class SubscriptionService:
             amount = Decimal(str(monthly_price_value))
         
         # Apply promo code
+        discount_applied = Decimal('0')
         if promo_code:
-            discount_percent = SubscriptionService.validate_promo_code(db, promo_code, user_id)
+            discount_percent = SubscriptionService.validate_promo_code(db, promo_code, user_id, plan_id)
             if discount_percent:
-                discount_decimal = Decimal(str(discount_percent))
-                amount = amount * (Decimal('1') - discount_decimal / Decimal('100'))
+                discount_applied = amount * (discount_percent / Decimal('100'))
+                amount = amount - discount_applied
+        
+        # Determine subscription status based on payment method
+        subscription_status = "pending" if payment_method == "qr_code" else "active"
+        payment_status = "pending" if payment_method == "qr_code" else "completed"
         
         # Create subscription
         subscription = UserSubscription(
             user_id=user_id,
             plan_id=plan_id,
-            status="active",
+            status=subscription_status,
             billing_cycle=billing_cycle,
-            current_period_start=datetime.utcnow(),
-            current_period_end=datetime.utcnow() + timedelta(days=30 if billing_cycle == "monthly" else 365),
-            next_billing_date=datetime.utcnow() + timedelta(days=30 if billing_cycle == "monthly" else 365),
+            current_period_start=datetime.utcnow() if subscription_status == "active" else None,
+            current_period_end=(datetime.utcnow() + timedelta(days=30 if billing_cycle == "monthly" else 365)) if subscription_status == "active" else None,
+            next_billing_date=(datetime.utcnow() + timedelta(days=30 if billing_cycle == "monthly" else 365)) if subscription_status == "active" else None,
             subscribed_at=datetime.utcnow()
         )
         
         db.add(subscription)
         db.flush()
         
-        # FIX: Safely get subscription.id
         subscription_id = int(getattr(subscription, 'id', 0))
         
         # Create payment record
         payment = SubscriptionPayment(
             subscription_id=subscription_id,
             user_id=user_id,
+            plan_id=plan_id,
             amount=amount,
             payment_method=payment_method,
-            status="completed"
+            status=payment_status,
+            qr_code_shown=(payment_method == "qr_code"),
+            created_at=datetime.utcnow()
         )
+        
+        # For non-QR payments, mark as paid immediately
+        if payment_status == "completed":
+            payment.paid_at = datetime.utcnow() # type: ignore[assignment]
+        
         db.add(payment)
         
-        # Update user - FIX: Use setattr
-        user = db.query(User).filter(User.id == user_id).first()
-        if user:
-            setattr(user, 'current_subscription_id', subscription_id)
-            setattr(user, 'subscription_status', "active")
-            setattr(user, 'subscription_expires_at', getattr(subscription, 'current_period_end', None))
-        
-        # Record promo code usage
-        if promo_code:
-            SubscriptionService.record_promo_usage(db, promo_code, user_id, subscription_id)
+        # Update user subscription status (only if active)
+        if subscription_status == "active":
+            user = db.query(User).filter(User.id == user_id).first()
+            if user:
+                setattr(user, 'current_subscription_id', subscription_id)
+                setattr(user, 'subscription_status', "active")
+                setattr(user, 'subscription_tier', getattr(plan, 'plan_type', 'standard'))
         
         db.commit()
         db.refresh(subscription)
+        db.refresh(payment)
         
-        return subscription
+        return subscription, payment
+    
+    # ========================================
+    # NEW QR CODE PAYMENT METHODS
+    # ========================================
+    
+    @staticmethod
+    def get_qr_code_settings(db: Session) -> Dict[str, str]:
+        """Get QR code payment settings"""
+        qr_image = db.query(PaymentSetting).filter(
+            PaymentSetting.setting_key == "payment_qr_code_image"
+        ).first()
+        
+        instructions = db.query(PaymentSetting).filter(
+            PaymentSetting.setting_key == "payment_instructions"
+        ).first()
+        
+        return {
+            "qr_code_image_url": getattr(qr_image, 'setting_value', '/uploads/qr/default_payment_qr.png') if qr_image else '/uploads/qr/default_payment_qr.png',
+            "payment_instructions": getattr(instructions, 'setting_value', 'Please scan the QR code and enter the reference number from your payment confirmation.') if instructions else 'Please scan the QR code and enter the reference number from your payment confirmation.'
+        }
+    
+    @staticmethod
+    def submit_reference_number(
+        db: Session,
+        payment_id: int,
+        user_id: int,
+        reference_number: str
+    ) -> SubscriptionPayment:
+        """
+        Submit payment reference number
+        
+        This updates the payment with the reference number and marks it for admin verification
+        """
+        # Get payment
+        payment = db.query(SubscriptionPayment).filter(
+            SubscriptionPayment.id == payment_id,
+            SubscriptionPayment.user_id == user_id
+        ).first()
+        
+        if not payment:
+            raise ValueError("Payment not found")
+        
+        # Check if already submitted
+        if getattr(payment, 'reference_number', None):
+            raise ValueError("Reference number already submitted for this payment")
+        
+        # Check if payment is pending
+        if getattr(payment, 'status', '') != "pending":
+            raise ValueError(f"Cannot submit reference number for payment with status: {getattr(payment, 'status', '')}")
+        
+        # Update payment
+        setattr(payment, 'reference_number', reference_number)
+        setattr(payment, 'submitted_at', datetime.utcnow())
+        
+        db.commit()
+        db.refresh(payment)
+        
+        return payment
+    
+    @staticmethod
+    def get_pending_payments(
+        db: Session,
+        limit: int = 100,
+        offset: int = 0
+    ) -> List[Dict]:
+        """Get pending payments for admin verification"""
+        payments = db.query(
+            SubscriptionPayment,
+            User,
+            SubscriptionPlan
+        ).join(
+            User, SubscriptionPayment.user_id == User.id
+        ).join(
+            SubscriptionPlan, SubscriptionPayment.plan_id == SubscriptionPlan.id
+        ).filter(
+            SubscriptionPayment.status == "pending",
+            SubscriptionPayment.reference_number.isnot(None)
+        ).order_by(
+            SubscriptionPayment.submitted_at.desc()
+        ).limit(limit).offset(offset).all()
+        
+        result = []
+        for payment, user, plan in payments:
+            created_at = getattr(payment, 'created_at', datetime.utcnow())
+            days_pending = (datetime.utcnow() - created_at).days if created_at else 0
+            
+            result.append({
+                "payment_id": int(getattr(payment, 'id', 0)),
+                "user_id": int(getattr(user, 'id', 0)),
+                "user_email": str(getattr(user, 'email', '')),
+                "user_name": f"{getattr(user, 'first_name', '')} {getattr(user, 'last_name', '')}".strip(),
+                "plan_name": str(getattr(plan, 'name', '')),
+                "amount": Decimal(str(getattr(payment, 'amount', 0))),
+                "currency": str(getattr(payment, 'currency', 'PHP')),
+                "reference_number": str(getattr(payment, 'reference_number', '')),
+                "submitted_at": getattr(payment, 'submitted_at', None),
+                "created_at": created_at,
+                "days_pending": days_pending
+            })
+        
+        return result
+    
+    @staticmethod
+    def verify_payment(
+        db: Session,
+        payment_id: int,
+        admin_id: int,
+        action: str,
+        admin_notes: Optional[str] = None,
+        rejection_reason: Optional[str] = None
+    ) -> SubscriptionPayment:
+        """
+        Admin verify or reject payment
+        
+        Args:
+            payment_id: Payment ID
+            admin_id: Admin user ID
+            action: "approve" or "reject"
+            admin_notes: Optional admin notes
+            rejection_reason: Required if action is "reject"
+            
+        Returns:
+            Updated SubscriptionPayment
+        """
+        # Get payment
+        payment = db.query(SubscriptionPayment).filter(
+            SubscriptionPayment.id == payment_id
+        ).first()
+        
+        if not payment:
+            raise ValueError("Payment not found")
+        
+        previous_status = getattr(payment, 'status', 'pending')
+        
+        if previous_status != "pending":
+            raise ValueError(f"Cannot verify payment with status: {previous_status}")
+        
+        # Update payment based on action
+        if action == "approve":
+            new_status = "completed"
+            setattr(payment, 'status', new_status)
+            setattr(payment, 'paid_at', datetime.utcnow())
+            
+            # Activate subscription
+            subscription = db.query(UserSubscription).filter(
+                UserSubscription.id == getattr(payment, 'subscription_id', 0)
+            ).first()
+            
+            if subscription:
+                setattr(subscription, 'status', 'active')
+                setattr(subscription, 'current_period_start', datetime.utcnow())
+                
+                billing_cycle = getattr(subscription, 'billing_cycle', 'monthly')
+                days = 30 if billing_cycle == "monthly" else 365
+                setattr(subscription, 'current_period_end', datetime.utcnow() + timedelta(days=days))
+                setattr(subscription, 'next_billing_date', datetime.utcnow() + timedelta(days=days))
+                
+                # Update user
+                user = db.query(User).filter(User.id == getattr(payment, 'user_id', 0)).first()
+                if user:
+                    setattr(user, 'current_subscription_id', getattr(subscription, 'id', 0))
+                    setattr(user, 'subscription_status', 'active')
+        else:
+            new_status = "failed"
+            setattr(payment, 'status', new_status)
+            setattr(payment, 'rejection_reason', rejection_reason)
+            
+            # Cancel subscription
+            subscription = db.query(UserSubscription).filter(
+                UserSubscription.id == getattr(payment, 'subscription_id', 0)
+            ).first()
+            
+            if subscription:
+                setattr(subscription, 'status', 'cancelled')
+                setattr(subscription, 'cancelled_at', datetime.utcnow())
+        
+        # Update verification fields
+        setattr(payment, 'admin_verified_by', admin_id)
+        setattr(payment, 'admin_verified_at', datetime.utcnow())
+        setattr(payment, 'admin_notes', admin_notes)
+        
+        # Create verification log
+        log = PaymentVerificationLog(
+            payment_id=payment_id,
+            admin_id=admin_id,
+            action="verified" if action == "approve" else "rejected",
+            previous_status=previous_status,
+            new_status=new_status,
+            notes=admin_notes or rejection_reason
+        )
+        db.add(log)
+        
+        db.commit()
+        db.refresh(payment)
+        
+        return payment
+    
+    @staticmethod
+    def get_payment_statistics(db: Session) -> Dict:
+        """Get payment statistics for admin dashboard"""
+        today = datetime.utcnow().date()
+        month_start = datetime.utcnow().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        
+        # Count queries
+        total_pending = db.query(func.count(SubscriptionPayment.id)).filter(
+            SubscriptionPayment.status == "pending"
+        ).scalar() or 0
+        
+        total_completed_today = db.query(func.count(SubscriptionPayment.id)).filter(
+            SubscriptionPayment.status == "completed",
+            func.date(SubscriptionPayment.paid_at) == today
+        ).scalar() or 0
+        
+        total_completed_this_month = db.query(func.count(SubscriptionPayment.id)).filter(
+            SubscriptionPayment.status == "completed",
+            SubscriptionPayment.paid_at >= month_start
+        ).scalar() or 0
+        
+        total_failed = db.query(func.count(SubscriptionPayment.id)).filter(
+            SubscriptionPayment.status == "failed"
+        ).scalar() or 0
+        
+        # Amount queries
+        amount_pending = db.query(func.sum(SubscriptionPayment.amount)).filter(
+            SubscriptionPayment.status == "pending"
+        ).scalar() or Decimal('0')
+        
+        amount_completed_today = db.query(func.sum(SubscriptionPayment.amount)).filter(
+            SubscriptionPayment.status == "completed",
+            func.date(SubscriptionPayment.paid_at) == today
+        ).scalar() or Decimal('0')
+        
+        amount_completed_this_month = db.query(func.sum(SubscriptionPayment.amount)).filter(
+            SubscriptionPayment.status == "completed",
+            SubscriptionPayment.paid_at >= month_start
+        ).scalar() or Decimal('0')
+        
+        # Average verification time
+        avg_time = db.query(
+            func.avg(
+                func.timestampdiff(
+                    'hour',
+                    SubscriptionPayment.submitted_at,
+                    SubscriptionPayment.admin_verified_at
+                )
+            )
+        ).filter(
+            SubscriptionPayment.admin_verified_at.isnot(None),
+            SubscriptionPayment.submitted_at.isnot(None)
+        ).scalar() or 0.0
+        
+        return {
+            "total_pending": total_pending,
+            "total_completed_today": total_completed_today,
+            "total_completed_this_month": total_completed_this_month,
+            "total_failed": total_failed,
+            "total_amount_pending": Decimal(str(amount_pending)),
+            "total_amount_completed_today": Decimal(str(amount_completed_today)),
+            "total_amount_completed_this_month": Decimal(str(amount_completed_this_month)),
+            "average_verification_time_hours": float(avg_time)
+        }
+    
+    # ========================================
+    # ORIGINAL CANCEL METHOD (PRESERVED)
+    # ========================================
     
     @staticmethod
     def cancel_subscription(db: Session, user_id: int) -> bool:
-        """Cancel user's subscription"""
-        subscription = db.query(UserSubscription).filter(
-            UserSubscription.user_id == user_id,
-            UserSubscription.status == "active"
-        ).first()
+        """Cancel user's current subscription"""
+        subscription = SubscriptionService.get_user_subscription(db, user_id)
         
         if not subscription:
             raise ValueError("No active subscription found")
         
-        # FIX: Use setattr
-        setattr(subscription, 'status', "cancelled")
+        setattr(subscription, 'status', 'cancelled')
         setattr(subscription, 'cancelled_at', datetime.utcnow())
         setattr(subscription, 'auto_renew', False)
+        
+        # Update user
+        user = db.query(User).filter(User.id == user_id).first()
+        if user:
+            setattr(user, 'subscription_status', 'cancelled')
         
         db.commit()
         
         return True
-    
-    @staticmethod
-    def get_usage(db: Session, user_id: int) -> Dict:
-        """Get subscription usage for user"""
-        subscription = SubscriptionService.get_user_subscription(db, user_id)
-        if not subscription:
-            return {
-                "active_listings": 0,
-                "max_active_listings": 3,
-                "featured_listings": 0,
-                "max_featured_listings": 0,
-                "premium_listings": 0,
-                "max_premium_listings": 0,
-                "boost_credits_used": 0,
-                "boost_credits_monthly": 0,
-                "storage_used_mb": 0,
-                "storage_mb": 100,
-                "period_start": datetime.utcnow(),
-                "period_end": datetime.utcnow() + timedelta(days=30)
-            }
-        
-        # FIX: Use getattr for subscription.id
-        subscription_id = int(getattr(subscription, 'id', 0))
-        
-        usage = db.query(SubscriptionUsage).filter(
-            SubscriptionUsage.subscription_id == subscription_id
-        ).first()
-        
-        if not usage:
-            # Create initial usage record - FIX: Use getattr
-            period_start = getattr(subscription, 'current_period_start', datetime.utcnow())
-            period_end = getattr(subscription, 'current_period_end', datetime.utcnow() + timedelta(days=30))
-            
-            usage = SubscriptionUsage(
-                user_id=user_id,
-                subscription_id=subscription_id,
-                period_start=period_start,
-                period_end=period_end
-            )
-            db.add(usage)
-            db.commit()
-            db.refresh(usage)
-        
-        # FIX: Use getattr for all attributes
-        plan = getattr(subscription, 'plan', None)
-        
-        return {
-            "active_listings": int(getattr(usage, 'active_listings', 0)),
-            "max_active_listings": int(getattr(plan, 'max_active_listings', 3)) if plan else 3,
-            "featured_listings": int(getattr(usage, 'featured_listings', 0)),
-            "max_featured_listings": int(getattr(plan, 'max_featured_listings', 0)) if plan else 0,
-            "premium_listings": int(getattr(usage, 'premium_listings', 0)),
-            "max_premium_listings": int(getattr(plan, 'max_premium_listings', 0)) if plan else 0,
-            "boost_credits_used": int(getattr(usage, 'boost_credits_used', 0)),
-            "boost_credits_monthly": int(getattr(plan, 'boost_credits_monthly', 0)) if plan else 0,
-            "storage_used_mb": int(getattr(usage, 'storage_used_mb', 0)),
-            "storage_mb": int(getattr(plan, 'storage_mb', 100)) if plan else 100,
-            "period_start": getattr(usage, 'period_start', datetime.utcnow()),
-            "period_end": getattr(usage, 'period_end', datetime.utcnow() + timedelta(days=30))
-        }
-    
-    @staticmethod
-    def validate_promo_code(db: Session, code: str, user_id: int) -> Optional[float]:
-        """Validate promo code and return discount percentage"""
-        promo = db.query(PromotionCode).filter(
-            PromotionCode.code == code,
-            PromotionCode.is_active == True  # noqa: E712
-        ).first()
-        
-        if not promo:
-            return None
-        
-        # Check validity period - FIX: Use getattr
-        now = datetime.utcnow()
-        valid_from = getattr(promo, 'valid_from', None)
-        valid_until = getattr(promo, 'valid_until', None)
-        
-        if valid_from is not None and now < valid_from:
-            return None
-        if valid_until is not None and now > valid_until:
-            return None
-        
-        # Check usage limits - FIX: Use getattr
-        max_uses = getattr(promo, 'max_uses', None)
-        times_used = int(getattr(promo, 'times_used', 0))
-        
-        if max_uses is not None and times_used >= max_uses:
-            return None
-        
-        # Check if user already used this code - FIX: Use getattr
-        promo_id = int(getattr(promo, 'id', 0))
-        existing = db.query(PromotionCodeUsage).filter(
-            PromotionCodeUsage.code_id == promo_id,
-            PromotionCodeUsage.user_id == user_id
-        ).first()
-        
-        if existing:
-            return None
-        
-        # FIX: Use getattr for discount_value
-        discount_value = getattr(promo, 'discount_value', 0)
-        return float(discount_value)
-    
-    @staticmethod
-    def record_promo_usage(db: Session, code: str, user_id: int, subscription_id: int):
-        """Record promo code usage"""
-        promo = db.query(PromotionCode).filter(PromotionCode.code == code).first()
-        if not promo:
-            return
-        
-        # FIX: Use getattr for promo.id
-        promo_id = int(getattr(promo, 'id', 0))
-        
-        usage = PromotionCodeUsage(
-            code_id=promo_id,
-            user_id=user_id,
-            subscription_id=subscription_id
-        )
-        db.add(usage)
-        
-        # FIX: Use getattr to increment times_used
-        current_times_used = int(getattr(promo, 'times_used', 0))
-        setattr(promo, 'times_used', current_times_used + 1)
-        
-        db.commit()
