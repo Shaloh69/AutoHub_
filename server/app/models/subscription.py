@@ -1,8 +1,8 @@
 """
 ===========================================
-FILE: app/models/subscription.py - UPDATED WITH QR CODE PAYMENT
+FILE: app/models/subscription.py - FIXED VERSION
 Path: server/app/models/subscription.py
-ADDED: Reference number, admin verification, QR code support
+FIX: Added missing 'user' relationship in UserSubscription model
 PRESERVED: All original functionality
 ===========================================
 """
@@ -84,6 +84,8 @@ class UserSubscription(Base):
     updated_at = Column(TIMESTAMP, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
+    # ✅ FIXED: Added missing 'user' relationship with explicit foreign_keys
+    user = relationship("User", foreign_keys=[user_id], back_populates="subscriptions")
     plan = relationship("SubscriptionPlan", back_populates="subscriptions")
     payments = relationship("SubscriptionPayment", back_populates="subscription")
     usage = relationship("SubscriptionUsage", back_populates="subscription")
