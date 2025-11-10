@@ -127,3 +127,44 @@ class Favorite(Base):
     # Relationships
     user = relationship("User", back_populates="favorites")
     car = relationship("Car", back_populates="favorites")
+
+class Report(Base):
+    __tablename__ = "reports"
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    
+    # Reporter
+    reporter_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    
+    # Reported Entity (user or car)
+    reported_user_id = Column(Integer, ForeignKey("users.id"), index=True)
+    reported_car_id = Column(Integer, ForeignKey("cars.id"), index=True)
+    
+    # Report Details
+    report_type = Column(
+        Enum("spam", "fraud", "inappropriate", "scam", "fake_listing", "other", name="report_type"),
+        nullable=False
+    )
+    description = Column(Text, nullable=False)
+    
+    # Status
+    status = Column(
+        Enum("pending", "investigating", "resolved", "dismissed", name="report_status"),
+        default="pending",
+        nullable=False,
+        index=True
+    )
+    
+    # Resolution
+    resolution = Column(Text)
+    resolved_by = Column(Integer, ForeignKey("users.id"))
+    resolved_at = Column(TIMESTAMP)
+    
+    # Timestamps
+    created_at = Column(TIMESTAMP, default=datetime.utcnow, nullable=False, index=True)
+    
+    # Relationships
+    reporter = relationship("User", foreign_keys=[reporter_id], backref="reports_made")
+    reported_user = relationship("User", foreign_keys=[reported_user_id], backref="reports_received")
+    reported_car = relationship("Car", foreign_keys=[reported_car_id], backref="reports")
+    resolver = relationship("User", foreign_keys=[resolved_by], backref="reports_resolved")

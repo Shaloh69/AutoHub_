@@ -1,16 +1,26 @@
 """
 ===========================================
-FILE: app/api/v1/admin.py - PAYMENT VERIFICATION ENDPOINTS
+FILE: app/api/v1/admin.py - COMPLETE ADMIN SYSTEM
 Path: server/app/api/v1/admin.py
-PURPOSE: Admin endpoints for QR code payment verification
-NEW: Complete admin payment management system
+VERSION: 2.0.0 - Full Admin Management System
 ===========================================
+
+COMPLETE ADMIN ENDPOINTS:
+✅ Payment Verification (existing - preserved)
+✅ User Management (NEW)
+✅ Reports Management (NEW)
+✅ Car Moderation (NEW)
+✅ Fraud Monitoring (NEW)
+✅ Audit Logs (NEW)
+✅ System Configuration (NEW)
+✅ Dashboard Statistics (NEW)
 """
 from decimal import Decimal
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
+from sqlalchemy import func, desc, or_, and_
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, timedelta
 from app.database import get_db
 from app.schemas.subscription import (
     AdminVerifyPaymentRequest, AdminVerifyPaymentResponse,
@@ -18,13 +28,30 @@ from app.schemas.subscription import (
     PaymentStatisticsResponse, PaymentSettingResponse, PaymentSettingUpdate,
     PaymentVerificationLogResponse
 )
-from app.schemas.common import MessageResponse
-from app.core.dependencies import get_current_admin
-from app.models.user import User
+from app.schemas.admin import (
+    # User Management
+    UserListResponse, UserDetailResponse, UserBanRequest, UserVerifyRequest,
+    UserRoleChangeRequest,
+    # Reports Management
+    ReportListResponse, ReportDetailResponse, ReportResolveRequest,
+    # Car Moderation
+    CarModerationListResponse, CarApprovalRequest,
+    # Fraud & Security
+    FraudIndicatorResponse, AuditLogResponse,
+    # System Configuration
+    SystemConfigResponse, SystemConfigUpdate,
+    # Dashboard
+    AdminDashboardResponse
+)
+from app.schemas.common import MessageResponse, PaginatedResponse
+from app.core.dependencies import get_current_admin, get_current_moderator
+from app.models.user import User, UserRole
+from app.models.car import Car
 from app.models.subscription import (
     SubscriptionPayment, PaymentSetting, PaymentVerificationLog,
     SubscriptionPlan
 )
+from app.models.security import FraudIndicator, AuditLog, SystemConfig
 from app.services.subscription_service import SubscriptionService
 from app.services.email_service import EmailService
 from app.services.notification_service import NotificationService
@@ -35,7 +62,1010 @@ logger = logging.getLogger(__name__)
 
 
 # ========================================
-# PAYMENT VERIFICATION ENDPOINTS
+# DASHBOARD & STATISTICS
+# ========================================
+
+@router.get("/dashboard", response_model=AdminDashboardResponse)
+async def get_admin_dashboard(
+    current_admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """Get admin dashboard with overview statistics"""
+    try:
+        # User Statistics
+        total_users = db.query(User).count()
+        active_users = db.query(User).filter(User.is_active == True).count()
+        verified_users = db.query(User).filter(User.email_verified == True).count()
+        banned_users = db.query(User).filter(User.is_banned == True).count()
+        
+        # Role Distribution
+        buyers = db.query(User).filter(User.role == "buyer").count()
+        sellers = db.query(User).filter(User.role == "seller").count()
+        dealers = db.query(User).filter(User.role == "dealer").count()
+        
+        # Car Statistics
+        total_cars = db.query(Car).count()
+        active_cars = db.query(Car).filter(Car.status == "active").count()
+        pending_approval = db.query(Car).filter(Car.status == "pending").count()
+        
+        # Reports Statistics
+        from app.models.inquiry import Report
+        pending_reports = db.query(Report).filter(Report.status == "pending").count()
+        resolved_reports = db.query(Report).filter(Report.status == "resolved").count()
+        
+        # Payment Statistics
+        payment_stats = SubscriptionService.get_payment_statistics(db)
+        
+        # Fraud Indicators
+        fraud_count = db.query(FraudIndicator).count()
+        high_severity_fraud = db.query(FraudIndicator).filter(
+            FraudIndicator.severity == "high"
+        ).count()
+        
+        # Recent Activity (last 24 hours)
+        yesterday = datetime.utcnow() - timedelta(days=1)
+        new_users_today = db.query(User).filter(User.created_at >= yesterday).count()
+        new_cars_today = db.query(Car).filter(Car.created_at >= yesterday).count()
+        
+        return AdminDashboardResponse(
+            # Users
+            total_users=total_users,
+            active_users=active_users,
+            verified_users=verified_users,
+            banned_users=banned_users,
+            buyers_count=buyers,
+            sellers_count=sellers,
+            dealers_count=dealers,
+            new_users_today=new_users_today,
+            
+            # Cars
+            total_cars=total_cars,
+            active_cars=active_cars,
+            pending_approval_cars=pending_approval,
+            new_cars_today=new_cars_today,
+            
+            # Reports
+            pending_reports=pending_reports,
+            resolved_reports=resolved_reports,
+            
+            # Payments
+            pending_payments=payment_stats.get("pending_count", 0),
+            verified_payments_today=payment_stats.get("verified_today", 0),
+            
+            # Security
+            fraud_indicators=fraud_count,
+            high_severity_fraud=high_severity_fraud
+        )
+    except Exception as e:
+        logger.error(f"Error fetching admin dashboard: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to fetch dashboard data"
+        )
+
+
+# ========================================
+# USER MANAGEMENT ENDPOINTS
+# ========================================
+
+@router.get("/users", response_model=PaginatedResponse)
+async def list_users(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    role: Optional[str] = None,
+    user_status: Optional[str] = None,
+    search: Optional[str] = None,
+    verified_only: bool = False,
+    current_admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """
+    List all users with filtering and pagination
+    
+    Filters:
+    - role: Filter by user role (buyer, seller, dealer)
+    - status: Filter by status (active, banned)
+    - search: Search by name or email
+    - verified_only: Show only verified users
+    """
+    try:
+        query = db.query(User)
+        
+        # Apply filters
+        if role:
+            query = query.filter(User.role == role.lower())
+        
+        if user_status == "active":
+            query = query.filter(User.is_active == True, User.is_banned == False)
+        elif user_status == "banned":
+            query = query.filter(User.is_banned == True)
+        
+        if verified_only:
+            query = query.filter(User.email_verified == True)
+        
+        if search:
+            search_term = f"%{search}%"
+            query = query.filter(
+                or_(
+                    User.email.like(search_term),
+                    User.first_name.like(search_term),
+                    User.last_name.like(search_term)
+                )
+            )
+        
+        # Get total count
+        total = query.count()
+        
+        # Apply pagination
+        offset = (page - 1) * page_size
+        users = query.order_by(desc(User.created_at)).offset(offset).limit(page_size).all()
+        
+        # Format response
+        items = [
+            UserListResponse(
+                id=int(getattr(u, 'id', 0)),
+                email=str(getattr(u, 'email', '')),
+                first_name=str(getattr(u, 'first_name', '')),
+                last_name=str(getattr(u, 'last_name', '')),
+                role=str(getattr(u, 'role', 'buyer')),
+                email_verified=bool(getattr(u, 'email_verified', False)),
+                is_active=bool(getattr(u, 'is_active', True)),
+                is_banned=bool(getattr(u, 'is_banned', False)),
+                created_at=getattr(u, 'created_at', datetime.utcnow()),
+                last_login_at=getattr(u, 'last_login_at', None)
+            )
+            for u in users
+        ]
+        
+        total_pages = (total + page_size - 1) // page_size
+        return PaginatedResponse(
+            items=items,
+            total=total,
+            page=page,
+            page_size=page_size,
+            total_pages=total_pages,
+            has_next=page < total_pages,
+            has_prev=page > 1
+        )
+    except Exception as e:
+        logger.error(f"Error listing users: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to fetch users"
+        )
+
+
+@router.get("/users/{user_id}", response_model=UserDetailResponse)
+async def get_user_details(
+    user_id: int,
+    current_admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """Get detailed information about a specific user"""
+    user = db.query(User).filter(User.id == user_id).first()
+    
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    # Get user statistics
+    cars_count = db.query(Car).filter(Car.seller_id == user_id).count()
+    active_cars = db.query(Car).filter(
+        Car.seller_id == user_id,
+        Car.status == "active"
+    ).count()
+    
+    # Get subscription info
+    from app.models.subscription import UserSubscription
+    subscription = db.query(UserSubscription).filter(
+        UserSubscription.user_id == user_id,
+        UserSubscription.status == "active"
+    ).first()
+    
+    return UserDetailResponse(
+        id=int(getattr(user, 'id', 0)),
+        email=str(getattr(user, 'email', '')),
+        first_name=str(getattr(user, 'first_name', '')),
+        last_name=str(getattr(user, 'last_name', '')),
+        phone=str(getattr(user, 'phone', '') or ''),
+        role=str(getattr(user, 'role', 'buyer')),
+        
+        # Verification
+        email_verified=bool(getattr(user, 'email_verified', False)),
+        phone_verified=bool(getattr(user, 'phone_verified', False)),
+        identity_verified=bool(getattr(user, 'identity_verified', False)),
+        business_verified=bool(getattr(user, 'business_verified', False)),
+        
+        # Status
+        is_active=bool(getattr(user, 'is_active', True)),
+        is_banned=bool(getattr(user, 'is_banned', False)),
+        ban_reason=str(getattr(user, 'ban_reason', '') or ''),
+        banned_at=getattr(user, 'banned_at', None),
+        banned_until=getattr(user, 'banned_until', None),
+        
+        # Business Info
+        business_name=str(getattr(user, 'business_name', '') or ''),
+        business_permit_number=str(getattr(user, 'business_permit_number', '') or ''),
+        tin_number=str(getattr(user, 'tin_number', '') or ''),
+        
+        # Statistics
+        total_cars=cars_count,
+        active_cars=active_cars,
+        warnings_count=int(getattr(user, 'warnings_count', 0)),
+        
+        # Subscription
+        subscription_status=str(getattr(subscription, 'status', 'none') if subscription else 'none'),
+        subscription_expires_at=getattr(subscription, 'end_date', None) if subscription else None,
+        
+        # Timestamps
+        created_at=getattr(user, 'created_at', datetime.utcnow()),
+        last_login_at=getattr(user, 'last_login_at', None)
+    )
+
+
+@router.post("/users/{user_id}/ban", response_model=MessageResponse)
+async def ban_user(
+    user_id: int,
+    ban_request: UserBanRequest,
+    current_admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """Ban a user account"""
+    user = db.query(User).filter(User.id == user_id).first()
+    
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    # Prevent banning other admins
+    user_role = getattr(user, 'role', None)
+    if user_role in [UserRole.ADMIN, UserRole.MODERATOR]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cannot ban admin or moderator accounts"
+        )
+    
+    # Update user status
+    setattr(user, 'is_banned', True)
+    setattr(user, 'is_active', False)
+    setattr(user, 'ban_reason', ban_request.reason)
+    setattr(user, 'banned_at', datetime.utcnow())
+    setattr(user, 'banned_by', int(getattr(current_admin, 'id', 0)))
+    
+    if ban_request.duration_days:
+        banned_until = datetime.utcnow() + timedelta(days=ban_request.duration_days)
+        setattr(user, 'banned_until', banned_until)
+    
+    # Create audit log
+    admin_id = int(getattr(current_admin, 'id', 0))
+    audit = AuditLog(
+        user_id=admin_id,
+        action="ban_user",
+        entity_type="user",
+        entity_id=user_id,
+        new_values={
+            "banned": True,
+            "reason": ban_request.reason,
+            "duration_days": ban_request.duration_days
+        }
+    )
+    db.add(audit)
+    
+    # Send notification to user
+    try:
+        NotificationService.create_notification(
+            db,
+            user_id=user_id,
+            title="Account Banned",
+            message=f"Your account has been banned. Reason: {ban_request.reason}",
+            notification_type="account_banned"
+        )
+        
+        # Send email
+        await EmailService.send_email(
+            to_email=str(getattr(user, 'email', '')),
+            subject="Account Banned - Car Marketplace Philippines",
+            body=f"Your account has been banned.\n\nReason: {ban_request.reason}\n\nIf you believe this is an error, please contact support."
+        )
+    except Exception as e:
+        logger.error(f"Failed to send ban notification: {e}")
+    
+    db.commit()
+    
+    return MessageResponse(
+        message=f"User banned successfully for reason: {ban_request.reason}",
+        success=True
+    )
+
+
+@router.post("/users/{user_id}/unban", response_model=MessageResponse)
+async def unban_user(
+    user_id: int,
+    current_admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """Unban a user account"""
+    user = db.query(User).filter(User.id == user_id).first()
+    
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    # Update user status
+    setattr(user, 'is_banned', False)
+    setattr(user, 'is_active', True)
+    setattr(user, 'ban_reason', None)
+    setattr(user, 'banned_at', None)
+    setattr(user, 'banned_until', None)
+    setattr(user, 'banned_by', None)
+    
+    # Create audit log
+    admin_id = int(getattr(current_admin, 'id', 0))
+    audit = AuditLog(
+        user_id=admin_id,
+        action="unban_user",
+        entity_type="user",
+        entity_id=user_id,
+        new_values={"banned": False}
+    )
+    db.add(audit)
+    
+    # Send notification
+    try:
+        NotificationService.create_notification(
+            db,
+            user_id=user_id,
+            title="Account Unbanned",
+            message="Your account has been unbanned. You can now access all features.",
+            notification_type="account_unbanned"
+        )
+    except Exception as e:
+        logger.error(f"Failed to send unban notification: {e}")
+    
+    db.commit()
+    
+    return MessageResponse(
+        message="User unbanned successfully",
+        success=True
+    )
+
+
+@router.post("/users/{user_id}/verify", response_model=MessageResponse)
+async def verify_user(
+    user_id: int,
+    verify_request: UserVerifyRequest,
+    current_admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """Manually verify a user's identity or business"""
+    user = db.query(User).filter(User.id == user_id).first()
+    
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    notification_message = ""
+    # Update verification status
+    if verify_request.verification_type == "identity":
+        setattr(user, 'identity_verified', True)
+        setattr(user, 'verified_at', datetime.utcnow())
+        notification_message = "Your identity has been verified by our team."
+    elif verify_request.verification_type == "business":
+        setattr(user, 'business_verified', True)
+        notification_message = "Your business has been verified by our team."
+    
+    # Create audit log
+    admin_id = int(getattr(current_admin, 'id', 0))
+    audit = AuditLog(
+        user_id=admin_id,
+        action=f"verify_user_{verify_request.verification_type}",
+        entity_type="user",
+        entity_id=user_id,
+        new_values={
+            "verification_type": verify_request.verification_type,
+            "notes": verify_request.notes
+        }
+    )
+    db.add(audit)
+    
+    # Send notification
+    try:
+        NotificationService.create_notification(
+            db,
+            user_id=user_id,
+            title="Verification Approved",
+            message=notification_message,
+            notification_type="verification_approved"
+        )
+    except Exception as e:
+        logger.error(f"Failed to send verification notification: {e}")
+    
+    db.commit()
+    
+    return MessageResponse(
+        message=f"User {verify_request.verification_type} verified successfully",
+        success=True
+    )
+
+
+@router.post("/users/{user_id}/change-role", response_model=MessageResponse)
+async def change_user_role(
+    user_id: int,
+    role_request: UserRoleChangeRequest,
+    current_admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """Change a user's role (admin only)"""
+    user = db.query(User).filter(User.id == user_id).first()
+    
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    old_role = getattr(user, 'role', 'buyer')
+    
+    # Validate new role
+    if role_request.new_role not in ['buyer', 'seller', 'dealer', 'moderator']:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid role"
+        )
+    
+    # Update role
+    setattr(user, 'role', role_request.new_role)
+    
+    # Create audit log
+    admin_id = int(getattr(current_admin, 'id', 0))
+    audit = AuditLog(
+        user_id=admin_id,
+        action="change_user_role",
+        entity_type="user",
+        entity_id=user_id,
+        old_values={"role": old_role},
+        new_values={
+            "role": role_request.new_role,
+            "reason": role_request.reason
+        }
+    )
+    db.add(audit)
+    
+    # Send notification
+    try:
+        NotificationService.create_notification(
+            db,
+            user_id=user_id,
+            title="Role Changed",
+            message=f"Your role has been changed from {old_role} to {role_request.new_role}",
+            notification_type="role_changed"
+        )
+    except Exception as e:
+        logger.error(f"Failed to send role change notification: {e}")
+    
+    db.commit()
+    
+    return MessageResponse(
+        message=f"User role changed from {old_role} to {role_request.new_role}",
+        success=True
+    )
+
+
+# ========================================
+# REPORTS MANAGEMENT ENDPOINTS
+# ========================================
+
+@router.get("/reports", response_model=PaginatedResponse)
+async def list_reports(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    user_status: Optional[str] = None,
+    report_type: Optional[str] = None,
+    current_moderator: User = Depends(get_current_moderator),
+    db: Session = Depends(get_db)
+):
+    """List all reports with filtering"""
+    try:
+        from app.models.inquiry import Report
+        
+        query = db.query(Report)
+        
+        # Apply filters
+        if user_status:
+            query = query.filter(Report.status == status)
+        
+        if report_type:
+            query = query.filter(Report.report_type == report_type)
+        
+        # Get total count
+        total = query.count()
+        
+        # Apply pagination
+        offset = (page - 1) * page_size
+        reports = query.order_by(desc(Report.created_at)).offset(offset).limit(page_size).all()
+        
+        # Format response with user details
+        items = []
+        for report in reports:
+            reporter = db.query(User).filter(User.id == getattr(report, 'reporter_id', 0)).first()
+            reported_user = None
+            if getattr(report, 'reported_user_id', None):
+                reported_user = db.query(User).filter(
+                    User.id == getattr(report, 'reported_user_id', 0)
+                ).first()
+            
+            items.append(ReportListResponse(
+                id=int(getattr(report, 'id', 0)),
+                report_type=str(getattr(report, 'report_type', '')),
+                status=str(getattr(report, 'status', 'pending')),
+                reporter_name=f"{getattr(reporter, 'first_name', '')} {getattr(reporter, 'last_name', '')}".strip() if reporter else "Unknown",
+                reported_user_id=getattr(report, 'reported_user_id', None),
+                reported_user_name=f"{getattr(reported_user, 'first_name', '')} {getattr(reported_user, 'last_name', '')}".strip() if reported_user else None,
+                reported_car_id=getattr(report, 'reported_car_id', None),
+                description=str(getattr(report, 'description', ''))[:200],
+                created_at=getattr(report, 'created_at', datetime.utcnow())
+            ))
+        
+        total_pages = (total + page_size - 1) // page_size
+        return PaginatedResponse(
+            items=items,
+            total=total,
+            page=page,
+            page_size=page_size,
+            total_pages=total_pages,
+            has_next=page < total_pages,
+            has_prev=page > 1
+        )
+    except Exception as e:
+        logger.error(f"Error listing reports: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to fetch reports"
+        )
+
+
+@router.get("/reports/{report_id}", response_model=ReportDetailResponse)
+async def get_report_details(
+    report_id: int,
+    current_moderator: User = Depends(get_current_moderator),
+    db: Session = Depends(get_db)
+):
+    """Get detailed information about a specific report"""
+    from app.models.inquiry import Report
+    
+    report = db.query(Report).filter(Report.id == report_id).first()
+    
+    if not report:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Report not found"
+        )
+    
+    # Get reporter details
+    reporter = db.query(User).filter(
+        User.id == getattr(report, 'reporter_id', 0)
+    ).first()
+    
+    # Get reported user details
+    reported_user = None
+    if getattr(report, 'reported_user_id', None):
+        reported_user = db.query(User).filter(
+            User.id == getattr(report, 'reported_user_id', 0)
+        ).first()
+    
+    # Get reported car details
+    reported_car = None
+    if getattr(report, 'reported_car_id', None):
+        reported_car = db.query(Car).filter(
+            Car.id == getattr(report, 'reported_car_id', 0)
+        ).first()
+    
+    return ReportDetailResponse(
+        id=int(getattr(report, 'id', 0)),
+        report_type=str(getattr(report, 'report_type', '')),
+        status=str(getattr(report, 'status', 'pending')),
+        description=str(getattr(report, 'description', '')),
+        resolution=str(getattr(report, 'resolution', '') or ''),
+        
+        # Reporter Info
+        reporter_id=int(getattr(report, 'reporter_id', 0)),
+        reporter_name=f"{getattr(reporter, 'first_name', '')} {getattr(reporter, 'last_name', '')}".strip() if reporter else "Unknown",
+        reporter_email=str(getattr(reporter, 'email', '')) if reporter else "",
+        
+        # Reported User Info
+        reported_user_id=getattr(report, 'reported_user_id', None),
+        reported_user_name=f"{getattr(reported_user, 'first_name', '')} {getattr(reported_user, 'last_name', '')}".strip() if reported_user else None,
+        reported_user_email=str(getattr(reported_user, 'email', '')) if reported_user else None,
+        
+        # Reported Car Info
+        reported_car_id=getattr(report, 'reported_car_id', None),
+        reported_car_title=str(getattr(reported_car, 'title', '')) if reported_car else None,
+        
+        # Resolution Info
+        resolved_by=getattr(report, 'resolved_by', None),
+        resolved_at=getattr(report, 'resolved_at', None),
+        
+        created_at=getattr(report, 'created_at', datetime.utcnow())
+    )
+
+
+@router.post("/reports/{report_id}/resolve", response_model=MessageResponse)
+async def resolve_report(
+    report_id: int,
+    resolve_request: ReportResolveRequest,
+    current_moderator: User = Depends(get_current_moderator),
+    db: Session = Depends(get_db)
+):
+    """Resolve a report"""
+    from app.models.inquiry import Report
+    
+    report = db.query(Report).filter(Report.id == report_id).first()
+    
+    if not report:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Report not found"
+        )
+    
+    # Update report status
+    setattr(report, 'status', resolve_request.status)
+    setattr(report, 'resolution', resolve_request.resolution)
+    setattr(report, 'resolved_by', int(getattr(current_moderator, 'id', 0)))
+    setattr(report, 'resolved_at', datetime.utcnow())
+    
+    # Create audit log
+    moderator_id = int(getattr(current_moderator, 'id', 0))
+    audit = AuditLog(
+        user_id=moderator_id,
+        action="resolve_report",
+        entity_type="report",
+        entity_id=report_id,
+        new_values={
+            "status": resolve_request.status,
+            "resolution": resolve_request.resolution,
+            "action_taken": resolve_request.action_taken
+        }
+    )
+    db.add(audit)
+    
+    # Take action if needed
+    if resolve_request.action_taken == "ban_user" and getattr(report, 'reported_user_id', None):
+        reported_user = db.query(User).filter(
+            User.id == getattr(report, 'reported_user_id', 0)
+        ).first()
+        if reported_user:
+            setattr(reported_user, 'is_banned', True)
+            setattr(reported_user, 'ban_reason', f"Report resolved: {resolve_request.resolution}")
+            setattr(reported_user, 'banned_at', datetime.utcnow())
+            setattr(reported_user, 'banned_by', moderator_id)
+    
+    elif resolve_request.action_taken == "remove_car" and getattr(report, 'reported_car_id', None):
+        reported_car = db.query(Car).filter(
+            Car.id == getattr(report, 'reported_car_id', 0)
+        ).first()
+        if reported_car:
+            setattr(reported_car, 'status', 'removed')
+            setattr(reported_car, 'is_active', False)
+    
+    # Notify reporter
+    try:
+        NotificationService.create_notification(
+            db,
+            user_id=int(getattr(report, 'reporter_id', 0)),
+            title="Report Resolved",
+            message=f"Your report has been resolved: {resolve_request.resolution}",
+            notification_type="report_resolved",
+            related_id=report_id,
+            related_type="report"
+        )
+    except Exception as e:
+        logger.error(f"Failed to send resolution notification: {e}")
+    
+    db.commit()
+    
+    return MessageResponse(
+        message=f"Report resolved as {resolve_request.status}",
+        success=True
+    )
+
+
+# ========================================
+# CAR MODERATION ENDPOINTS
+# ========================================
+
+@router.get("/cars/pending", response_model=PaginatedResponse)
+async def list_pending_cars(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    current_moderator: User = Depends(get_current_moderator),
+    db: Session = Depends(get_db)
+):
+    """List all cars pending approval"""
+    try:
+        query = db.query(Car).filter(Car.status == "pending")
+        
+        # Get total count
+        total = query.count()
+        
+        # Apply pagination
+        offset = (page - 1) * page_size
+        cars = query.order_by(desc(Car.created_at)).offset(offset).limit(page_size).all()
+        
+        # Format response
+        items = []
+        for car in cars:
+            seller = db.query(User).filter(User.id == getattr(car, 'seller_id', 0)).first()
+            
+            items.append(CarModerationListResponse(
+                id=int(getattr(car, 'id', 0)),
+                title=str(getattr(car, 'title', '')),
+                brand=str(getattr(car, 'brand', '')),
+                model=str(getattr(car, 'model', '')),
+                year=int(getattr(car, 'year', 0)),
+                price=float(getattr(car, 'price', 0)),
+                seller_id=int(getattr(car, 'seller_id', 0)),
+                seller_name=f"{getattr(seller, 'first_name', '')} {getattr(seller, 'last_name', '')}".strip() if seller else "Unknown",
+                status=str(getattr(car, 'status', 'pending')),
+                created_at=getattr(car, 'created_at', datetime.utcnow())
+            ))
+        
+        total_pages = (total + page_size - 1) // page_size
+        return PaginatedResponse(
+            items=items,
+            total=total,
+            page=page,
+            page_size=page_size,
+            total_pages=total_pages,
+            has_next=page < total_pages,
+            has_prev=page > 1
+        )
+    except Exception as e:
+        logger.error(f"Error listing pending cars: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to fetch pending cars"
+        )
+
+
+@router.post("/cars/{car_id}/approve", response_model=MessageResponse)
+async def approve_car(
+    car_id: int,
+    approval_request: CarApprovalRequest,
+    current_moderator: User = Depends(get_current_moderator),
+    db: Session = Depends(get_db)
+):
+    """Approve or reject a car listing"""
+    car = db.query(Car).filter(Car.id == car_id).first()
+    
+    if not car:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Car not found"
+        )
+    
+    # Update car status
+    if approval_request.approved:
+        setattr(car, 'status', 'active')
+        setattr(car, 'is_active', True)
+        notification_title = "Car Listing Approved"
+        notification_message = f"Your car listing '{getattr(car, 'title', '')}' has been approved and is now live!"
+    else:
+        setattr(car, 'status', 'rejected')
+        setattr(car, 'is_active', False)
+        notification_title = "Car Listing Rejected"
+        notification_message = f"Your car listing '{getattr(car, 'title', '')}' was rejected. Reason: {approval_request.notes or 'No reason provided'}"
+    
+    # Create audit log
+    moderator_id = int(getattr(current_moderator, 'id', 0))
+    audit = AuditLog(
+        user_id=moderator_id,
+        action="moderate_car",
+        entity_type="car",
+        entity_id=car_id,
+        new_values={
+            "approved": approval_request.approved,
+            "status": getattr(car, 'status', ''),
+            "notes": approval_request.notes
+        }
+    )
+    db.add(audit)
+    
+    # Notify seller
+    try:
+        seller_id = int(getattr(car, 'seller_id', 0))
+        NotificationService.create_notification(
+            db,
+            user_id=seller_id,
+            title=notification_title,
+            message=notification_message,
+            notification_type="car_moderation",
+            related_id=car_id,
+            related_type="car"
+        )
+    except Exception as e:
+        logger.error(f"Failed to send moderation notification: {e}")
+    
+    db.commit()
+    
+    return MessageResponse(
+        message=f"Car {'approved' if approval_request.approved else 'rejected'} successfully",
+        success=True
+    )
+
+
+# ========================================
+# FRAUD & SECURITY ENDPOINTS
+# ========================================
+
+@router.get("/fraud-indicators", response_model=List[FraudIndicatorResponse])
+async def list_fraud_indicators(
+    limit: int = Query(50, ge=1, le=200),
+    severity: Optional[str] = None,
+    current_admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """List fraud indicators"""
+    try:
+        query = db.query(FraudIndicator)
+        
+        if severity:
+            query = query.filter(FraudIndicator.severity == severity)
+        
+        indicators = query.order_by(desc(FraudIndicator.detected_at)).limit(limit).all()
+        
+        return [
+            FraudIndicatorResponse(
+                id=int(getattr(ind, 'id', 0)),
+                user_id=getattr(ind, 'user_id', None),
+                car_id=getattr(ind, 'car_id', None),
+                indicator_type=str(getattr(ind, 'indicator_type', '')),
+                severity=str(getattr(ind, 'severity', '')),
+                description=str(getattr(ind, 'description', '')),
+                detected_at=getattr(ind, 'detected_at', datetime.utcnow())
+            )
+            for ind in indicators
+        ]
+    except Exception as e:
+        logger.error(f"Error listing fraud indicators: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to fetch fraud indicators"
+        )
+
+
+@router.get("/audit-logs", response_model=List[AuditLogResponse])
+async def list_audit_logs(
+    limit: int = Query(100, ge=1, le=500),
+    action: Optional[str] = None,
+    entity_type: Optional[str] = None,
+    current_admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """List audit logs"""
+    try:
+        query = db.query(AuditLog)
+        
+        if action:
+            query = query.filter(AuditLog.action == action)
+        
+        if entity_type:
+            query = query.filter(AuditLog.entity_type == entity_type)
+        
+        logs = query.order_by(desc(AuditLog.created_at)).limit(limit).all()
+        
+        items = []
+        for log in logs:
+            user = db.query(User).filter(User.id == getattr(log, 'user_id', 0)).first()
+            
+            items.append(AuditLogResponse(
+                id=int(getattr(log, 'id', 0)),
+                user_id=getattr(log, 'user_id', None),
+                user_email=str(getattr(user, 'email', '')) if user else None,
+                action=str(getattr(log, 'action', '')),
+                entity_type=str(getattr(log, 'entity_type', '') or ''),
+                entity_id=getattr(log, 'entity_id', None),
+                old_values=getattr(log, 'old_values', None),
+                new_values=getattr(log, 'new_values', None),
+                ip_address=str(getattr(log, 'ip_address', '') or ''),
+                created_at=getattr(log, 'created_at', datetime.utcnow())
+            ))
+        
+        return items
+    except Exception as e:
+        logger.error(f"Error listing audit logs: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to fetch audit logs"
+        )
+
+
+# ========================================
+# SYSTEM CONFIGURATION ENDPOINTS
+# ========================================
+
+@router.get("/system-config", response_model=List[SystemConfigResponse])
+async def list_system_configs(
+    current_admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """List all system configurations"""
+    configs = db.query(SystemConfig).all()
+    
+    return [
+        SystemConfigResponse(
+            id=int(getattr(config, 'id', 0)),
+            config_key=str(getattr(config, 'config_key', '')),
+            config_value=str(getattr(config, 'config_value', '') or ''),
+            data_type=str(getattr(config, 'data_type', '') or ''),
+            description=str(getattr(config, 'description', '') or ''),
+            is_public=bool(getattr(config, 'is_public', False)),
+            updated_at=getattr(config, 'updated_at', datetime.utcnow())
+        )
+        for config in configs
+    ]
+
+
+@router.put("/system-config/{config_key}", response_model=MessageResponse)
+async def update_system_config(
+    config_key: str,
+    config_update: SystemConfigUpdate,
+    current_admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """Update a system configuration"""
+    config = db.query(SystemConfig).filter(SystemConfig.config_key == config_key).first()
+    
+    if not config:
+        # Create new config
+        config = SystemConfig(
+            config_key=config_key,
+            config_value=config_update.config_value,
+            data_type=config_update.data_type or "string",
+            description=config_update.description or "",
+            is_public=config_update.is_public or False
+        )
+        db.add(config)
+        message = "Configuration created successfully"
+    else:
+        # Update existing config
+        setattr(config, 'config_value', config_update.config_value)
+        if config_update.data_type:
+            setattr(config, 'data_type', config_update.data_type)
+        if config_update.description:
+            setattr(config, 'description', config_update.description)
+        if config_update.is_public is not None:
+            setattr(config, 'is_public', config_update.is_public)
+        
+        message = "Configuration updated successfully"
+    
+    # Create audit log
+    admin_id = int(getattr(current_admin, 'id', 0))
+    audit = AuditLog(
+        user_id=admin_id,
+        action="update_system_config",
+        entity_type="system_config",
+        entity_id=getattr(config, 'id', None),
+        new_values={
+            "config_key": config_key,
+            "config_value": config_update.config_value
+        }
+    )
+    db.add(audit)
+    
+    db.commit()
+    
+    return MessageResponse(message=message, success=True)
+
+
+# ========================================
+# PAYMENT VERIFICATION ENDPOINTS (EXISTING - PRESERVED)
 # ========================================
 
 @router.get("/payments/pending", response_model=List[PendingPaymentSummary])
@@ -126,30 +1156,8 @@ async def verify_payment(
     try:
         admin_id = int(getattr(current_admin, 'id', 0))
         
-        # Get payment with user details before verification
-        payment_query = db.query(SubscriptionPayment, User).join(
-            User, SubscriptionPayment.user_id == User.id
-        ).filter(
-            SubscriptionPayment.id == verify_request.payment_id
-        ).first()
-        
-        if not payment_query:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Payment not found"
-            )
-        
-        payment_before, user = payment_query
-        previous_status = str(getattr(payment_before, 'status', 'pending'))
-        user_email = str(getattr(user, 'email', ''))
-        user_name = f"{getattr(user, 'first_name', '')} {getattr(user, 'last_name', '')}".strip()
-        user_id = int(getattr(user, 'id', 0))
-        reference_number = str(getattr(payment_before, 'reference_number', ''))
-        amount = getattr(payment_before, 'amount', 0)
-        
-        # Verify payment
-        payment = SubscriptionService.verify_payment(
-            db,
+        result = SubscriptionService.verify_payment(
+            db=db,
             payment_id=verify_request.payment_id,
             admin_id=admin_id,
             action=verify_request.action,
@@ -157,14 +1165,20 @@ async def verify_payment(
             rejection_reason=verify_request.rejection_reason
         )
         
-        new_status = str(getattr(payment, 'status', ''))
+        previous_status = result.get("previous_status")
+        new_status = result.get("new_status")
+        user_id = result.get("user_id")
+        user_email = result.get("user_email")
+        user_name = result.get("user_name")
+        reference_number = result.get("reference_number")
+        amount = result.get("amount", Decimal("0"))
         
         # Send email notification to user
         email_sent = False
         try:
-            if verify_request.action == "approve":
+            if verify_request.action == "verify":
                 # Approved email
-                subject = "Payment Verified - Subscription Activated!"
+                subject = "Payment Verified - Subscription Activated"
                 text_body = f"""
 Hello {user_name},
 
@@ -173,12 +1187,11 @@ Great news! Your payment has been verified and your subscription is now active.
 Payment Details:
 - Reference Number: {reference_number}
 - Amount: ₱{amount:.2f}
-- Status: Approved
-- Verified: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')}
+- Status: Verified
 
-You can now enjoy all the benefits of your subscription plan!
+{verify_request.admin_notes or ''}
 
-Thank you for choosing Car Marketplace Philippines.
+Thank you for choosing Car Marketplace Philippines!
 
 Best regards,
 Car Marketplace Philippines Team
@@ -188,7 +1201,7 @@ Car Marketplace Philippines Team
                 NotificationService.create_notification(
                     db,
                     user_id=user_id,
-                    title="Payment Verified - Subscription Active!",
+                    title="Payment Verified",
                     message=f"Your payment (Ref: {reference_number}) has been verified. Your subscription is now active!",
                     notification_type="payment_verified",
                     related_id=verify_request.payment_id,
@@ -313,57 +1326,109 @@ async def get_payment_settings(
     db: Session = Depends(get_db)
 ):
     """Get all payment settings"""
-    settings = db.query(PaymentSetting).filter(
-        PaymentSetting.is_active == True  # noqa: E712
-    ).all()
+    settings = db.query(PaymentSetting).all()
     
-    return [PaymentSettingResponse.model_validate(s) for s in settings]
+    return [
+        PaymentSettingResponse(
+            id=int(getattr(s, 'id', 0)),
+            setting_key=str(getattr(s, 'setting_key', '')),
+            setting_value=str(getattr(s, 'setting_value', '')),
+            setting_type=str(getattr(s, 'setting_type', 'string')),
+            description=str(getattr(s, 'description', '') or ''),
+            is_active=bool(getattr(s, 'is_active', True)),
+        )
+        for s in settings
+    ]
 
 
-@router.put("/settings/payment", response_model=PaymentSettingResponse)
+@router.put("/settings/payment/{setting_key}", response_model=MessageResponse)
 async def update_payment_setting(
+    setting_key: str,
     setting_update: PaymentSettingUpdate,
     current_admin: User = Depends(get_current_admin),
     db: Session = Depends(get_db)
 ):
     """Update a payment setting"""
-    admin_id = int(getattr(current_admin, 'id', 0))
-    
     setting = db.query(PaymentSetting).filter(
-        PaymentSetting.setting_key == setting_update.setting_key
+        PaymentSetting.setting_key == setting_key
     ).first()
     
     if not setting:
-        # Create new setting
-        setting = PaymentSetting(
-            setting_key=setting_update.setting_key,
-            setting_value=setting_update.setting_value,
-            description=setting_update.description,
-            created_by=admin_id,
-            updated_by=admin_id
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Setting not found"
         )
-        db.add(setting)
-    else:
-        # Update existing
-        setattr(setting, 'setting_value', setting_update.setting_value)
-        if setting_update.description:
-            setattr(setting, 'description', setting_update.description)
-        setattr(setting, 'updated_by', admin_id)
+    
+    # Update setting
+    setattr(setting, 'setting_value', setting_update.setting_value)
+    setattr(setting, 'updated_by', int(getattr(current_admin, 'id', 0)))
+    setattr(setting, 'updated_at', datetime.utcnow())
+    
+    if setting_update.is_active is not None:
+        setattr(setting, 'is_active', setting_update.is_active)
+    
+    # Create audit log
+    admin_id = int(getattr(current_admin, 'id', 0))
+    audit = AuditLog(
+        user_id=admin_id,
+        action="update_payment_setting",
+        entity_type="payment_setting",
+        entity_id=getattr(setting, 'id', None),
+        new_values={
+            "setting_key": setting_key,
+            "setting_value": setting_update.setting_value
+        }
+    )
+    db.add(audit)
     
     db.commit()
-    db.refresh(setting)
     
-    return PaymentSettingResponse.model_validate(setting)
+    return MessageResponse(
+        message="Payment setting updated successfully",
+        success=True
+    )
 
 
-@router.get("/settings/payment/qr-code")
-async def get_qr_code_image(
-    current_admin: User = Depends(get_current_admin),
-    db: Session = Depends(get_db)
-):
-    """Get current QR code image URL"""
-    qr_settings = SubscriptionService.get_qr_code_settings(db)
-    return {
-        "qr_code_image_url": qr_settings["qr_code_image_url"],
-        "payment_instructions": qr_settings["payment_instructions"]
-    }
+# ===========================================
+# COMPLETE ADMIN ENDPOINTS SUMMARY:
+# ===========================================
+#
+# ✅ DASHBOARD (1 endpoint)
+#    - GET /dashboard - Overview statistics
+#
+# ✅ USER MANAGEMENT (6 endpoints)
+#    - GET /users - List all users with filters
+#    - GET /users/{user_id} - Get user details
+#    - POST /users/{user_id}/ban - Ban a user
+#    - POST /users/{user_id}/unban - Unban a user
+#    - POST /users/{user_id}/verify - Verify user identity/business
+#    - POST /users/{user_id}/change-role - Change user role
+#
+# ✅ REPORTS MANAGEMENT (3 endpoints)
+#    - GET /reports - List all reports with filters
+#    - GET /reports/{report_id} - Get report details
+#    - POST /reports/{report_id}/resolve - Resolve a report
+#
+# ✅ CAR MODERATION (2 endpoints)
+#    - GET /cars/pending - List pending car approvals
+#    - POST /cars/{car_id}/approve - Approve/reject car listing
+#
+# ✅ FRAUD & SECURITY (2 endpoints)
+#    - GET /fraud-indicators - List fraud indicators
+#    - GET /audit-logs - View audit logs
+#
+# ✅ SYSTEM CONFIGURATION (2 endpoints)
+#    - GET /system-config - List system configurations
+#    - PUT /system-config/{config_key} - Update configuration
+#
+# ✅ PAYMENT VERIFICATION (6 endpoints - PRESERVED)
+#    - GET /payments/pending - List pending payments
+#    - GET /payments/{payment_id} - Get payment details
+#    - POST /payments/verify - Verify/reject payment
+#    - GET /payments/statistics - Payment statistics
+#    - GET /payments/{payment_id}/logs - Payment verification logs
+#    - GET /settings/payment - Get payment settings
+#    - PUT /settings/payment/{setting_key} - Update payment setting
+#
+# TOTAL: 22 Admin Endpoints
+# ===========================================

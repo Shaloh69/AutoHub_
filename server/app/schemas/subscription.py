@@ -272,6 +272,7 @@ class PaymentSettingUpdate(BaseModel):
     setting_key: str = Field(..., max_length=100)
     setting_value: str = Field(..., max_length=5000)
     description: Optional[str] = Field(None, max_length=500)
+    is_active: Optional[bool] = None
 
 
 class PaymentVerificationLogResponse(BaseModel):
