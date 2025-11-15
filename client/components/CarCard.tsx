@@ -1,6 +1,9 @@
 'use client';
 
-import { Card, CardBody, CardFooter, Image, Button, Chip } from '@heroui/react';
+import {Card, CardBody, CardFooter} from "@heroui/card";
+import {Image} from "@heroui/image";
+import {Button} from "@heroui/button";
+import {Chip} from "@heroui/chip";
 import { Heart, MapPin, Calendar, Gauge, Fuel, Settings2 } from 'lucide-react';
 import { Car } from '@/types';
 import { useRouter } from 'next/navigation';
