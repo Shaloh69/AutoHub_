@@ -263,8 +263,13 @@ def normalize_enum_value(field_name: str, value: Any) -> Any:
     if value is None:
         return None
 
-    # Convert to string for comparison
-    str_value = str(value)
+    # Handle Python enum objects (e.g., CarStatus.ACTIVE, FuelType.GASOLINE)
+    # Extract the .value property if it's an enum
+    if hasattr(value, 'value'):
+        str_value = str(value.value)
+    else:
+        # Convert to string for comparison
+        str_value = str(value)
 
     # Check if it's an UPPERCASE enum field
     if field_name in UPPERCASE_ENUMS:
