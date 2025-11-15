@@ -1,7 +1,7 @@
 'use client';
 
 import { ReactNode } from 'react';
-import { Button } from '@heroui/react';
+import {Button} from "@heroui/button";
 import { ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 

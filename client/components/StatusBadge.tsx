@@ -1,6 +1,6 @@
 'use client';
 
-import { Chip } from '@heroui/react';
+import {Chip} from "@heroui/chip";
 
 interface StatusBadgeProps {
   status: string;
