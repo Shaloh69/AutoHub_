@@ -38,7 +38,7 @@ class SubscriptionService:
         """Get user's current active subscription"""
         return db.query(UserSubscription).filter(
             UserSubscription.user_id == user_id,
-            UserSubscription.status == "active"
+            UserSubscription.status == "ACTIVE"  # Fixed: Use UPPERCASE to match SQL schema
         ).first()
     
     @staticmethod
@@ -207,26 +207,27 @@ class SubscriptionService:
                 amount = amount - discount_applied
         
         # Determine subscription status based on payment method
-        subscription_status = "pending" if payment_method == "qr_code" else "active"
+        # Fixed: Use UPPERCASE for UserSubscription.status to match SQL schema
+        subscription_status = "PENDING" if payment_method == "qr_code" else "ACTIVE"
         payment_status = "pending" if payment_method == "qr_code" else "completed"
-        
+
         # Create subscription
         subscription = UserSubscription(
             user_id=user_id,
             plan_id=plan_id,
             status=subscription_status,
             billing_cycle=billing_cycle,
-            current_period_start=datetime.utcnow() if subscription_status == "active" else None,
-            current_period_end=(datetime.utcnow() + timedelta(days=30 if billing_cycle == "monthly" else 365)) if subscription_status == "active" else None,
-            next_billing_date=(datetime.utcnow() + timedelta(days=30 if billing_cycle == "monthly" else 365)) if subscription_status == "active" else None,
+            current_period_start=datetime.utcnow() if subscription_status == "ACTIVE" else None,
+            current_period_end=(datetime.utcnow() + timedelta(days=30 if billing_cycle == "monthly" else 365)) if subscription_status == "ACTIVE" else None,
+            next_billing_date=(datetime.utcnow() + timedelta(days=30 if billing_cycle == "monthly" else 365)) if subscription_status == "ACTIVE" else None,
             subscribed_at=datetime.utcnow()
         )
-        
+
         db.add(subscription)
         db.flush()
-        
+
         subscription_id = int(getattr(subscription, 'id', 0))
-        
+
         # Create payment record
         payment = SubscriptionPayment(
             subscription_id=subscription_id,
@@ -238,15 +239,15 @@ class SubscriptionService:
             qr_code_shown=(payment_method == "qr_code"),
             created_at=datetime.utcnow()
         )
-        
+
         # For non-QR payments, mark as paid immediately
         if payment_status == "completed":
             payment.paid_at = datetime.utcnow() # type: ignore[assignment]
-        
+
         db.add(payment)
-        
+
         # Update user subscription status (only if active)
-        if subscription_status == "active":
+        if subscription_status == "ACTIVE":
             user = db.query(User).filter(User.id == user_id).first()
             if user:
                 setattr(user, 'current_subscription_id', subscription_id)
@@ -597,20 +598,21 @@ class SubscriptionService:
         plan = getattr(subscription, 'plan', None)
 
         # Calculate real-time usage from cars table
+        # Fixed: Use UPPERCASE for Car.status to match SQL schema
         active_listings = db.query(Car).filter(
             Car.seller_id == user_id,
-            Car.status == "active"
+            Car.status == "ACTIVE"
         ).count()
 
         featured_listings = db.query(Car).filter(
             Car.seller_id == user_id,
-            Car.status == "active",
+            Car.status == "ACTIVE",
             Car.is_featured == True
         ).count()
 
         premium_listings = db.query(Car).filter(
             Car.seller_id == user_id,
-            Car.status == "active",
+            Car.status == "ACTIVE",
             Car.is_premium == True
         ).count()
 
