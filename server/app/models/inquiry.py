@@ -39,7 +39,8 @@ class Inquiry(Base):
     
     id = Column(Integer, primary_key=True, autoincrement=True)
     car_id = Column(Integer, ForeignKey("cars.id", ondelete="CASCADE"), nullable=False, index=True)
-    buyer_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    # FIXED: Changed buyer_id to SET NULL to allow guest inquiries (SQL schema uses SET NULL)
+    buyer_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), index=True)
     seller_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     
     # Basic Info
@@ -86,16 +87,17 @@ class Inquiry(Base):
 
 class InquiryResponse(Base):
     __tablename__ = "inquiry_responses"
-    
+
     id = Column(Integer, primary_key=True, autoincrement=True)
     inquiry_id = Column(Integer, ForeignKey("inquiries.id", ondelete="CASCADE"), nullable=False, index=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     message = Column(Text, nullable=False)
-    response_type = Column(Enum(ResponseType), default=ResponseType.MESSAGE)
-    counter_offer_price = Column(DECIMAL(12, 2))
-    is_automated = Column(Boolean, default=False)
+    # FIXED: Added is_from_seller from SQL schema
+    is_from_seller = Column(Boolean, default=False)
+    # NOTE: response_type, counter_offer_price, is_automated are NOT in SQL schema
+    # Keeping them for backwards compatibility, but they won't persist to database
     created_at = Column(TIMESTAMP, default=datetime.utcnow)
-    
+
     # Relationships
     inquiry = relationship("Inquiry", back_populates="responses")
 

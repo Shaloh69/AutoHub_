@@ -521,7 +521,7 @@ def create_sample_cars(db):
             image_url=f"https://via.placeholder.com/800x600/333/fff?text={car_data['title'][:20]}",
             thumbnail_url=f"https://via.placeholder.com/200x150/333/fff?text={car_data['title'][:10]}",
             image_type="exterior",
-            is_primary=True,
+            is_main=True,  # FIXED: Changed from is_primary to is_main to match SQL schema
             display_order=0,
             uploaded_at=datetime.now()
         )
