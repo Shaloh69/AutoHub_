@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from app.database import get_db
 from app.schemas.car import (
     CarCreate, CarUpdate, CarResponse, CarDetailResponse,
-    CarImageUpload, CarBoost, BrandResponse, ModelResponse, FeatureResponse,
+    CarImageUpload, CarBoost, BrandResponse, ModelResponse, CategoryResponse, FeatureResponse,
     PriceHistoryResponse
 )
 from app.schemas.common import PaginatedResponse, MessageResponse, IDResponse
@@ -13,7 +13,7 @@ from app.services.car_service import CarService
 from app.services.file_service import FileService
 from app.core.dependencies import get_current_user, get_current_seller, get_optional_user
 from app.models.user import User
-from app.models.car import CarImage, Car, Brand, Model, Feature
+from app.models.car import CarImage, Car, Brand, Model, Category, Feature
 from app.models.transaction import PriceHistory
 
 router = APIRouter()
@@ -414,23 +414,48 @@ async def get_price_history(
 
 
 @router.get("/brands/all", response_model=List[BrandResponse])
+@router.get("/brands", response_model=List[BrandResponse])  # Alias for frontend compatibility
 async def get_brands(
     is_popular: Optional[bool] = None,
     db: Session = Depends(get_db)
 ):
     """
     Get all car brands
-    
+
     Optionally filter by popular brands in Philippines.
     """
     query = db.query(Brand)
-    
+
     if is_popular is not None:
         query = query.filter(Brand.is_popular_in_ph == is_popular)
-    
+
     brands = query.order_by(Brand.name).all()
-    
+
     return [BrandResponse.model_validate(brand) for brand in brands]
+
+
+@router.get("/models", response_model=List[ModelResponse])
+async def get_models(
+    brand_id: Optional[int] = None,
+    is_popular: Optional[bool] = None,
+    db: Session = Depends(get_db)
+):
+    """
+    Get car models
+
+    Optionally filter by brand_id or popular models in Philippines.
+    """
+    query = db.query(Model)
+
+    if brand_id is not None:
+        query = query.filter(Model.brand_id == brand_id)
+
+    if is_popular is not None:
+        query = query.filter(Model.is_popular_in_ph == is_popular)
+
+    models = query.order_by(Model.name).all()
+
+    return [ModelResponse.model_validate(model) for model in models]
 
 
 @router.get("/brands/{brand_id}/models", response_model=List[ModelResponse])
@@ -440,21 +465,42 @@ async def get_models_by_brand(
     db: Session = Depends(get_db)
 ):
     """
-    Get all models for a specific brand
-    
+    Get all models for a specific brand (alternative endpoint)
+
     Optionally filter by popular models in Philippines.
     """
     query = db.query(Model).filter(Model.brand_id == brand_id)
-    
+
     if is_popular is not None:
         query = query.filter(Model.is_popular_in_ph == is_popular)
-    
+
     models = query.order_by(Model.name).all()
-    
+
     return [ModelResponse.model_validate(model) for model in models]
 
 
+@router.get("/categories", response_model=List[CategoryResponse])
+async def get_categories(
+    is_active: Optional[bool] = True,
+    db: Session = Depends(get_db)
+):
+    """
+    Get all car categories
+
+    Optionally filter by active categories (default: True).
+    """
+    query = db.query(Category)
+
+    if is_active is not None:
+        query = query.filter(Category.is_active == is_active)
+
+    categories = query.order_by(Category.display_order, Category.name).all()
+
+    return [CategoryResponse.model_validate(category) for category in categories]
+
+
 @router.get("/features/all", response_model=List[FeatureResponse])
+@router.get("/features", response_model=List[FeatureResponse])  # Alias for frontend compatibility
 async def get_features(
     category: Optional[str] = None,
     is_popular: Optional[bool] = None,
@@ -462,17 +508,17 @@ async def get_features(
 ):
     """
     Get all car features
-    
+
     Optionally filter by category or popular features.
     """
     query = db.query(Feature)
-    
+
     if category:
         query = query.filter(Feature.category == category)
-    
+
     if is_popular is not None:
         query = query.filter(Feature.is_popular == is_popular)
-    
+
     features = query.order_by(Feature.name).all()
-    
+
     return [FeatureResponse.model_validate(feature) for feature in features]

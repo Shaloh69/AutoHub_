@@ -66,6 +66,7 @@ logger = logging.getLogger(__name__)
 # ========================================
 
 @router.get("/dashboard", response_model=AdminDashboardResponse)
+@router.get("/analytics", response_model=AdminDashboardResponse)  # Alias for frontend compatibility
 async def get_admin_dashboard(
     current_admin: User = Depends(get_current_admin),
     db: Session = Depends(get_db)
@@ -893,9 +894,79 @@ async def approve_car(
         logger.error(f"Failed to send moderation notification: {e}")
     
     db.commit()
-    
+
     return MessageResponse(
         message=f"Car {'approved' if approval_request.approved else 'rejected'} successfully",
+        success=True
+    )
+
+
+@router.post("/cars/{car_id}/reject", response_model=MessageResponse)
+async def reject_car(
+    car_id: int,
+    rejection_data: dict,
+    current_moderator: User = Depends(get_current_moderator),
+    db: Session = Depends(get_db)
+):
+    """
+    Reject a car listing (frontend-compatible endpoint)
+
+    Converts frontend's 'reason' field to backend's 'notes' field.
+    """
+    # Convert frontend request to backend format
+    approval_request = CarApprovalRequest(
+        approved=False,
+        notes=rejection_data.get('reason', rejection_data.get('notes', 'No reason provided'))
+    )
+
+    # Call the main approve function
+    car = db.query(Car).filter(Car.id == car_id).first()
+
+    if not car:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Car not found"
+        )
+
+    # Update car status
+    setattr(car, 'status', 'rejected')
+    setattr(car, 'is_active', False)
+    setattr(car, 'rejection_reason', approval_request.notes)
+
+    # Create audit log
+    moderator_id = int(getattr(current_moderator, 'id', 0))
+    audit = AuditLog(
+        user_id=moderator_id,
+        action="reject_car",
+        entity_type="car",
+        entity_id=car_id,
+        new_values={
+            "approved": False,
+            "status": "rejected",
+            "rejection_reason": approval_request.notes
+        }
+    )
+    db.add(audit)
+
+    # Notify seller
+    try:
+        seller_id = int(getattr(car, 'seller_id', 0))
+        NotificationService.create_notification(
+            db,
+            user_id=seller_id,
+            title="Car Listing Rejected",
+            message=f"Your car listing '{getattr(car, 'title', '')}' was rejected. Reason: {approval_request.notes}",
+            notification_type="car_moderation",
+            related_id=car_id,
+            related_type="car"
+        )
+    except Exception as e:
+        logger.error(f"Failed to send rejection notification: {e}")
+
+    db.commit()
+
+    return MessageResponse(
+        message="Car rejected successfully",
         success=True
     )
 

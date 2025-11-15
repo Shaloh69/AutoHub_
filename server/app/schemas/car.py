@@ -319,6 +319,19 @@ class ModelResponse(BaseModel):
     )
 
 
+class CategoryResponse(BaseModel):
+    """Category response"""
+    id: int
+    name: str
+    slug: str
+    description: Optional[str] = None
+    icon: Optional[str] = None
+    display_order: int
+    is_active: bool
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class FeatureResponse(BaseModel):
     """Feature response"""
     id: int
@@ -327,7 +340,7 @@ class FeatureResponse(BaseModel):
     description: Optional[str] = None
     is_premium: bool
     is_popular: bool
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 
