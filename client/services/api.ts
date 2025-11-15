@@ -394,6 +394,31 @@ class ApiService {
     });
   }
 
+  async getUserLimits(): Promise<ApiResponse<any>> {
+    return this.request('/users/statistics');
+  }
+
+  async upgradeSubscription(planId: number): Promise<ApiResponse<Subscription>> {
+    return this.request<Subscription>('/subscriptions/subscribe', {
+      method: 'POST',
+      body: JSON.stringify({ plan_id: planId }),
+    });
+  }
+
+  async submitPaymentReference(data: {
+    subscription_id: number;
+    reference_number: string;
+  }): Promise<ApiResponse<any>> {
+    return this.request('/subscriptions/submit-reference', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getPaymentQRCode(): Promise<ApiResponse<{ qr_code_url: string; instructions: string }>> {
+    return this.request('/subscriptions/qr-code');
+  }
+
   // ==================== FAVORITES ====================
   
   async getFavorites(): Promise<ApiResponse<Car[]>> {

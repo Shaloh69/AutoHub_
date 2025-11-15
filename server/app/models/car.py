@@ -59,6 +59,38 @@ class ApprovalStatus(str, enum.Enum):
     NEEDS_REVISION = "needs_revision"
 
 
+class BodyType(str, enum.Enum):
+    SEDAN = "sedan"
+    SUV = "suv"
+    PICKUP = "pickup"
+    VAN = "van"
+    HATCHBACK = "hatchback"
+    COUPE = "coupe"
+    MPV = "mpv"
+    CROSSOVER = "crossover"
+    WAGON = "wagon"
+    CONVERTIBLE = "convertible"
+
+
+class EngineType(str, enum.Enum):
+    GASOLINE = "gasoline"
+    DIESEL = "diesel"
+    ELECTRIC = "electric"
+    HYBRID = "hybrid"
+    PLUGIN_HYBRID = "plug-in-hybrid"
+
+
+class MileageUnit(str, enum.Enum):
+    KM = "km"
+    MILES = "miles"
+
+
+class Visibility(str, enum.Enum):
+    PUBLIC = "public"
+    PRIVATE = "private"
+    UNLISTED = "unlisted"
+
+
 class Brand(Base):
     __tablename__ = "brands"
     
@@ -140,51 +172,72 @@ class Car(Base):
     title = Column(String(255), nullable=False, index=True)
     description = Column(Text)
     year = Column(Integer, nullable=False, index=True)
+    make = Column(String(100), nullable=False)  # Brand name as string (separate from brand_id)
+    model = Column(String(100), nullable=False)  # Model name as string (separate from model_id)
+    trim = Column(String(100))  # Trim level/variant
     
     # Pricing
     price = Column(DECIMAL(12, 2), nullable=False, index=True)
     currency = Column(String(3), default="PHP")
+    currency_id = Column(Integer, ForeignKey("currencies.id"), default=1)
     original_price = Column(DECIMAL(12, 2))
-    discount_percentage = Column(DECIMAL(5, 2))  # ← VERIFY THIS EXISTS
+    discount_amount = Column(DECIMAL(12, 2))
+    discount_percentage = Column(DECIMAL(5, 2))
     negotiable = Column(Boolean, default=True)
+    price_negotiable = Column(Boolean, default=True)  # Duplicate for SQL compatibility
     
     # Vehicle Details
-    vin_number = Column(String(17), unique=True, index=True)
+    vin = Column(String(17), unique=True, index=True)  # Primary VIN field
+    vin_number = Column(String(17), unique=True, index=True)  # Duplicate for compatibility
     plate_number = Column(String(20), index=True)
     engine_number = Column(String(50))
     chassis_number = Column(String(50))
+    body_type = Column(Enum(BodyType))
     
     # Technical Specifications
     mileage = Column(Integer, nullable=False, index=True)
+    mileage_unit = Column(Enum(MileageUnit), default=MileageUnit.KM)
     fuel_type = Column(Enum(FuelType), nullable=False, index=True)
+    engine_type = Column(Enum(EngineType))  # Separate from fuel_type
     transmission = Column(Enum(TransmissionType), nullable=False, index=True)
     engine_size = Column(String(20))  # e.g., "1.5L", "2000cc"
+    cylinders = Column(Integer)
     horsepower = Column(Integer)
     torque = Column(Integer)
+    fuel_economy_city = Column(DECIMAL(5, 2))  # km/L or mpg
+    fuel_economy_highway = Column(DECIMAL(5, 2))  # km/L or mpg
     drivetrain = Column(Enum(DrivetrainType))
     seats = Column(Integer)
     doors = Column(Integer)
     
-    # Exterior
+    # Exterior & Interior
     exterior_color = Column(String(50), index=True)
+    interior_color = Column(String(50))
     color_type = Column(Enum("solid", "metallic", "pearl", "matte"))
     
     # Condition
     condition_rating = Column(Enum(ConditionRating), nullable=False, index=True)
+    car_condition = Column(Enum(ConditionRating), nullable=False, index=True)  # SQL uses this name
     accident_history = Column(Boolean, default=False)
     accident_details = Column(Text)
     flood_history = Column(Boolean, default=False)
     number_of_owners = Column(Integer, default=1)
+    previous_owners = Column(Integer, default=1)  # Separate field for SQL compatibility
+    service_history = Column(Boolean, default=False)
     service_history_available = Column(Boolean, default=False)
     
     # Ownership & Documentation
     registration_status = Column(Enum("registered", "unregistered", "for_transfer", "expired"), default="registered")
+    registration_valid = Column(Boolean, default=True)
+    registration_expiry = Column(TIMESTAMP)
     or_cr_status = Column(Enum("complete", "incomplete", "missing"), default="complete")
     lto_registered = Column(Boolean, default=True)
     deed_of_sale_available = Column(Boolean, default=True)
+    has_emission_test = Column(Boolean, default=False)
     casa_maintained = Column(Boolean, default=False)
     
     # Insurance & Warranty
+    has_insurance = Column(Boolean, default=False)
     insurance_status = Column(Enum("active", "expired", "none"), default="none")
     insurance_expiry = Column(TIMESTAMP)
     warranty_remaining = Column(Boolean, default=False)
@@ -201,16 +254,28 @@ class Car(Base):
     province_id = Column(Integer, ForeignKey("ph_provinces.id"), nullable=False, index=True)
     region_id = Column(Integer, ForeignKey("ph_regions.id"), nullable=False, index=True)
     detailed_address = Column(Text)
+    exact_location = Column(Text)  # Exact location details
     barangay = Column(String(100))
     latitude = Column(DECIMAL(10, 8), index=True)
     longitude = Column(DECIMAL(11, 8), index=True)
+
+    # Media
+    main_image = Column(String(500))
+    total_images = Column(Integer, default=0)
+    video_url = Column(String(500))
+    virtual_tour_url = Column(String(500))
     
     # Status & Visibility
     status = Column(Enum(CarStatus), default=CarStatus.PENDING, nullable=False, index=True)
     approval_status = Column(Enum(ApprovalStatus), default=ApprovalStatus.PENDING, nullable=False, index=True)
+    visibility = Column(Enum(Visibility), default=Visibility.PUBLIC)
     rejection_reason = Column(Text)
+    rejected_reason = Column(Text)  # SQL uses this name
+    admin_notes = Column(Text)
+    featured = Column(Boolean, default=False, index=True)  # SQL uses this name
     is_featured = Column(Boolean, default=False, index=True)
     is_premium = Column(Boolean, default=False, index=True)
+    verified = Column(Boolean, default=False)
     is_active = Column(Boolean, default=True, index=True)
     featured_until = Column(TIMESTAMP)
     premium_until = Column(TIMESTAMP)
@@ -224,9 +289,12 @@ class Car(Base):
     search_keywords = Column(Text)  # ← VERIFY THIS EXISTS
     
     # Metrics & Analytics
+    view_count = Column(Integer, default=0)  # SQL uses this name
     views_count = Column(Integer, default=0)
     unique_views_count = Column(Integer, default=0)
+    inquiry_count = Column(Integer, default=0)
     contact_count = Column(Integer, default=0)
+    click_count = Column(Integer, default=0)
     favorite_count = Column(Integer, default=0)
     average_rating = Column(DECIMAL(3, 2), default=0.00)
     quality_score = Column(Integer, default=0)

@@ -111,6 +111,7 @@ class User(Base):
     sold_listings = Column(Integer, default=0)
     
     # Fraud Detection
+    fraud_score = Column(Integer, default=0)
     warnings_count = Column(Integer, default=0)
     last_warning_at = Column(TIMESTAMP)
     warning_reasons = Column(Text)
