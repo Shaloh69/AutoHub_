@@ -280,7 +280,7 @@ def create_features(db):
 def get_location(db):
     """Get a default location (Metro Manila)"""
     city = db.query(PhCity).filter(PhCity.name.like("%Manila%")).first()
-    if city:
+    if city and city.province:
         return city.id, city.province_id, city.province.region_id
     # Fallback to IDs if name search fails
     return 1, 1, 1
@@ -311,6 +311,16 @@ def create_sample_cars(db):
     civic = db.query(Model).filter(Model.name == "Civic").first()
     crv = db.query(Model).filter(Model.name == "CR-V").first()
     montero = db.query(Model).filter(Model.name == "Montero Sport").first()
+
+    # Validate models exist
+    if not all([vios, fortuner, civic, crv, montero]):
+        print("❌ One or more models not found!")
+        print(f"   Vios: {'✓' if vios else '✗'}")
+        print(f"   Fortuner: {'✓' if fortuner else '✗'}")
+        print(f"   Civic: {'✓' if civic else '✗'}")
+        print(f"   CR-V: {'✓' if crv else '✗'}")
+        print(f"   Montero Sport: {'✓' if montero else '✗'}")
+        return
 
     # Get location
     city_id, province_id, region_id = get_location(db)
@@ -441,10 +451,16 @@ def create_sample_cars(db):
         },
     ]
 
+    created_count = 0
     for car_data in sample_cars:
         # Get brand and model names for required fields
         brand = db.query(Brand).filter(Brand.id == car_data['brand_id']).first()
         model = db.query(Model).filter(Model.id == car_data['model_id']).first()
+
+        # Skip this car if brand or model not found
+        if not brand or not model:
+            print(f"⚠️  Skipping car '{car_data.get('title', 'Unknown')}': Brand or Model not found")
+            continue
 
         car = Car(
             seller_id=seller.id,
@@ -492,8 +508,10 @@ def create_sample_cars(db):
             car_feature = CarFeature(car_id=car.id, feature_id=feature.id)
             db.add(car_feature)
 
+        created_count += 1
+
     db.commit()
-    print(f"✅ Created {len(sample_cars)} sample cars")
+    print(f"✅ Created {created_count} sample cars")
 
 
 def main():
