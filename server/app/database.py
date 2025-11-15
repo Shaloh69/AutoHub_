@@ -81,13 +81,15 @@ def close_db_connections():
 # Event listener to set timezone for MySQL connections
 @event.listens_for(engine, "connect")
 def set_timezone(dbapi_conn, connection_record):
-    """Set timezone to Philippines time for each connection"""
-    cursor = dbapi_conn.cursor()
-    try:
-        cursor.execute("SET time_zone = '+08:00'")
-        cursor.execute("SET sql_mode='STRICT_TRANS_TABLES,NO_ZERO_DATE,NO_ZERO_IN_DATE,ERROR_FOR_DIVISION_BY_ZERO'")
-    finally:
-        cursor.close()
+    """Set timezone to Philippines time for each connection (MySQL only)"""
+    # Only apply for MySQL connections
+    if 'mysql' in settings.DATABASE_URL.lower():
+        cursor = dbapi_conn.cursor()
+        try:
+            cursor.execute("SET time_zone = '+08:00'")
+            cursor.execute("SET sql_mode='STRICT_TRANS_TABLES,NO_ZERO_DATE,NO_ZERO_IN_DATE,ERROR_FOR_DIVISION_BY_ZERO'")
+        finally:
+            cursor.close()
 
 
 # Cache utilities

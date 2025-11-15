@@ -15,7 +15,7 @@ from typing import List, Any
 # Import settings
 from app.config import settings
 from app.database import engine, Base, close_db_connections
-from app.api.v1 import auth, cars, users, subscriptions, inquiries, transactions, analytics, admin  
+from app.api.v1 import auth, cars, users, subscriptions, inquiries, transactions, analytics, admin, locations  
 
 # Create required directories BEFORE configuring logging
 os.makedirs(os.path.dirname(settings.LOG_FILE), exist_ok=True)
@@ -202,6 +202,7 @@ app.include_router(inquiries.router, prefix="/api/v1/inquiries", tags=["Inquirie
 app.include_router(transactions.router, prefix="/api/v1/transactions", tags=["Transactions"])
 app.include_router(analytics.router, prefix="/api/v1/analytics", tags=["Analytics"])
 app.include_router(admin.router, prefix="/api/v1/admin", tags=["Admin"])
+app.include_router(locations.router, prefix="/api/v1/locations", tags=["Locations"])
 
 
 if __name__ == "__main__":

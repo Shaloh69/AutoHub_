@@ -1,0 +1,1199 @@
+{
+  "info": {
+    "name": "AutoHub Philippines API",
+    "description": "Complete Car Marketplace Platform for Philippines - Multi-tier subscriptions, location-based search, fraud detection\n\nBase URL: http://localhost:8000/api/v1\n\nAuthentication: Most endpoints require a Bearer token. Get the token by registering or logging in.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "autohub_api_v1"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{access_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "access_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refresh_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "user_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "car_id",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health & Root",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8000/health",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8000",
+              "path": ["health"]
+            },
+            "description": "Check if the API is healthy and running"
+          }
+        },
+        {
+          "name": "Root",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8000/",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8000",
+              "path": [""]
+            },
+            "description": "API root endpoint with basic information"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Register",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "    const jsonData = pm.response.json();",
+                  "    if (jsonData.access_token) {",
+                  "        pm.collectionVariables.set(\"access_token\", jsonData.access_token);",
+                  "        pm.collectionVariables.set(\"refresh_token\", jsonData.refresh_token);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"seller@example.com\",\n  \"password\": \"SecurePass123!\",\n  \"first_name\": \"John\",\n  \"last_name\": \"Doe\",\n  \"phone_number\": \"+639171234567\",\n  \"role\": \"seller\",\n  \"city_id\": 1\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/register",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "register"]
+            },
+            "description": "Register a new user account"
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set(\"access_token\", jsonData.access_token);",
+                  "    pm.collectionVariables.set(\"refresh_token\", jsonData.refresh_token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"seller@example.com\",\n  \"password\": \"SecurePass123!\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "Login with email and password"
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set(\"access_token\", jsonData.access_token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh_token\": \"{{refresh_token}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/refresh",
+              "host": ["{{base_url}}"],
+              "path": ["auth", "refresh"]
+            },
+            "description": "Refresh access token using refresh token"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Locations",
+      "item": [
+        {
+          "name": "Get Regions",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/locations/regions?active_only=true",
+              "host": ["{{base_url}}"],
+              "path": ["locations", "regions"],
+              "query": [
+                {
+                  "key": "active_only",
+                  "value": "true"
+                }
+              ]
+            },
+            "description": "Get all Philippine regions"
+          }
+        },
+        {
+          "name": "Get Region by ID",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/locations/regions/1",
+              "host": ["{{base_url}}"],
+              "path": ["locations", "regions", "1"]
+            },
+            "description": "Get a specific region by ID"
+          }
+        },
+        {
+          "name": "Get Provinces",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/locations/provinces?region_id=&active_only=true",
+              "host": ["{{base_url}}"],
+              "path": ["locations", "provinces"],
+              "query": [
+                {
+                  "key": "region_id",
+                  "value": "",
+                  "description": "Filter by region ID"
+                },
+                {
+                  "key": "active_only",
+                  "value": "true"
+                }
+              ]
+            },
+            "description": "Get all provinces, optionally filtered by region"
+          }
+        },
+        {
+          "name": "Get Cities",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/locations/cities?province_id=&region_id=&active_only=true&search=&limit=100",
+              "host": ["{{base_url}}"],
+              "path": ["locations", "cities"],
+              "query": [
+                {
+                  "key": "province_id",
+                  "value": "",
+                  "description": "Filter by province ID"
+                },
+                {
+                  "key": "region_id",
+                  "value": "",
+                  "description": "Filter by region ID"
+                },
+                {
+                  "key": "active_only",
+                  "value": "true"
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Search by city name"
+                },
+                {
+                  "key": "limit",
+                  "value": "100"
+                }
+              ]
+            },
+            "description": "Get all cities/municipalities with filters"
+          }
+        },
+        {
+          "name": "Search Locations",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/locations/search?query=Manila&limit=20",
+              "host": ["{{base_url}}"],
+              "path": ["locations", "search"],
+              "query": [
+                {
+                  "key": "query",
+                  "value": "Manila"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Search across regions, provinces, and cities"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cars",
+      "item": [
+        {
+          "name": "Search Cars",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/cars?page=1&page_size=20&brand=&model=&min_price=&max_price=&min_year=&max_year=&transmission=&fuel_type=&city_id=&is_featured=&sort=-created_at",
+              "host": ["{{base_url}}"],
+              "path": ["cars"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "page_size",
+                  "value": "20"
+                },
+                {
+                  "key": "brand",
+                  "value": ""
+                },
+                {
+                  "key": "model",
+                  "value": ""
+                },
+                {
+                  "key": "min_price",
+                  "value": ""
+                },
+                {
+                  "key": "max_price",
+                  "value": ""
+                },
+                {
+                  "key": "min_year",
+                  "value": ""
+                },
+                {
+                  "key": "max_year",
+                  "value": ""
+                },
+                {
+                  "key": "transmission",
+                  "value": ""
+                },
+                {
+                  "key": "fuel_type",
+                  "value": ""
+                },
+                {
+                  "key": "city_id",
+                  "value": ""
+                },
+                {
+                  "key": "is_featured",
+                  "value": ""
+                },
+                {
+                  "key": "sort",
+                  "value": "-created_at"
+                }
+              ]
+            },
+            "description": "Search and filter cars with pagination"
+          }
+        },
+        {
+          "name": "Get Car by ID",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/cars/{{car_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["cars", "{{car_id}}"]
+            },
+            "description": "Get detailed information about a specific car"
+          }
+        },
+        {
+          "name": "Create Car Listing",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "    const jsonData = pm.response.json();",
+                  "    if (jsonData.id) {",
+                  "        pm.collectionVariables.set(\"car_id\", jsonData.id);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"brand_id\": 1,\n  \"model_id\": 1,\n  \"year\": 2020,\n  \"price\": 850000,\n  \"mileage_km\": 35000,\n  \"transmission\": \"automatic\",\n  \"fuel_type\": \"gasoline\",\n  \"body_type\": \"sedan\",\n  \"color\": \"White\",\n  \"city_id\": 1,\n  \"title\": \"2020 Toyota Vios - Well Maintained\",\n  \"description\": \"Excellent condition, single owner, complete papers\",\n  \"condition\": \"used\",\n  \"engine_size_l\": 1.5,\n  \"doors\": 4,\n  \"seats\": 5\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/cars",
+              "host": ["{{base_url}}"],
+              "path": ["cars"]
+            },
+            "description": "Create a new car listing (requires authentication)"
+          }
+        },
+        {
+          "name": "Update Car",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"price\": 820000,\n  \"description\": \"Price reduced! Excellent condition, single owner\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/cars/{{car_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["cars", "{{car_id}}"]
+            },
+            "description": "Update an existing car listing"
+          }
+        },
+        {
+          "name": "Delete Car",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/cars/{{car_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["cars", "{{car_id}}"]
+            },
+            "description": "Delete a car listing"
+          }
+        },
+        {
+          "name": "Get Brands",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/cars/brands?is_popular=",
+              "host": ["{{base_url}}"],
+              "path": ["cars", "brands"],
+              "query": [
+                {
+                  "key": "is_popular",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Get all car brands"
+          }
+        },
+        {
+          "name": "Get Models",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/cars/models?brand_id=1&is_popular=",
+              "host": ["{{base_url}}"],
+              "path": ["cars", "models"],
+              "query": [
+                {
+                  "key": "brand_id",
+                  "value": "1"
+                },
+                {
+                  "key": "is_popular",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Get car models for a specific brand"
+          }
+        },
+        {
+          "name": "Get Categories",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/cars/categories",
+              "host": ["{{base_url}}"],
+              "path": ["cars", "categories"]
+            },
+            "description": "Get all car categories"
+          }
+        },
+        {
+          "name": "Get Features",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/cars/features?category=",
+              "host": ["{{base_url}}"],
+              "path": ["cars", "features"],
+              "query": [
+                {
+                  "key": "category",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Get available car features"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "Get Profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users/profile",
+              "host": ["{{base_url}}"],
+              "path": ["users", "profile"]
+            },
+            "description": "Get current user profile"
+          }
+        },
+        {
+          "name": "Update Profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"first_name\": \"John\",\n  \"last_name\": \"Doe\",\n  \"phone_number\": \"+639171234567\",\n  \"bio\": \"Professional car seller in Metro Manila\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/users/profile",
+              "host": ["{{base_url}}"],
+              "path": ["users", "profile"]
+            },
+            "description": "Update user profile"
+          }
+        },
+        {
+          "name": "Get User Listings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users/listings?status=",
+              "host": ["{{base_url}}"],
+              "path": ["users", "listings"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Get current user's car listings"
+          }
+        },
+        {
+          "name": "Get User Statistics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users/statistics",
+              "host": ["{{base_url}}"],
+              "path": ["users", "statistics"]
+            },
+            "description": "Get user statistics and analytics"
+          }
+        },
+        {
+          "name": "Get Public Profile",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users/{{user_id}}/public-profile",
+              "host": ["{{base_url}}"],
+              "path": ["users", "{{user_id}}", "public-profile"]
+            },
+            "description": "Get public profile of any user"
+          }
+        },
+        {
+          "name": "Get Favorites",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users/favorites",
+              "host": ["{{base_url}}"],
+              "path": ["users", "favorites"]
+            },
+            "description": "Get user's favorite cars"
+          }
+        },
+        {
+          "name": "Add to Favorites",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users/favorites/{{car_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["users", "favorites", "{{car_id}}"]
+            },
+            "description": "Add a car to favorites"
+          }
+        },
+        {
+          "name": "Remove from Favorites",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users/favorites/{{car_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["users", "favorites", "{{car_id}}"]
+            },
+            "description": "Remove a car from favorites"
+          }
+        },
+        {
+          "name": "Get Notifications",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users/notifications?unread_only=false",
+              "host": ["{{base_url}}"],
+              "path": ["users", "notifications"],
+              "query": [
+                {
+                  "key": "unread_only",
+                  "value": "false"
+                }
+              ]
+            },
+            "description": "Get user notifications"
+          }
+        },
+        {
+          "name": "Get Unread Count",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users/notifications/unread-count",
+              "host": ["{{base_url}}"],
+              "path": ["users", "notifications", "unread-count"]
+            },
+            "description": "Get count of unread notifications"
+          }
+        },
+        {
+          "name": "Mark Notification as Read",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users/notifications/1",
+              "host": ["{{base_url}}"],
+              "path": ["users", "notifications", "1"]
+            },
+            "description": "Mark a notification as read"
+          }
+        },
+        {
+          "name": "Mark All as Read",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users/notifications/mark-all-read",
+              "host": ["{{base_url}}"],
+              "path": ["users", "notifications", "mark-all-read"]
+            },
+            "description": "Mark all notifications as read"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Inquiries",
+      "item": [
+        {
+          "name": "Create Inquiry",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"car_id\": 1,\n  \"subject\": \"Interested in this car\",\n  \"message\": \"Is this car still available? Can I schedule a test drive?\",\n  \"buyer_name\": \"Jane Smith\",\n  \"buyer_email\": \"jane@example.com\",\n  \"buyer_phone\": \"+639181234567\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/inquiries",
+              "host": ["{{base_url}}"],
+              "path": ["inquiries"]
+            },
+            "description": "Create an inquiry about a car"
+          }
+        },
+        {
+          "name": "Get My Inquiries",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/inquiries?type=sent&status=",
+              "host": ["{{base_url}}"],
+              "path": ["inquiries"],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "sent",
+                  "description": "sent or received"
+                },
+                {
+                  "key": "status",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Get inquiries (sent or received)"
+          }
+        },
+        {
+          "name": "Get Inquiry by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/inquiries/1",
+              "host": ["{{base_url}}"],
+              "path": ["inquiries", "1"]
+            },
+            "description": "Get a specific inquiry with responses"
+          }
+        },
+        {
+          "name": "Respond to Inquiry",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"Yes, the car is still available. You can come for a test drive this Saturday.\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/inquiries/1/responses",
+              "host": ["{{base_url}}"],
+              "path": ["inquiries", "1", "responses"]
+            },
+            "description": "Respond to an inquiry"
+          }
+        },
+        {
+          "name": "Update Inquiry Status",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"closed\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/inquiries/1",
+              "host": ["{{base_url}}"],
+              "path": ["inquiries", "1"]
+            },
+            "description": "Update inquiry status"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Transactions",
+      "item": [
+        {
+          "name": "Create Transaction",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"car_id\": 1,\n  \"agreed_price\": 820000,\n  \"payment_method\": \"bank_transfer\",\n  \"deposit_amount\": 50000\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/transactions",
+              "host": ["{{base_url}}"],
+              "path": ["transactions"]
+            },
+            "description": "Create a transaction for car purchase"
+          }
+        },
+        {
+          "name": "Get Transactions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/transactions?type=purchases&status=",
+              "host": ["{{base_url}}"],
+              "path": ["transactions"],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "purchases",
+                  "description": "sales or purchases"
+                },
+                {
+                  "key": "status",
+                  "value": ""
+                }
+              ]
+            },
+            "description": "Get user transactions"
+          }
+        },
+        {
+          "name": "Get Transaction by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/transactions/1",
+              "host": ["{{base_url}}"],
+              "path": ["transactions", "1"]
+            },
+            "description": "Get transaction details"
+          }
+        },
+        {
+          "name": "Update Transaction",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"payment_verified\",\n  \"payment_verified\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/transactions/1",
+              "host": ["{{base_url}}"],
+              "path": ["transactions", "1"]
+            },
+            "description": "Update transaction status"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Subscriptions",
+      "item": [
+        {
+          "name": "Get Plans",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/subscriptions/plans",
+              "host": ["{{base_url}}"],
+              "path": ["subscriptions", "plans"]
+            },
+            "description": "Get all subscription plans"
+          }
+        },
+        {
+          "name": "Get Current Subscription",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/subscriptions/current",
+              "host": ["{{base_url}}"],
+              "path": ["subscriptions", "current"]
+            },
+            "description": "Get user's current subscription"
+          }
+        },
+        {
+          "name": "Subscribe",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"plan_id\": 2,\n  \"billing_cycle\": \"monthly\",\n  \"payment_method\": \"credit_card\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/subscriptions/subscribe",
+              "host": ["{{base_url}}"],
+              "path": ["subscriptions", "subscribe"]
+            },
+            "description": "Subscribe to a plan"
+          }
+        },
+        {
+          "name": "Cancel Subscription",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/subscriptions/cancel",
+              "host": ["{{base_url}}"],
+              "path": ["subscriptions", "cancel"]
+            },
+            "description": "Cancel current subscription"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Analytics",
+      "item": [
+        {
+          "name": "Get Dashboard",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/analytics/dashboard",
+              "host": ["{{base_url}}"],
+              "path": ["analytics", "dashboard"]
+            },
+            "description": "Get analytics dashboard data"
+          }
+        },
+        {
+          "name": "Get Car Analytics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/analytics/cars/{{car_id}}/views?days=30",
+              "host": ["{{base_url}}"],
+              "path": ["analytics", "cars", "{{car_id}}", "views"],
+              "query": [
+                {
+                  "key": "days",
+                  "value": "30"
+                }
+              ]
+            },
+            "description": "Get analytics for a specific car"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "item": [
+        {
+          "name": "Get Analytics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/analytics",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "analytics"]
+            },
+            "description": "Get admin analytics (requires admin role)"
+          }
+        },
+        {
+          "name": "Get Pending Cars",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/cars/pending",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "cars", "pending"]
+            },
+            "description": "Get cars pending approval"
+          }
+        },
+        {
+          "name": "Approve Car",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/cars/1/approve",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "cars", "1", "approve"]
+            },
+            "description": "Approve a car listing"
+          }
+        },
+        {
+          "name": "Reject Car",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Photos are not clear enough\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/cars/1/reject",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "cars", "1", "reject"]
+            },
+            "description": "Reject a car listing"
+          }
+        },
+        {
+          "name": "Get All Users",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/users",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "users"]
+            },
+            "description": "Get all users"
+          }
+        },
+        {
+          "name": "Ban User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Posting fake listings\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/users/1/ban",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "users", "1", "ban"]
+            },
+            "description": "Ban a user"
+          }
+        },
+        {
+          "name": "Unban User",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/users/1/unban",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "users", "1", "unban"]
+            },
+            "description": "Unban a user"
+          }
+        }
+      ]
+    }
+  ]
+}
