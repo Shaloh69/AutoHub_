@@ -54,7 +54,7 @@ def create_users(db):
         first_name="Admin",
         last_name="User",
         role=UserRole.ADMIN,
-        phone_number="+639171234567",
+        phone="+639171234567",
         is_active=True,
         is_banned=False,
         email_verified=True,
@@ -71,15 +71,13 @@ def create_users(db):
         first_name="Juan",
         last_name="Dela Cruz",
         role=UserRole.SELLER,
-        phone_number="+639171234568",
+        phone="+639171234568",
         business_name="Juan's Auto Shop",
         is_active=True,
         is_banned=False,
         email_verified=True,
         phone_verified=True,
         identity_verified=True,
-        city="Manila",
-        province="Metro Manila",
         created_at=datetime.utcnow()
     )
     db.add(seller)
@@ -91,13 +89,11 @@ def create_users(db):
         first_name="Maria",
         last_name="Santos",
         role=UserRole.BUYER,
-        phone_number="+639171234569",
+        phone="+639171234569",
         is_active=True,
         is_banned=False,
         email_verified=True,
         phone_verified=True,
-        city="Quezon City",
-        province="Metro Manila",
         created_at=datetime.utcnow()
     )
     db.add(buyer)
@@ -448,6 +444,10 @@ def create_sample_cars(db):
     ]
 
     for car_data in sample_cars:
+        # Get brand and model names for required fields
+        brand = db.query(Brand).filter(Brand.id == car_data['brand_id']).first()
+        model = db.query(Model).filter(Model.id == car_data['model_id']).first()
+
         car = Car(
             seller_id=seller.id,
             city_id=city_id,
@@ -468,6 +468,10 @@ def create_sample_cars(db):
             created_at=datetime.utcnow(),
             published_at=datetime.utcnow(),
             expires_at=datetime.utcnow() + timedelta(days=30),
+            # Add required string fields from the new schema
+            make=brand.name,
+            model=model.name,
+            car_condition=car_data.get('condition_rating', ConditionRating.GOOD),
             **car_data
         )
         db.add(car)
