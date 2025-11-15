@@ -351,6 +351,17 @@ class Car(Base):
     def __repr__(self):
         return f"<Car {self.id}: {self.title}>"
 
+    # Property aliases for Pydantic serialization compatibility
+    @property
+    def brand(self):
+        """Alias for brand_rel to match schema expectations"""
+        return self.brand_rel
+
+    @property
+    def model(self):
+        """Alias for model_rel to match schema expectations"""
+        return self.model_rel
+
 
 class CarImage(Base):
     __tablename__ = "car_images"
