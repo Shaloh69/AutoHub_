@@ -500,17 +500,12 @@ def create_sample_cars(db):
             created_at=datetime.now(),
             published_at=datetime.now(),
             expires_at=datetime.now() + timedelta(days=30),
-            # Add required string fields from the new schema
+            # FIXED: Add required string fields from the schema
             make=brand.name,
-            # NOTE: 'model' field is set after creation due to naming conflict
-            # with the 'model' relationship in the Car model
+            model=model.name,  # Now works correctly - relationship renamed to model_rel
             car_condition=car_data.get('condition_rating', ConditionRating.GOOD),
             **car_data
         )
-
-        # Set the model string field directly to bypass the relationship descriptor
-        # This is necessary because 'model' is both a Column and a relationship
-        car.__dict__['model'] = model.name
 
         db.add(car)
         db.flush()
@@ -519,9 +514,8 @@ def create_sample_cars(db):
         image = CarImage(
             car_id=car.id,
             image_url=f"https://via.placeholder.com/800x600/333/fff?text={car_data['title'][:20]}",
-            thumbnail_url=f"https://via.placeholder.com/200x150/333/fff?text={car_data['title'][:10]}",
             image_type="exterior",
-            is_main=True,  # FIXED: Changed from is_primary to is_main to match SQL schema
+            is_main=True,  # SQL schema uses is_main
             display_order=0,
             uploaded_at=datetime.now()
         )

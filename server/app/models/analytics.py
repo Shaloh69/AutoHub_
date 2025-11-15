@@ -14,7 +14,7 @@ class CarView(Base):
     
     # Device & Location
     ip_address = Column(String(45))
-    user_agent = Column(String(500))
+    user_agent = Column(Text)  # FIXED: SQL schema uses TEXT not VARCHAR(500)
     device_type = Column(Enum("desktop", "mobile", "tablet"))
     referrer = Column(String(500))
     
