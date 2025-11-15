@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, DECIMAL, Text, TIMESTAMP, ForeignKey, Enum, JSON
+from sqlalchemy import Column, Integer, String, Boolean, DECIMAL, Text, TIMESTAMP, Date, ForeignKey, Enum, JSON
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from app.database import Base
@@ -229,7 +229,7 @@ class Car(Base):
     # Exterior & Interior
     exterior_color = Column(String(50), index=True)
     interior_color = Column(String(50))
-    color_type = Column(Enum("solid", "metallic", "pearl", "matte"))
+    # NOTE: color_type removed - not in SQL schema
     
     # Condition
     condition_rating = Column(Enum(ConditionRating), nullable=False, index=True)
@@ -245,20 +245,23 @@ class Car(Base):
     # Ownership & Documentation
     registration_status = Column(Enum("registered", "unregistered", "for_transfer", "expired"), default="registered")
     registration_valid = Column(Boolean, default=True)
-    registration_expiry = Column(TIMESTAMP)
+    # FIXED: Changed from TIMESTAMP to Date to match SQL schema
+    registration_expiry = Column(Date)
     or_cr_status = Column(Enum("complete", "incomplete", "missing"), default="complete")
     lto_registered = Column(Boolean, default=True)
     deed_of_sale_available = Column(Boolean, default=True)
     has_emission_test = Column(Boolean, default=False)
     casa_maintained = Column(Boolean, default=False)
-    
+
     # Insurance & Warranty
     has_insurance = Column(Boolean, default=False)
     insurance_status = Column(Enum("active", "expired", "none"), default="none")
-    insurance_expiry = Column(TIMESTAMP)
+    # FIXED: Changed from TIMESTAMP to Date to match SQL schema
+    insurance_expiry = Column(Date)
     warranty_remaining = Column(Boolean, default=False)
     warranty_details = Column(Text)
-    warranty_expiry = Column(TIMESTAMP)
+    # FIXED: Changed from TIMESTAMP to Date to match SQL schema
+    warranty_expiry = Column(Date)
     
     # Trade & Finance Options
     financing_available = Column(Boolean, default=False)
