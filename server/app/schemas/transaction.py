@@ -21,7 +21,7 @@ class TransactionCreate(BaseModel):
 
 class TransactionUpdate(BaseModel):
     """Update transaction - Complete"""
-    status: Optional[str] = Field(None, pattern="^(pending|deposit_paid|financing_approved|documents_ready|completed|cancelled|disputed)$")
+    status: Optional[str] = Field(None, pattern="^(pending|confirmed|completed|cancelled|disputed)$")  # Fixed: Match SQL schema exactly
     documents_verified: Optional[bool] = None
     payment_verified: Optional[bool] = None
     transfer_completed: Optional[bool] = None
