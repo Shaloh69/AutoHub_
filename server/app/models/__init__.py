@@ -4,6 +4,7 @@ from app.models.location import Currency, PhRegion, PhProvince, PhCity, Standard
 from app.models.car import Brand, Model, Category, Feature, Car, CarImage, CarFeature
 from app.models.inquiry import Inquiry, InquiryResponse, InquiryAttachment, Favorite, Report
 from app.models.transaction import Transaction, PriceHistory
+from app.models.review import Review, ReviewStatus
 from app.models.subscription import (
     SubscriptionPlan,
     UserSubscription,
@@ -27,6 +28,8 @@ __all__ = [
     "Inquiry", "InquiryResponse", "InquiryAttachment", "Favorite",
     # Transaction
     "Transaction", "PriceHistory",
+    # Review
+    "Review", "ReviewStatus",
     # Subscription
     "SubscriptionPlan", "UserSubscription", "SubscriptionUsage",
     "SubscriptionPayment", "SubscriptionFeatureUsage",

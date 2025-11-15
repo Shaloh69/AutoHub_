@@ -20,6 +20,7 @@ class TransmissionType(str, enum.Enum):
     AUTOMATIC = "automatic"
     SEMI_AUTOMATIC = "semi_automatic"
     CVT = "cvt"
+    DCT = "dct"  # Dual-Clutch Transmission
 
 
 class DrivetrainType(str, enum.Enum):
@@ -30,6 +31,8 @@ class DrivetrainType(str, enum.Enum):
 
 
 class ConditionRating(str, enum.Enum):
+    BRAND_NEW = "brand_new"
+    LIKE_NEW = "like_new"
     EXCELLENT = "excellent"
     VERY_GOOD = "very_good"
     GOOD = "good"
@@ -43,6 +46,8 @@ class CarStatus(str, enum.Enum):
     ACTIVE = "active"
     SOLD = "sold"
     RESERVED = "reserved"
+    INACTIVE = "inactive"
+    REJECTED = "rejected"
     EXPIRED = "expired"
     REMOVED = "removed"
 
@@ -250,6 +255,7 @@ class Car(Base):
     inquiries = relationship("Inquiry", back_populates="car", cascade="all, delete-orphan")
     views = relationship("CarView", back_populates="car")
     favorites = relationship("Favorite", back_populates="car")
+    reviews = relationship("Review", back_populates="car")
     
     def __repr__(self):
         return f"<Car {self.id}: {self.title}>"

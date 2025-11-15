@@ -1928,6 +1928,169 @@ async def get_fraud_statistics(
     }
 
 
+# ========================================
+# REVIEW MODERATION
+# ========================================
+
+@router.get("/reviews", response_model=List[dict])
+async def list_reviews(
+    status: Optional[str] = None,
+    car_id: Optional[int] = None,
+    seller_id: Optional[int] = None,
+    limit: int = Query(100, ge=1, le=500),
+    offset: int = Query(0, ge=0),
+    current_admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """List all reviews for moderation"""
+    from app.models.review import Review
+
+    query = db.query(Review)
+
+    if status:
+        query = query.filter(Review.status == status)
+    if car_id:
+        query = query.filter(Review.car_id == car_id)
+    if seller_id:
+        query = query.filter(Review.seller_id == seller_id)
+
+    reviews = query.order_by(desc(Review.created_at)).limit(limit).offset(offset).all()
+
+    return [{
+        "id": int(getattr(r, 'id', 0)),
+        "car_id": getattr(r, 'car_id', None),
+        "seller_id": int(getattr(r, 'seller_id', 0)),
+        "buyer_id": int(getattr(r, 'buyer_id', 0)),
+        "rating": float(getattr(r, 'rating', 0)),
+        "title": getattr(r, 'title', None),
+        "comment": getattr(r, 'comment', None),
+        "verified_purchase": bool(getattr(r, 'verified_purchase', False)),
+        "status": str(getattr(r, 'status', '')),
+        "created_at": getattr(r, 'created_at', None),
+        "updated_at": getattr(r, 'updated_at', None)
+    } for r in reviews]
+
+
+@router.post("/reviews/{review_id}/moderate", response_model=MessageResponse)
+async def moderate_review(
+    review_id: int,
+    moderation_data: dict,
+    current_admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """Moderate review (approve/reject/hide)"""
+    from app.models.review import Review, ReviewStatus
+
+    review = db.query(Review).filter(Review.id == review_id).first()
+    if not review:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Review not found"
+        )
+
+    action = moderation_data.get('status')
+    if action not in ['approved', 'rejected', 'hidden', 'pending']:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid status. Must be: approved, rejected, hidden, or pending"
+        )
+
+    # Update review status
+    old_status = str(getattr(review, 'status', ''))
+    setattr(review, 'status', ReviewStatus(action))
+    setattr(review, 'admin_notes', moderation_data.get('admin_notes', ''))
+    setattr(review, 'updated_at', datetime.utcnow())
+
+    db.commit()
+
+    # Create audit log
+    admin_id = int(getattr(current_admin, 'id', 0))
+    audit_log = AuditLog(
+        user_id=admin_id,
+        action=f"review_{action}",
+        entity_type="review",
+        entity_id=review_id,
+        old_values={"status": old_status},
+        new_values={"status": action, "admin_notes": moderation_data.get('admin_notes', '')},
+        created_at=datetime.utcnow()
+    )
+    db.add(audit_log)
+    db.commit()
+
+    # Update seller and car ratings if approved
+    if action == 'approved':
+        seller_id = int(getattr(review, 'seller_id', 0))
+        car_id = getattr(review, 'car_id', None)
+
+        # Update seller rating
+        from sqlalchemy import func
+        avg_rating = db.query(func.avg(Review.rating)).filter(
+            Review.seller_id == seller_id,
+            Review.status == ReviewStatus.APPROVED
+        ).scalar()
+
+        total_reviews = db.query(func.count(Review.id)).filter(
+            Review.seller_id == seller_id,
+            Review.status == ReviewStatus.APPROVED
+        ).scalar()
+
+        seller = db.query(User).filter(User.id == seller_id).first()
+        if seller:
+            from decimal import Decimal
+            setattr(seller, 'average_rating', avg_rating or Decimal("0.00"))
+            setattr(seller, 'total_ratings', total_reviews or 0)
+
+        # Update car rating if car exists
+        if car_id:
+            avg_car_rating = db.query(func.avg(Review.rating)).filter(
+                Review.car_id == car_id,
+                Review.status == ReviewStatus.APPROVED
+            ).scalar()
+
+            car = db.query(Car).filter(Car.id == car_id).first()
+            if car:
+                setattr(car, 'average_rating', avg_car_rating or Decimal("0.00"))
+
+        db.commit()
+
+    return MessageResponse(
+        message=f"Review {action} successfully",
+        success=True
+    )
+
+
+@router.get("/reviews/statistics")
+async def get_review_statistics(
+    current_admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """Get review moderation statistics"""
+    from app.models.review import Review, ReviewStatus
+
+    total = db.query(Review).count()
+    pending = db.query(Review).filter(Review.status == ReviewStatus.PENDING).count()
+    approved = db.query(Review).filter(Review.status == ReviewStatus.APPROVED).count()
+    rejected = db.query(Review).filter(Review.status == ReviewStatus.REJECTED).count()
+    hidden = db.query(Review).filter(Review.status == ReviewStatus.HIDDEN).count()
+
+    verified_purchases = db.query(Review).filter(Review.verified_purchase == True).count()
+
+    from sqlalchemy import func
+    avg_rating = db.query(func.avg(Review.rating)).filter(
+        Review.status == ReviewStatus.APPROVED
+    ).scalar()
+
+    return {
+        "total": total,
+        "pending": pending,
+        "approved": approved,
+        "rejected": rejected,
+        "hidden": hidden,
+        "verified_purchases": verified_purchases,
+        "average_rating": float(avg_rating) if avg_rating else 0.0
+    }
+
+
 # ===========================================
 # COMPLETE ADMIN ENDPOINTS SUMMARY:
 # ===========================================
@@ -1988,5 +2151,10 @@ async def get_fraud_statistics(
 #    - PUT /fraud-indicators/{id}/resolve - Resolve fraud
 #    - GET /fraud-indicators/statistics - Fraud statistics
 #
-# TOTAL: 35 Admin Endpoints (was 22, added 13 new)
+# ✅ REVIEW MODERATION (3 endpoints - NEW)
+#    - GET /reviews - List all reviews for moderation
+#    - POST /reviews/{id}/moderate - Approve/reject/hide review
+#    - GET /reviews/statistics - Review moderation statistics
+#
+# TOTAL: 38 Admin Endpoints (was 22, added 16 new)
 # ===========================================
