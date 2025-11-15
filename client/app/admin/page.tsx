@@ -5,6 +5,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { Card, CardHeader, CardBody } from '@heroui/card';
 import { Button } from '@heroui/button';
 import { Chip } from '@heroui/chip';
@@ -15,7 +16,7 @@ import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure
 import { Textarea } from '@heroui/input';
 import {
   Users, Car, DollarSign, TrendingUp, CheckCircle,
-  XCircle, AlertCircle, Shield, Eye
+  XCircle, AlertCircle, Shield, Eye, CreditCard
 } from 'lucide-react';
 import { apiService } from '@/services/api';
 import { Car as CarType, User as UserType, DashboardStats } from '@/types';
@@ -27,6 +28,7 @@ export default function AdminDashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [pendingCars, setPendingCars] = useState<CarType[]>([]);
   const [users, setUsers] = useState<UserType[]>([]);
+  const [pendingPaymentsCount, setPendingPaymentsCount] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [selectedCar, setSelectedCar] = useState<CarType | null>(null);
@@ -46,10 +48,11 @@ export default function AdminDashboardPage() {
       setLoading(true);
       setError(null);
 
-      const [statsResponse, carsResponse, usersResponse] = await Promise.all([
+      const [statsResponse, carsResponse, usersResponse, paymentsResponse] = await Promise.all([
         apiService.getAdminAnalytics(),
         apiService.getPendingCars(),
         apiService.getAllUsers(),
+        apiService.getPendingPayments(100, 0),
       ]);
 
       if (statsResponse.success && statsResponse.data) {
@@ -62,6 +65,10 @@ export default function AdminDashboardPage() {
 
       if (usersResponse.success && usersResponse.data) {
         setUsers(usersResponse.data);
+      }
+
+      if (paymentsResponse.success && paymentsResponse.data) {
+        setPendingPaymentsCount(paymentsResponse.data.length || 0);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load admin data');
@@ -208,7 +215,7 @@ export default function AdminDashboardPage() {
 
         {/* Stats Cards */}
         {stats && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
             <Card className="border-l-4 border-blue-500">
               <CardBody>
                 <div className="flex items-center justify-between">
@@ -286,6 +293,29 @@ export default function AdminDashboardPage() {
                 </div>
               </CardBody>
             </Card>
+
+            <Link href="/admin/payments" className="block">
+              <Card className="border-l-4 border-red-500 hover:shadow-lg transition-shadow cursor-pointer">
+                <CardBody>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                        Pending Payments
+                      </p>
+                      <p className="text-3xl font-bold text-gray-900 dark:text-white">
+                        {pendingPaymentsCount}
+                      </p>
+                      <p className="text-xs text-red-600 dark:text-red-400 mt-1">
+                        Needs verification
+                      </p>
+                    </div>
+                    <div className="p-3 bg-red-100 dark:bg-red-900/30 rounded-full">
+                      <CreditCard className="text-red-600 dark:text-red-400" size={24} />
+                    </div>
+                  </div>
+                </CardBody>
+              </Card>
+            </Link>
           </div>
         )}
 
@@ -540,6 +570,47 @@ export default function AdminDashboardPage() {
                     </div>
                   </div>
                 )}
+              </CardBody>
+            </Card>
+          </Tab>
+
+          <Tab key="payments" title={`Payments (${pendingPaymentsCount})`}>
+            <Card>
+              <CardHeader className="flex justify-between items-center">
+                <h2 className="text-2xl font-bold">Payment Verification</h2>
+                <Button
+                  as={Link}
+                  href="/admin/payments"
+                  color="primary"
+                  endContent={<CreditCard size={18} />}
+                >
+                  View Payment Dashboard
+                </Button>
+              </CardHeader>
+              <CardBody>
+                <div className="text-center py-12">
+                  <div className="p-4 bg-red-100 dark:bg-red-900/30 rounded-full inline-flex mb-4">
+                    <CreditCard className="text-red-600 dark:text-red-400" size={48} />
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                    Payment Verification Required
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-400 mb-4">
+                    {pendingPaymentsCount > 0
+                      ? `You have ${pendingPaymentsCount} pending payment${pendingPaymentsCount !== 1 ? 's' : ''} waiting for verification`
+                      : 'No pending payments at this time'
+                    }
+                  </p>
+                  <Button
+                    as={Link}
+                    href="/admin/payments"
+                    color="primary"
+                    size="lg"
+                    endContent={<CreditCard size={20} />}
+                  >
+                    Go to Payment Dashboard
+                  </Button>
+                </div>
               </CardBody>
             </Card>
           </Tab>
