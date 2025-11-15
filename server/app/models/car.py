@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, DECIMAL, Text, TIMESTAMP, Date, ForeignKey, Enum, JSON
+from sqlalchemy import Column, Integer, String, Boolean, DECIMAL, Text, TIMESTAMP, Date, ForeignKey, Enum
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from app.database import Base
@@ -330,8 +330,8 @@ class Car(Base):
     
     # Relationships
     seller = relationship("User", foreign_keys=[seller_id], back_populates="cars")
-    brand = relationship("Brand")
-    model = relationship("Model")
+    brand_rel = relationship("Brand")
+    model_rel = relationship("Model")  # Renamed from 'model' to avoid conflict with model Column
     category = relationship("Category")
     city = relationship("PhCity")
     province = relationship("PhProvince")
@@ -350,38 +350,27 @@ class Car(Base):
 
 class CarImage(Base):
     __tablename__ = "car_images"
-    
+
     id = Column(Integer, primary_key=True, autoincrement=True)
     car_id = Column(Integer, ForeignKey("cars.id", ondelete="CASCADE"), nullable=False, index=True)
-    
-    # Image URLs
+
+    # Image URL - FIXED: Only image_url exists in SQL schema
     image_url = Column(String(500), nullable=False)
-    thumbnail_url = Column(String(500))
-    medium_url = Column(String(500))
-    
-    # Image Details
-    file_name = Column(String(255))
-    file_size = Column(Integer)
-    # SQL enum: 'exterior', 'interior', 'engine', 'damage', 'document', 'other'
-    # Note: Removed 'dashboard', 'wheels' (not in SQL), changed 'documents' to 'document'
+
+    # Image Type - SQL enum: 'exterior', 'interior', 'engine', 'damage', 'document', 'other'
     image_type = Column(Enum("exterior", "interior", "engine", "damage", "document", "other"), default="exterior")
-    
+
     # Display Options
-    is_main = Column(Boolean, default=False)  # SQL uses 'is_main' not 'is_primary'
+    is_main = Column(Boolean, default=False, index=True)  # SQL uses 'is_main' not 'is_primary'
     display_order = Column(Integer, default=0)
     caption = Column(String(255))
-    
-    # Image Metadata
-    width = Column(Integer)
-    height = Column(Integer)
-    exif_data = Column(JSON)
-    
+
     # Timestamps
     uploaded_at = Column(TIMESTAMP, default=datetime.now)
-    
+
     # Relationships
     car = relationship("Car", back_populates="images")
-    
+
     def __repr__(self):
         return f"<CarImage {self.id}: Car {self.car_id}>"
 

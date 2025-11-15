@@ -104,15 +104,15 @@ class InquiryResponse(Base):
 
 class InquiryAttachment(Base):
     __tablename__ = "inquiry_attachments"
-    
+
     id = Column(Integer, primary_key=True, autoincrement=True)
-    inquiry_id = Column(Integer, ForeignKey("inquiries.id", ondelete="CASCADE"), nullable=False)
+    inquiry_id = Column(Integer, ForeignKey("inquiries.id", ondelete="CASCADE"), nullable=False, index=True)
     file_url = Column(String(500), nullable=False)
-    file_name = Column(String(255))
+    # FIXED: Removed file_name - not in SQL schema
     file_type = Column(String(50))
     file_size = Column(Integer)
     uploaded_at = Column(TIMESTAMP, default=datetime.utcnow)
-    
+
     # Relationships
     inquiry = relationship("Inquiry", back_populates="attachments")
 
