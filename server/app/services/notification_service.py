@@ -186,3 +186,47 @@ class NotificationService:
             related_id=user_id,
             related_type="subscription"
         )
+
+    @staticmethod
+    def notify_new_review(db: Session, seller_id: int, buyer_id: int, rating: float):
+        """Notify seller of new review"""
+        stars = "⭐" * int(rating)
+        return NotificationService.create_notification(
+            db,
+            user_id=seller_id,
+            title="New Review Received",
+            message=f"You received a new {rating:.1f} star review {stars}. Review is pending admin approval.",
+            notification_type="new_review",
+            related_id=buyer_id,
+            related_type="review"
+        )
+
+    @staticmethod
+    def notify_review_approved(db: Session, buyer_id: int, review_id: int):
+        """Notify buyer that review was approved"""
+        return NotificationService.create_notification(
+            db,
+            user_id=buyer_id,
+            title="Review Approved",
+            message="Your review has been approved and is now visible to everyone!",
+            notification_type="review_approved",
+            related_id=review_id,
+            related_type="review"
+        )
+
+    @staticmethod
+    def notify_review_rejected(db: Session, buyer_id: int, review_id: int, reason: Optional[str] = None):
+        """Notify buyer that review was rejected"""
+        message = "Your review was rejected by our moderation team."
+        if reason:
+            message += f" Reason: {reason}"
+
+        return NotificationService.create_notification(
+            db,
+            user_id=buyer_id,
+            title="Review Rejected",
+            message=message,
+            notification_type="review_rejected",
+            related_id=review_id,
+            related_type="review"
+        )

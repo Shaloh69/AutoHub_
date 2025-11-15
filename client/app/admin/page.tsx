@@ -16,7 +16,7 @@ import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure
 import { Textarea } from '@heroui/input';
 import {
   Users, Car, DollarSign, TrendingUp, CheckCircle,
-  XCircle, AlertCircle, Shield, Eye, CreditCard
+  XCircle, AlertCircle, Shield, Eye, CreditCard, MessageSquare
 } from 'lucide-react';
 import { apiService } from '@/services/api';
 import { Car as CarType, User as UserType, DashboardStats } from '@/types';
@@ -29,6 +29,8 @@ export default function AdminDashboardPage() {
   const [pendingCars, setPendingCars] = useState<CarType[]>([]);
   const [users, setUsers] = useState<UserType[]>([]);
   const [pendingPaymentsCount, setPendingPaymentsCount] = useState<number>(0);
+  const [fraudIndicatorCount, setFraudIndicatorCount] = useState<number>(0);
+  const [pendingReviewsCount, setPendingReviewsCount] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [selectedCar, setSelectedCar] = useState<CarType | null>(null);
@@ -48,11 +50,13 @@ export default function AdminDashboardPage() {
       setLoading(true);
       setError(null);
 
-      const [statsResponse, carsResponse, usersResponse, paymentsResponse] = await Promise.all([
+      const [statsResponse, carsResponse, usersResponse, paymentsResponse, fraudResponse, reviewStatsResponse] = await Promise.all([
         apiService.getAdminAnalytics(),
         apiService.getPendingCars(),
         apiService.getAllUsers(),
         apiService.getPendingPayments(100, 0),
+        apiService.getFraudStatistics(),
+        apiService.getReviewStatistics(),
       ]);
 
       if (statsResponse.success && statsResponse.data) {
@@ -69,6 +73,14 @@ export default function AdminDashboardPage() {
 
       if (paymentsResponse.success && paymentsResponse.data) {
         setPendingPaymentsCount(paymentsResponse.data.length || 0);
+      }
+
+      if (fraudResponse.success && fraudResponse.data) {
+        setFraudIndicatorCount(fraudResponse.data.total || 0);
+      }
+
+      if (reviewStatsResponse.success && reviewStatsResponse.data) {
+        setPendingReviewsCount(reviewStatsResponse.data.pending || 0);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load admin data');
@@ -215,7 +227,7 @@ export default function AdminDashboardPage() {
 
         {/* Stats Cards */}
         {stats && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <Card className="border-l-4 border-blue-500">
               <CardBody>
                 <div className="flex items-center justify-between">
@@ -311,6 +323,52 @@ export default function AdminDashboardPage() {
                     </div>
                     <div className="p-3 bg-red-100 dark:bg-red-900/30 rounded-full">
                       <CreditCard className="text-red-600 dark:text-red-400" size={24} />
+                    </div>
+                  </div>
+                </CardBody>
+              </Card>
+            </Link>
+
+            <Link href="/admin/fraud-detection" className="block">
+              <Card className="border-l-4 border-orange-500 hover:shadow-lg transition-shadow cursor-pointer">
+                <CardBody>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                        Fraud Indicators
+                      </p>
+                      <p className="text-3xl font-bold text-gray-900 dark:text-white">
+                        {fraudIndicatorCount}
+                      </p>
+                      <p className="text-xs text-orange-600 dark:text-orange-400 mt-1">
+                        Requires attention
+                      </p>
+                    </div>
+                    <div className="p-3 bg-orange-100 dark:bg-orange-900/30 rounded-full">
+                      <Shield className="text-orange-600 dark:text-orange-400" size={24} />
+                    </div>
+                  </div>
+                </CardBody>
+              </Card>
+            </Link>
+
+            <Link href="/admin/reviews" className="block">
+              <Card className="border-l-4 border-indigo-500 hover:shadow-lg transition-shadow cursor-pointer">
+                <CardBody>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                        Pending Reviews
+                      </p>
+                      <p className="text-3xl font-bold text-gray-900 dark:text-white">
+                        {pendingReviewsCount}
+                      </p>
+                      <p className="text-xs text-indigo-600 dark:text-indigo-400 mt-1">
+                        Needs moderation
+                      </p>
+                    </div>
+                    <div className="p-3 bg-indigo-100 dark:bg-indigo-900/30 rounded-full">
+                      <MessageSquare className="text-indigo-600 dark:text-indigo-400" size={24} />
                     </div>
                   </div>
                 </CardBody>
@@ -609,6 +667,88 @@ export default function AdminDashboardPage() {
                     endContent={<CreditCard size={20} />}
                   >
                     Go to Payment Dashboard
+                  </Button>
+                </div>
+              </CardBody>
+            </Card>
+          </Tab>
+
+          <Tab key="fraud" title={`Fraud Detection (${fraudIndicatorCount})`}>
+            <Card>
+              <CardHeader className="flex justify-between items-center">
+                <h2 className="text-2xl font-bold">Fraud Detection</h2>
+                <Button
+                  as={Link}
+                  href="/admin/fraud-detection"
+                  color="warning"
+                  endContent={<Shield size={18} />}
+                >
+                  View Fraud Dashboard
+                </Button>
+              </CardHeader>
+              <CardBody>
+                <div className="text-center py-12">
+                  <div className="p-4 bg-orange-100 dark:bg-orange-900/30 rounded-full inline-flex mb-4">
+                    <Shield className="text-orange-600 dark:text-orange-400" size={48} />
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                    Fraud Monitoring
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-400 mb-4">
+                    {fraudIndicatorCount > 0
+                      ? `There ${fraudIndicatorCount === 1 ? 'is' : 'are'} ${fraudIndicatorCount} fraud indicator${fraudIndicatorCount !== 1 ? 's' : ''} requiring attention`
+                      : 'No fraud indicators detected - all systems normal'
+                    }
+                  </p>
+                  <Button
+                    as={Link}
+                    href="/admin/fraud-detection"
+                    color="warning"
+                    size="lg"
+                    endContent={<Shield size={20} />}
+                  >
+                    Go to Fraud Dashboard
+                  </Button>
+                </div>
+              </CardBody>
+            </Card>
+          </Tab>
+
+          <Tab key="reviews" title={`Reviews (${pendingReviewsCount})`}>
+            <Card>
+              <CardHeader className="flex justify-between items-center">
+                <h2 className="text-2xl font-bold">Review Moderation</h2>
+                <Button
+                  as={Link}
+                  href="/admin/reviews"
+                  color="secondary"
+                  endContent={<MessageSquare size={18} />}
+                >
+                  View Reviews Dashboard
+                </Button>
+              </CardHeader>
+              <CardBody>
+                <div className="text-center py-12">
+                  <div className="p-4 bg-indigo-100 dark:bg-indigo-900/30 rounded-full inline-flex mb-4">
+                    <MessageSquare className="text-indigo-600 dark:text-indigo-400" size={48} />
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                    Review Moderation
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-400 mb-4">
+                    {pendingReviewsCount > 0
+                      ? `You have ${pendingReviewsCount} pending review${pendingReviewsCount !== 1 ? 's' : ''} waiting for moderation`
+                      : 'No pending reviews at this time - all reviews have been moderated'
+                    }
+                  </p>
+                  <Button
+                    as={Link}
+                    href="/admin/reviews"
+                    color="secondary"
+                    size="lg"
+                    endContent={<MessageSquare size={20} />}
+                  >
+                    Go to Reviews Dashboard
                   </Button>
                 </div>
               </CardBody>

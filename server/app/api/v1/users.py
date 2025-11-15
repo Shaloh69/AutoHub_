@@ -327,6 +327,22 @@ async def remove_favorite(
     return MessageResponse(message="Car removed from favorites", success=True)
 
 
+@router.get("/notifications/unread-count")
+async def get_unread_notifications_count(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get count of unread notifications"""
+    user_id = int(getattr(current_user, 'id', 0))
+
+    count = db.query(Notification).filter(
+        Notification.user_id == user_id,
+        Notification.is_read == False  # noqa: E712
+    ).count()
+
+    return {"count": count, "unread_count": count}
+
+
 @router.get("/notifications", response_model=List[NotificationResponse])
 async def get_notifications(
     unread_only: bool = Query(False),
@@ -337,12 +353,12 @@ async def get_notifications(
 ):
     """Get user notifications"""
     user_id = int(getattr(current_user, 'id', 0))
-    
+
     query = db.query(Notification).filter(Notification.user_id == user_id)
-    
+
     if unread_only:
         query = query.filter(Notification.is_read == False)  # noqa: E712
-    
+
     notifications = query.order_by(Notification.created_at.desc()).offset(skip).limit(limit).all()
     return [NotificationResponse.model_validate(notif) for notif in notifications]
 
@@ -391,8 +407,102 @@ async def mark_all_notifications_read(
     })
     
     db.commit()
-    
+
     return MessageResponse(message="All notifications marked as read", success=True)
+
+
+@router.get("/statistics")
+async def get_user_statistics(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get user statistics dashboard
+
+    Returns counts for listings, favorites, inquiries, and notifications.
+    """
+    user_id = int(getattr(current_user, 'id', 0))
+
+    # Count listings
+    total_listings = db.query(Car).filter(Car.seller_id == user_id).count()
+    active_listings = db.query(Car).filter(
+        Car.seller_id == user_id,
+        Car.status == "active"
+    ).count()
+    sold_listings = db.query(Car).filter(
+        Car.seller_id == user_id,
+        Car.status == "sold"
+    ).count()
+
+    # Count favorites
+    favorite_count = db.query(Favorite).filter(Favorite.user_id == user_id).count()
+
+    # Count notifications
+    notification_count = db.query(Notification).filter(Notification.user_id == user_id).count()
+    unread_notifications = db.query(Notification).filter(
+        Notification.user_id == user_id,
+        Notification.is_read == False  # noqa: E712
+    ).count()
+
+    return {
+        "listings": {
+            "total": total_listings,
+            "active": active_listings,
+            "sold": sold_listings,
+            "pending": db.query(Car).filter(Car.seller_id == user_id, Car.status == "pending").count(),
+            "draft": db.query(Car).filter(Car.seller_id == user_id, Car.status == "draft").count()
+        },
+        "favorites": favorite_count,
+        "notifications": {
+            "total": notification_count,
+            "unread": unread_notifications
+        },
+        "profile_completeness": int(getattr(current_user, 'completeness_score', 0)),
+        "member_since": getattr(current_user, 'created_at', None)
+    }
+
+
+@router.get("/{user_id}/public-profile")
+async def get_public_profile(
+    user_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Get public profile of a user (seller profile view)
+
+    Returns limited public information about a user for display on listings.
+    """
+    user = db.query(User).filter(User.id == user_id, User.is_active == True).first()  # noqa: E712
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+
+    # Count active listings
+    active_listings = db.query(Car).filter(
+        Car.seller_id == user_id,
+        Car.status == "active"
+    ).count()
+
+    # Return public information only
+    return {
+        "id": int(getattr(user, 'id', 0)),
+        "first_name": str(getattr(user, 'first_name', '')),
+        "last_name": str(getattr(user, 'last_name', '')),
+        "profile_image": getattr(user, 'profile_image', None),
+        "role": str(getattr(user, 'role', 'buyer')),
+        "business_name": getattr(user, 'business_name', None),
+        "average_rating": float(getattr(user, 'average_rating', 0.0)),
+        "total_reviews": int(getattr(user, 'total_reviews', 0)),
+        "active_listings": active_listings,
+        "member_since": getattr(user, 'created_at', None),
+        "is_verified": getattr(user, 'identity_verified', False),
+        "phone_number": str(getattr(user, 'phone_number', '')) if getattr(user, 'phone_verified', False) else None,
+        "city": getattr(user, 'city', None),
+        "province": getattr(user, 'province', None)
+    }
 
 
 # ===========================================

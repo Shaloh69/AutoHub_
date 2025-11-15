@@ -66,6 +66,7 @@ logger = logging.getLogger(__name__)
 # ========================================
 
 @router.get("/dashboard", response_model=AdminDashboardResponse)
+@router.get("/analytics", response_model=AdminDashboardResponse)  # Alias for frontend compatibility
 async def get_admin_dashboard(
     current_admin: User = Depends(get_current_admin),
     db: Session = Depends(get_db)
@@ -893,9 +894,79 @@ async def approve_car(
         logger.error(f"Failed to send moderation notification: {e}")
     
     db.commit()
-    
+
     return MessageResponse(
         message=f"Car {'approved' if approval_request.approved else 'rejected'} successfully",
+        success=True
+    )
+
+
+@router.post("/cars/{car_id}/reject", response_model=MessageResponse)
+async def reject_car(
+    car_id: int,
+    rejection_data: dict,
+    current_moderator: User = Depends(get_current_moderator),
+    db: Session = Depends(get_db)
+):
+    """
+    Reject a car listing (frontend-compatible endpoint)
+
+    Converts frontend's 'reason' field to backend's 'notes' field.
+    """
+    # Convert frontend request to backend format
+    approval_request = CarApprovalRequest(
+        approved=False,
+        notes=rejection_data.get('reason', rejection_data.get('notes', 'No reason provided'))
+    )
+
+    # Call the main approve function
+    car = db.query(Car).filter(Car.id == car_id).first()
+
+    if not car:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Car not found"
+        )
+
+    # Update car status
+    setattr(car, 'status', 'rejected')
+    setattr(car, 'is_active', False)
+    setattr(car, 'rejection_reason', approval_request.notes)
+
+    # Create audit log
+    moderator_id = int(getattr(current_moderator, 'id', 0))
+    audit = AuditLog(
+        user_id=moderator_id,
+        action="reject_car",
+        entity_type="car",
+        entity_id=car_id,
+        new_values={
+            "approved": False,
+            "status": "rejected",
+            "rejection_reason": approval_request.notes
+        }
+    )
+    db.add(audit)
+
+    # Notify seller
+    try:
+        seller_id = int(getattr(car, 'seller_id', 0))
+        NotificationService.create_notification(
+            db,
+            user_id=seller_id,
+            title="Car Listing Rejected",
+            message=f"Your car listing '{getattr(car, 'title', '')}' was rejected. Reason: {approval_request.notes}",
+            notification_type="car_moderation",
+            related_id=car_id,
+            related_type="car"
+        )
+    except Exception as e:
+        logger.error(f"Failed to send rejection notification: {e}")
+
+    db.commit()
+
+    return MessageResponse(
+        message="Car rejected successfully",
         success=True
     )
 
@@ -1389,6 +1460,647 @@ async def update_payment_setting(
     )
 
 
+# ========================================
+# CURRENCY MANAGEMENT (NEW)
+# ========================================
+
+@router.get("/currencies", response_model=List[dict])
+async def list_currencies(
+    is_active: Optional[bool] = None,
+    current_admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """List all currencies"""
+    from app.models.location import Currency
+
+    query = db.query(Currency)
+    if is_active is not None:
+        query = query.filter(Currency.is_active == is_active)
+
+    currencies = query.all()
+
+    return [
+        {
+            "id": int(getattr(c, 'id', 0)),
+            "code": str(getattr(c, 'code', '')),
+            "name": str(getattr(c, 'name', '')),
+            "symbol": str(getattr(c, 'symbol', '')),
+            "exchange_rate_to_php": float(getattr(c, 'exchange_rate_to_php', 1.0)),
+            "is_active": bool(getattr(c, 'is_active', True)),
+            "updated_at": getattr(c, 'updated_at', None)
+        }
+        for c in currencies
+    ]
+
+
+@router.post("/currencies", response_model=MessageResponse, status_code=status.HTTP_201_CREATED)
+async def create_currency(
+    currency_data: dict,
+    current_admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """Create new currency"""
+    from app.models.location import Currency
+
+    # Check if currency code already exists
+    existing = db.query(Currency).filter(Currency.code == currency_data.get('code')).first()
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Currency code already exists"
+        )
+
+    currency = Currency(
+        code=currency_data.get('code'),
+        name=currency_data.get('name'),
+        symbol=currency_data.get('symbol'),
+        exchange_rate_to_php=currency_data.get('exchange_rate_to_php', 1.0),
+        is_active=currency_data.get('is_active', True)
+    )
+
+    db.add(currency)
+
+    # Create audit log
+    admin_id = int(getattr(current_admin, 'id', 0))
+    audit = AuditLog(
+        user_id=admin_id,
+        action="create_currency",
+        entity_type="currency",
+        new_values=currency_data
+    )
+    db.add(audit)
+
+    db.commit()
+
+    return MessageResponse(message="Currency created successfully", success=True)
+
+
+@router.put("/currencies/{currency_id}", response_model=MessageResponse)
+async def update_currency(
+    currency_id: int,
+    currency_data: dict,
+    current_admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """Update currency"""
+    from app.models.location import Currency
+
+    currency = db.query(Currency).filter(Currency.id == currency_id).first()
+    if not currency:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Currency not found"
+        )
+
+    # Store old values for audit
+    old_values = {
+        "code": str(getattr(currency, 'code', '')),
+        "name": str(getattr(currency, 'name', '')),
+        "symbol": str(getattr(currency, 'symbol', '')),
+        "exchange_rate_to_php": float(getattr(currency, 'exchange_rate_to_php', 1.0)),
+        "is_active": bool(getattr(currency, 'is_active', True))
+    }
+
+    # Update fields
+    for key, value in currency_data.items():
+        if hasattr(currency, key):
+            setattr(currency, key, value)
+
+    setattr(currency, 'updated_at', datetime.utcnow())
+
+    # Create audit log
+    admin_id = int(getattr(current_admin, 'id', 0))
+    audit = AuditLog(
+        user_id=admin_id,
+        action="update_currency",
+        entity_type="currency",
+        entity_id=currency_id,
+        old_values=old_values,
+        new_values=currency_data
+    )
+    db.add(audit)
+
+    db.commit()
+
+    return MessageResponse(message="Currency updated successfully", success=True)
+
+
+@router.delete("/currencies/{currency_id}", response_model=MessageResponse)
+async def delete_currency(
+    currency_id: int,
+    current_admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """Delete/deactivate currency"""
+    from app.models.location import Currency
+
+    currency = db.query(Currency).filter(Currency.id == currency_id).first()
+    if not currency:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Currency not found"
+        )
+
+    # Soft delete by deactivating
+    setattr(currency, 'is_active', False)
+
+    # Create audit log
+    admin_id = int(getattr(current_admin, 'id', 0))
+    audit = AuditLog(
+        user_id=admin_id,
+        action="delete_currency",
+        entity_type="currency",
+        entity_id=currency_id
+    )
+    db.add(audit)
+
+    db.commit()
+
+    return MessageResponse(message="Currency deactivated successfully", success=True)
+
+
+# ========================================
+# PROMOTION CODE MANAGEMENT (NEW)
+# ========================================
+
+@router.get("/promotion-codes", response_model=List[dict])
+async def list_promotion_codes(
+    is_active: Optional[bool] = None,
+    current_admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """List all promotion codes"""
+    from app.models.subscription import PromotionCode
+
+    query = db.query(PromotionCode)
+    if is_active is not None:
+        query = query.filter(PromotionCode.is_active == is_active)
+
+    codes = query.order_by(PromotionCode.created_at.desc()).all()
+
+    return [
+        {
+            "id": int(getattr(c, 'id', 0)),
+            "code": str(getattr(c, 'code', '')),
+            "description": str(getattr(c, 'description', '') or ''),
+            "discount_type": str(getattr(c, 'discount_type', '')),
+            "discount_value": float(getattr(c, 'discount_value', 0)),
+            "valid_from": getattr(c, 'valid_from', None),
+            "valid_until": getattr(c, 'valid_until', None),
+            "max_uses": getattr(c, 'max_uses', None),
+            "max_uses_per_user": int(getattr(c, 'max_uses_per_user', 1)),
+            "current_uses": int(getattr(c, 'current_uses', 0)),
+            "min_purchase_amount": float(getattr(c, 'min_purchase_amount', 0)) if getattr(c, 'min_purchase_amount', None) else None,
+            "applicable_plans": str(getattr(c, 'applicable_plans', '') or ''),
+            "is_active": bool(getattr(c, 'is_active', True)),
+            "created_at": getattr(c, 'created_at', None),
+            "created_by": getattr(c, 'created_by', None)
+        }
+        for c in codes
+    ]
+
+
+@router.post("/promotion-codes", response_model=MessageResponse, status_code=status.HTTP_201_CREATED)
+async def create_promotion_code(
+    promo_data: dict,
+    current_admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """Create new promotion code"""
+    from app.models.subscription import PromotionCode
+
+    # Check if code already exists
+    existing = db.query(PromotionCode).filter(
+        PromotionCode.code == promo_data.get('code')
+    ).first()
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Promotion code already exists"
+        )
+
+    admin_id = int(getattr(current_admin, 'id', 0))
+
+    promo = PromotionCode(
+        code=promo_data.get('code'),
+        description=promo_data.get('description'),
+        discount_type=promo_data.get('discount_type'),
+        discount_value=promo_data.get('discount_value'),
+        valid_from=promo_data.get('valid_from'),
+        valid_until=promo_data.get('valid_until'),
+        max_uses=promo_data.get('max_uses'),
+        max_uses_per_user=promo_data.get('max_uses_per_user', 1),
+        min_purchase_amount=promo_data.get('min_purchase_amount'),
+        applicable_plans=promo_data.get('applicable_plans'),
+        is_active=promo_data.get('is_active', True),
+        created_by=admin_id
+    )
+
+    db.add(promo)
+
+    # Create audit log
+    audit = AuditLog(
+        user_id=admin_id,
+        action="create_promotion_code",
+        entity_type="promotion_code",
+        new_values=promo_data
+    )
+    db.add(audit)
+
+    db.commit()
+
+    return MessageResponse(message="Promotion code created successfully", success=True)
+
+
+@router.put("/promotion-codes/{promo_id}", response_model=MessageResponse)
+async def update_promotion_code(
+    promo_id: int,
+    promo_data: dict,
+    current_admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """Update promotion code"""
+    from app.models.subscription import PromotionCode
+
+    promo = db.query(PromotionCode).filter(PromotionCode.id == promo_id).first()
+    if not promo:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Promotion code not found"
+        )
+
+    # Update fields
+    for key, value in promo_data.items():
+        if hasattr(promo, key) and key != 'id' and key != 'created_by':
+            setattr(promo, key, value)
+
+    # Create audit log
+    admin_id = int(getattr(current_admin, 'id', 0))
+    audit = AuditLog(
+        user_id=admin_id,
+        action="update_promotion_code",
+        entity_type="promotion_code",
+        entity_id=promo_id,
+        new_values=promo_data
+    )
+    db.add(audit)
+
+    db.commit()
+
+    return MessageResponse(message="Promotion code updated successfully", success=True)
+
+
+@router.delete("/promotion-codes/{promo_id}", response_model=MessageResponse)
+async def delete_promotion_code(
+    promo_id: int,
+    current_admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """Deactivate promotion code"""
+    from app.models.subscription import PromotionCode
+
+    promo = db.query(PromotionCode).filter(PromotionCode.id == promo_id).first()
+    if not promo:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Promotion code not found"
+        )
+
+    # Soft delete by deactivating
+    setattr(promo, 'is_active', False)
+
+    # Create audit log
+    admin_id = int(getattr(current_admin, 'id', 0))
+    audit = AuditLog(
+        user_id=admin_id,
+        action="delete_promotion_code",
+        entity_type="promotion_code",
+        entity_id=promo_id
+    )
+    db.add(audit)
+
+    db.commit()
+
+    return MessageResponse(message="Promotion code deactivated successfully", success=True)
+
+
+@router.get("/promotion-codes/{promo_id}/usage", response_model=List[dict])
+async def get_promotion_code_usage(
+    promo_id: int,
+    current_admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """Get promotion code usage statistics"""
+    from app.models.subscription import PromotionCodeUsage
+
+    usages = db.query(PromotionCodeUsage).filter(
+        PromotionCodeUsage.promo_code_id == promo_id
+    ).all()
+
+    return [
+        {
+            "id": int(getattr(u, 'id', 0)),
+            "user_id": int(getattr(u, 'user_id', 0)),
+            "subscription_id": int(getattr(u, 'subscription_id', 0)),
+            "discount_amount": float(getattr(u, 'discount_amount', 0)),
+            "used_at": getattr(u, 'used_at', None)
+        }
+        for u in usages
+    ]
+
+
+# ========================================
+# FRAUD DETECTION MANAGEMENT (NEW)
+# ========================================
+
+@router.post("/fraud-indicators", response_model=MessageResponse, status_code=status.HTTP_201_CREATED)
+async def create_fraud_indicator(
+    fraud_data: dict,
+    current_admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """Manually flag fraud indicator"""
+    fraud = FraudIndicator(
+        user_id=fraud_data.get('user_id'),
+        car_id=fraud_data.get('car_id'),
+        indicator_type=fraud_data.get('indicator_type'),
+        severity=fraud_data.get('severity', 'medium'),
+        description=fraud_data.get('description')
+    )
+
+    db.add(fraud)
+
+    # Create audit log
+    admin_id = int(getattr(current_admin, 'id', 0))
+    audit = AuditLog(
+        user_id=admin_id,
+        action="create_fraud_indicator",
+        entity_type="fraud_indicator",
+        new_values=fraud_data
+    )
+    db.add(audit)
+
+    # Notify user if specified
+    if fraud_data.get('notify_user') and fraud_data.get('user_id'):
+        try:
+            NotificationService.create_notification(
+                db,
+                user_id=fraud_data.get('user_id'),
+                title="Security Alert",
+                message=f"Unusual activity detected: {fraud_data.get('description', 'Please review your account.')}",
+                notification_type="security_alert"
+            )
+        except Exception as e:
+            logger.error(f"Failed to send fraud notification: {e}")
+
+    db.commit()
+
+    return MessageResponse(message="Fraud indicator created successfully", success=True)
+
+
+@router.put("/fraud-indicators/{fraud_id}/resolve", response_model=MessageResponse)
+async def resolve_fraud_indicator(
+    fraud_id: int,
+    resolution_data: dict,
+    current_admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """Mark fraud indicator as resolved"""
+    fraud = db.query(FraudIndicator).filter(FraudIndicator.id == fraud_id).first()
+    if not fraud:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Fraud indicator not found"
+        )
+
+    # Delete as resolved (could be soft delete if model is updated)
+    db.delete(fraud)
+
+    # Create audit log
+    admin_id = int(getattr(current_admin, 'id', 0))
+    audit = AuditLog(
+        user_id=admin_id,
+        action="resolve_fraud_indicator",
+        entity_type="fraud_indicator",
+        entity_id=fraud_id,
+        new_values=resolution_data
+    )
+    db.add(audit)
+
+    db.commit()
+
+    return MessageResponse(message="Fraud indicator resolved successfully", success=True)
+
+
+@router.get("/fraud-indicators/statistics")
+async def get_fraud_statistics(
+    current_admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """Get fraud detection statistics"""
+    total = db.query(FraudIndicator).count()
+
+    high_severity = db.query(FraudIndicator).filter(
+        FraudIndicator.severity == "high"
+    ).count()
+
+    medium_severity = db.query(FraudIndicator).filter(
+        FraudIndicator.severity == "medium"
+    ).count()
+
+    low_severity = db.query(FraudIndicator).filter(
+        FraudIndicator.severity == "low"
+    ).count()
+
+    # Recent fraud (last 7 days)
+    from datetime import timedelta
+    week_ago = datetime.utcnow() - timedelta(days=7)
+    recent = db.query(FraudIndicator).filter(
+        FraudIndicator.detected_at >= week_ago
+    ).count()
+
+    return {
+        "total_indicators": total,
+        "high_severity": high_severity,
+        "medium_severity": medium_severity,
+        "low_severity": low_severity,
+        "recent_7_days": recent
+    }
+
+
+# ========================================
+# REVIEW MODERATION
+# ========================================
+
+@router.get("/reviews", response_model=List[dict])
+async def list_reviews(
+    status: Optional[str] = None,
+    car_id: Optional[int] = None,
+    seller_id: Optional[int] = None,
+    limit: int = Query(100, ge=1, le=500),
+    offset: int = Query(0, ge=0),
+    current_admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """List all reviews for moderation"""
+    from app.models.review import Review
+
+    query = db.query(Review)
+
+    if status:
+        query = query.filter(Review.status == status)
+    if car_id:
+        query = query.filter(Review.car_id == car_id)
+    if seller_id:
+        query = query.filter(Review.seller_id == seller_id)
+
+    reviews = query.order_by(desc(Review.created_at)).limit(limit).offset(offset).all()
+
+    return [{
+        "id": int(getattr(r, 'id', 0)),
+        "car_id": getattr(r, 'car_id', None),
+        "seller_id": int(getattr(r, 'seller_id', 0)),
+        "buyer_id": int(getattr(r, 'buyer_id', 0)),
+        "rating": float(getattr(r, 'rating', 0)),
+        "title": getattr(r, 'title', None),
+        "comment": getattr(r, 'comment', None),
+        "verified_purchase": bool(getattr(r, 'verified_purchase', False)),
+        "status": str(getattr(r, 'status', '')),
+        "created_at": getattr(r, 'created_at', None),
+        "updated_at": getattr(r, 'updated_at', None)
+    } for r in reviews]
+
+
+@router.post("/reviews/{review_id}/moderate", response_model=MessageResponse)
+async def moderate_review(
+    review_id: int,
+    moderation_data: dict,
+    current_admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """Moderate review (approve/reject/hide)"""
+    from app.models.review import Review, ReviewStatus
+
+    review = db.query(Review).filter(Review.id == review_id).first()
+    if not review:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Review not found"
+        )
+
+    action = moderation_data.get('status')
+    if action not in ['approved', 'rejected', 'hidden', 'pending']:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid status. Must be: approved, rejected, hidden, or pending"
+        )
+
+    # Update review status
+    old_status = str(getattr(review, 'status', ''))
+    setattr(review, 'status', ReviewStatus(action))
+    setattr(review, 'admin_notes', moderation_data.get('admin_notes', ''))
+    setattr(review, 'updated_at', datetime.utcnow())
+
+    db.commit()
+
+    # Create audit log
+    admin_id = int(getattr(current_admin, 'id', 0))
+    audit_log = AuditLog(
+        user_id=admin_id,
+        action=f"review_{action}",
+        entity_type="review",
+        entity_id=review_id,
+        old_values={"status": old_status},
+        new_values={"status": action, "admin_notes": moderation_data.get('admin_notes', '')},
+        created_at=datetime.utcnow()
+    )
+    db.add(audit_log)
+    db.commit()
+
+    # Update seller and car ratings if approved
+    if action == 'approved':
+        seller_id = int(getattr(review, 'seller_id', 0))
+        car_id = getattr(review, 'car_id', None)
+
+        # Update seller rating
+        from sqlalchemy import func
+        avg_rating = db.query(func.avg(Review.rating)).filter(
+            Review.seller_id == seller_id,
+            Review.status == ReviewStatus.APPROVED
+        ).scalar()
+
+        total_reviews = db.query(func.count(Review.id)).filter(
+            Review.seller_id == seller_id,
+            Review.status == ReviewStatus.APPROVED
+        ).scalar()
+
+        seller = db.query(User).filter(User.id == seller_id).first()
+        if seller:
+            from decimal import Decimal
+            setattr(seller, 'average_rating', avg_rating or Decimal("0.00"))
+            setattr(seller, 'total_ratings', total_reviews or 0)
+
+        # Update car rating if car exists
+        if car_id:
+            avg_car_rating = db.query(func.avg(Review.rating)).filter(
+                Review.car_id == car_id,
+                Review.status == ReviewStatus.APPROVED
+            ).scalar()
+
+            car = db.query(Car).filter(Car.id == car_id).first()
+            if car:
+                setattr(car, 'average_rating', avg_car_rating or Decimal("0.00"))
+
+        db.commit()
+
+    # Send notifications to buyer
+    buyer_id = int(getattr(review, 'buyer_id', 0))
+    from app.services.notification_service import NotificationService
+
+    if action == 'approved':
+        NotificationService.notify_review_approved(db, buyer_id, review_id)
+    elif action == 'rejected':
+        admin_notes = moderation_data.get('admin_notes', '')
+        NotificationService.notify_review_rejected(db, buyer_id, review_id, admin_notes if admin_notes else None)
+
+    return MessageResponse(
+        message=f"Review {action} successfully",
+        success=True
+    )
+
+
+@router.get("/reviews/statistics")
+async def get_review_statistics(
+    current_admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """Get review moderation statistics"""
+    from app.models.review import Review, ReviewStatus
+
+    total = db.query(Review).count()
+    pending = db.query(Review).filter(Review.status == ReviewStatus.PENDING).count()
+    approved = db.query(Review).filter(Review.status == ReviewStatus.APPROVED).count()
+    rejected = db.query(Review).filter(Review.status == ReviewStatus.REJECTED).count()
+    hidden = db.query(Review).filter(Review.status == ReviewStatus.HIDDEN).count()
+
+    verified_purchases = db.query(Review).filter(Review.verified_purchase == True).count()
+
+    from sqlalchemy import func
+    avg_rating = db.query(func.avg(Review.rating)).filter(
+        Review.status == ReviewStatus.APPROVED
+    ).scalar()
+
+    return {
+        "total": total,
+        "pending": pending,
+        "approved": approved,
+        "rejected": rejected,
+        "hidden": hidden,
+        "verified_purchases": verified_purchases,
+        "average_rating": float(avg_rating) if avg_rating else 0.0
+    }
+
+
 # ===========================================
 # COMPLETE ADMIN ENDPOINTS SUMMARY:
 # ===========================================
@@ -1430,5 +2142,29 @@ async def update_payment_setting(
 #    - GET /settings/payment - Get payment settings
 #    - PUT /settings/payment/{setting_key} - Update payment setting
 #
-# TOTAL: 22 Admin Endpoints
+# ✅ CURRENCY MANAGEMENT (4 endpoints - NEW)
+#    - GET /currencies - List all currencies
+#    - POST /currencies - Create new currency
+#    - PUT /currencies/{id} - Update currency
+#    - DELETE /currencies/{id} - Deactivate currency
+#
+# ✅ PROMOTION CODES (5 endpoints - NEW)
+#    - GET /promotion-codes - List all promotion codes
+#    - POST /promotion-codes - Create promotion code
+#    - PUT /promotion-codes/{id} - Update promotion code
+#    - DELETE /promotion-codes/{id} - Deactivate promotion code
+#    - GET /promotion-codes/{id}/usage - Get usage statistics
+#
+# ✅ FRAUD DETECTION (4 endpoints - NEW)
+#    - GET /fraud-indicators - List fraud indicators
+#    - POST /fraud-indicators - Create fraud indicator
+#    - PUT /fraud-indicators/{id}/resolve - Resolve fraud
+#    - GET /fraud-indicators/statistics - Fraud statistics
+#
+# ✅ REVIEW MODERATION (3 endpoints - NEW)
+#    - GET /reviews - List all reviews for moderation
+#    - POST /reviews/{id}/moderate - Approve/reject/hide review
+#    - GET /reviews/statistics - Review moderation statistics
+#
+# TOTAL: 38 Admin Endpoints (was 22, added 16 new)
 # ===========================================

@@ -404,5 +404,64 @@ async def get_payment_details(
     )
 
 
+# ========================================
+# SUBSCRIPTION USAGE ENDPOINTS (NEW)
+# ========================================
+
+@router.get("/usage", response_model=SubscriptionUsageResponse)
+async def get_subscription_usage(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get current subscription usage for the logged-in user
+
+    Returns usage metrics for the current billing period.
+    """
+    user_id = int(getattr(current_user, 'id', 0))
+    usage = SubscriptionService.get_current_usage(db, user_id)
+
+    if not usage:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No usage data found. You may not have an active subscription."
+        )
+
+    return SubscriptionUsageResponse.model_validate(usage)
+
+
+@router.get("/usage/history", response_model=List[SubscriptionUsageResponse])
+async def get_subscription_usage_history(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+    limit: int = 12
+):
+    """
+    Get subscription usage history
+
+    Returns past usage records for analysis and tracking.
+    """
+    user_id = int(getattr(current_user, 'id', 0))
+    usage_history = SubscriptionService.get_usage_history(db, user_id, limit)
+
+    return [SubscriptionUsageResponse.model_validate(u) for u in usage_history]
+
+
+@router.get("/features/usage")
+async def get_feature_usage(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get detailed feature usage breakdown
+
+    Shows usage stats for each subscription feature.
+    """
+    user_id = int(getattr(current_user, 'id', 0))
+    feature_usage = SubscriptionService.get_feature_usage(db, user_id)
+
+    return feature_usage
+
+
 # Import at the top if not already
 from app.models.subscription import PaymentSetting

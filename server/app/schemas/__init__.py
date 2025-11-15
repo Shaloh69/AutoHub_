@@ -61,6 +61,15 @@ from app.schemas.transaction import (
     TransactionResponse,
     TransactionDetailResponse
 )
+from app.schemas.review import (
+    ReviewCreate,
+    ReviewUpdate,
+    ReviewModerate,
+    ReviewHelpful,
+    ReviewResponse,
+    ReviewDetailResponse,
+    ReviewStatsResponse
+)
 
 __all__ = [
     # Common
@@ -87,5 +96,8 @@ __all__ = [
     "SubscriptionPaymentResponse",
     # Transaction
     "TransactionCreate", "TransactionUpdate", "TransactionResponse",
-    "TransactionDetailResponse"
+    "TransactionDetailResponse",
+    # Review
+    "ReviewCreate", "ReviewUpdate", "ReviewModerate", "ReviewHelpful",
+    "ReviewResponse", "ReviewDetailResponse", "ReviewStatsResponse"
 ]
