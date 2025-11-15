@@ -256,11 +256,10 @@ export default function SearchCarsPage() {
                   selectedKeys={filters.fuel_type ? [filters.fuel_type] : []}
                   onChange={(e) => setFilters(prev => ({ ...prev, fuel_type: e.target.value as any }))}
                 >
-                  <SelectItem key="gasoline" value="gasoline">Gasoline</SelectItem>
-                  <SelectItem key="diesel" value="diesel">Diesel</SelectItem>
-                  <SelectItem key="electric" value="electric">Electric</SelectItem>
-                  <SelectItem key="hybrid" value="hybrid">Hybrid</SelectItem>
-                  <SelectItem key="plug_in_hybrid" value="plug_in_hybrid">Plug-in Hybrid</SelectItem>
+                  <SelectItem key="GASOLINE" value="GASOLINE">Gasoline</SelectItem>
+                  <SelectItem key="DIESEL" value="DIESEL">Diesel</SelectItem>
+                  <SelectItem key="ELECTRIC" value="ELECTRIC">Electric</SelectItem>
+                  <SelectItem key="HYBRID" value="HYBRID">Hybrid</SelectItem>
                 </Select>
 
                 {/* Transmission */}
@@ -270,10 +269,10 @@ export default function SearchCarsPage() {
                   selectedKeys={filters.transmission ? [filters.transmission] : []}
                   onChange={(e) => setFilters(prev => ({ ...prev, transmission: e.target.value as any }))}
                 >
-                  <SelectItem key="manual" value="manual">Manual</SelectItem>
-                  <SelectItem key="automatic" value="automatic">Automatic</SelectItem>
-                  <SelectItem key="cvt" value="cvt">CVT</SelectItem>
-                  <SelectItem key="dct" value="dct">DCT</SelectItem>
+                  <SelectItem key="MANUAL" value="MANUAL">Manual</SelectItem>
+                  <SelectItem key="AUTOMATIC" value="AUTOMATIC">Automatic</SelectItem>
+                  <SelectItem key="CVT" value="CVT">CVT</SelectItem>
+                  <SelectItem key="DCT" value="DCT">DCT</SelectItem>
                 </Select>
 
                 {/* Condition */}
@@ -283,10 +282,12 @@ export default function SearchCarsPage() {
                   selectedKeys={filters.condition_rating ? [filters.condition_rating] : []}
                   onChange={(e) => setFilters(prev => ({ ...prev, condition_rating: e.target.value as any }))}
                 >
-                  <SelectItem key="excellent" value="excellent">Excellent</SelectItem>
-                  <SelectItem key="very_good" value="very_good">Very Good</SelectItem>
-                  <SelectItem key="good" value="good">Good</SelectItem>
-                  <SelectItem key="fair" value="fair">Fair</SelectItem>
+                  <SelectItem key="BRAND_NEW" value="BRAND_NEW">Brand New</SelectItem>
+                  <SelectItem key="LIKE_NEW" value="LIKE_NEW">Like New</SelectItem>
+                  <SelectItem key="EXCELLENT" value="EXCELLENT">Excellent</SelectItem>
+                  <SelectItem key="GOOD" value="GOOD">Good</SelectItem>
+                  <SelectItem key="FAIR" value="FAIR">Fair</SelectItem>
+                  <SelectItem key="POOR" value="POOR">Poor</SelectItem>
                 </Select>
 
                 {/* Options */}

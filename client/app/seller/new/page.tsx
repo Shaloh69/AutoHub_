@@ -21,10 +21,11 @@ import { apiService } from '@/services/api';
 import { Brand, Model, Category, Feature, CarFormData } from '@/types';
 import { useRequireSeller } from '@/contexts/AuthContext';
 
-const FUEL_TYPES = ['gasoline', 'diesel', 'electric', 'hybrid', 'plug_in_hybrid'];
-const TRANSMISSIONS = ['manual', 'automatic', 'cvt', 'dct', 'amt'];
-const DRIVETRAINS = ['fwd', 'rwd', 'awd', '4wd'];
-const CONDITION_RATINGS = ['excellent', 'very_good', 'good', 'fair', 'poor'];
+// Match SQL schema enum values exactly
+const FUEL_TYPES = ['GASOLINE', 'DIESEL', 'ELECTRIC', 'HYBRID'];
+const TRANSMISSIONS = ['MANUAL', 'AUTOMATIC', 'CVT', 'DCT'];
+const DRIVETRAINS = ['FWD', 'RWD', 'AWD', '4WD'];
+const CONDITION_RATINGS = ['BRAND_NEW', 'LIKE_NEW', 'EXCELLENT', 'GOOD', 'FAIR', 'POOR'];
 
 export default function CreateCarPage() {
   const router = useRouter();

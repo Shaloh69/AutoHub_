@@ -14,21 +14,21 @@ import enum
 
 
 class UserRole(str, enum.Enum):
-    """User role enum - values are lowercase to match database"""
-    BUYER = "buyer"
-    SELLER = "seller"
-    DEALER = "dealer"
-    ADMIN = "admin"
-    MODERATOR = "moderator"
+    """User role enum - lowercase to match SQL schema exactly"""
+    buyer = "buyer"
+    seller = "seller"
+    dealer = "dealer"
+    admin = "admin"
+    moderator = "moderator"
 
 
 class VerificationLevel(str, enum.Enum):
-    """Verification level enum"""
-    NONE = "none"
-    EMAIL = "email"
-    PHONE = "phone"
-    IDENTITY = "identity"
-    BUSINESS = "business"
+    """Verification level enum - lowercase to match SQL schema exactly"""
+    none = "none"
+    email = "email"
+    phone = "phone"
+    identity = "identity"
+    business = "business"
 
 
 class User(Base):

@@ -6,26 +6,28 @@ import enum
 
 
 class TransactionType(str, enum.Enum):
-    SALE = "sale"
-    RESERVATION = "reservation"
-    DEPOSIT = "deposit"
+    """Transaction type enum - lowercase to match SQL schema exactly"""
+    sale = "sale"
+    reservation = "reservation"
+    deposit = "deposit"
 
 
 class TransactionStatus(str, enum.Enum):
-    """Transaction status enum - lowercase to match SQL schema"""
-    PENDING = "pending"
-    CONFIRMED = "confirmed"
-    COMPLETED = "completed"
-    CANCELLED = "cancelled"
-    DISPUTED = "disputed"
+    """Transaction status enum - lowercase to match SQL schema exactly"""
+    pending = "pending"
+    confirmed = "confirmed"
+    completed = "completed"
+    cancelled = "cancelled"
+    disputed = "disputed"
     # REMOVED: DEPOSIT_PAID, FINANCING_APPROVED, DOCUMENTS_READY (not in SQL)
 
 
 class PaymentStatus(str, enum.Enum):
-    PENDING = "pending"
-    PARTIAL = "partial"
-    COMPLETED = "completed"
-    REFUNDED = "refunded"
+    """Payment status enum - lowercase to match SQL schema exactly"""
+    pending = "pending"
+    partial = "partial"
+    completed = "completed"
+    refunded = "refunded"
 
 
 class Transaction(Base):
@@ -40,7 +42,7 @@ class Transaction(Base):
     inquiry_id = Column(Integer, ForeignKey("inquiries.id", ondelete="SET NULL"))
 
     # Transaction Details
-    transaction_type = Column(Enum(TransactionType), default=TransactionType.SALE)
+    transaction_type = Column(Enum(TransactionType), default=TransactionType.sale)
     agreed_price = Column(DECIMAL(12, 2), nullable=False)
     currency_id = Column(Integer, ForeignKey("currencies.id"), default=1)
     deposit_amount = Column(DECIMAL(12, 2))
@@ -48,7 +50,7 @@ class Transaction(Base):
 
     # Payment Details
     payment_method = Column(Enum("cash", "bank_transfer", "check", "financing", "trade_in", "mixed"), default="cash")
-    payment_status = Column(Enum(PaymentStatus), default=PaymentStatus.PENDING)
+    payment_status = Column(Enum(PaymentStatus), default=PaymentStatus.pending)
 
     # Trade-in
     has_trade_in = Column(Boolean, default=False)
@@ -61,7 +63,7 @@ class Transaction(Base):
     admin_notes = Column(Text)
 
     # Status
-    status = Column(Enum(TransactionStatus), default=TransactionStatus.PENDING, nullable=False, index=True)
+    status = Column(Enum(TransactionStatus), default=TransactionStatus.pending, nullable=False, index=True)
 
     # Timestamps
     confirmed_at = Column(TIMESTAMP)

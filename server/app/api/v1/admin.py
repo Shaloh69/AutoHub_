@@ -326,7 +326,7 @@ async def ban_user(
     
     # Prevent banning other admins
     user_role = getattr(user, 'role', None)
-    if user_role in [UserRole.ADMIN, UserRole.MODERATOR]:
+    if user_role in [UserRole.admin, UserRole.moderator]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Cannot ban admin or moderator accounts"

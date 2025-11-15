@@ -6,24 +6,26 @@ import enum
 
 
 class InquiryType(str, enum.Enum):
-    GENERAL = "general"
-    TEST_DRIVE = "test_drive"
-    PRICE_NEGOTIATION = "price_negotiation"
-    INSPECTION = "inspection"
-    PURCHASE_INTENT = "purchase_intent"
-    FINANCING = "financing"
-    TRADE_IN = "trade_in"
+    """Inquiry type enum - lowercase to match SQL schema exactly"""
+    general = "general"
+    test_drive = "test_drive"
+    price_negotiation = "price_negotiation"
+    inspection = "inspection"
+    purchase_intent = "purchase_intent"
+    financing = "financing"
+    trade_in = "trade_in"
 
 
 class InquiryStatus(str, enum.Enum):
-    NEW = "new"
-    READ = "read"
-    REPLIED = "replied"
-    IN_NEGOTIATION = "in_negotiation"
-    TEST_DRIVE_SCHEDULED = "test_drive_scheduled"
-    CLOSED = "closed"
-    CONVERTED = "converted"
-    SPAM = "spam"
+    """Inquiry status enum - lowercase to match SQL schema exactly"""
+    new = "new"
+    read = "read"
+    replied = "replied"
+    in_negotiation = "in_negotiation"
+    test_drive_scheduled = "test_drive_scheduled"
+    closed = "closed"
+    converted = "converted"
+    spam = "spam"
 
 
 class ResponseType(str, enum.Enum):
@@ -51,7 +53,7 @@ class Inquiry(Base):
     buyer_phone = Column(String(20))
     
     # Inquiry Details
-    inquiry_type = Column(Enum(InquiryType), default=InquiryType.GENERAL, index=True)
+    inquiry_type = Column(Enum(InquiryType), default=InquiryType.general, index=True)
     offered_price = Column(DECIMAL(12, 2))
     test_drive_requested = Column(Boolean, default=False)
     inspection_requested = Column(Boolean, default=False)
@@ -59,7 +61,7 @@ class Inquiry(Base):
     trade_in_vehicle = Column(Boolean, default=False)
     
     # Status
-    status = Column(Enum(InquiryStatus), default=InquiryStatus.NEW, index=True)
+    status = Column(Enum(InquiryStatus), default=InquiryStatus.new, index=True)
     is_read = Column(Boolean, default=False)
     priority = Column(Enum("low", "medium", "high", "urgent"), default="medium")
     
