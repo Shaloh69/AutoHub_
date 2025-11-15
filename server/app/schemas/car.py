@@ -5,7 +5,7 @@ Path: car_marketplace_ph/app/schemas/car.py
 ===========================================
 """
 from pydantic import BaseModel, Field, ConfigDict
-from typing import Optional, List
+from typing import Optional, List, Any
 from datetime import datetime
 from decimal import Decimal
 
@@ -224,6 +224,15 @@ class CarResponse(BaseModel):
     )
 
 
+class CityResponse(BaseModel):
+    """City response for car location"""
+    id: int
+    name: str
+    province_id: int
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class CarDetailResponse(CarResponse):
     """Detailed car response with all fields"""
     # Vehicle Details
@@ -234,41 +243,43 @@ class CarDetailResponse(CarResponse):
     drivetrain: Optional[str] = None
     seats: Optional[int] = None
     doors: Optional[int] = None
-    
+
     # Exterior
     exterior_color: Optional[str] = None
     color_type: Optional[str] = None
-    
+
     # Condition
     accident_history: bool
     flood_history: bool
     number_of_owners: int
     service_history_available: bool
-    
+
     # Documentation
     registration_status: str
     or_cr_status: str
     lto_registered: bool
     warranty_remaining: bool
-    
+
     # Options
     negotiable: bool
     financing_available: bool
     trade_in_accepted: bool
-    
+
     # Location details
     detailed_address: Optional[str] = None
     barangay: Optional[str] = None
     latitude: Optional[Decimal] = None
     longitude: Optional[Decimal] = None
-    
-    # Related data (populated by service)
-    images: List[dict] = []
-    features: List[dict] = []
-    seller: Optional[dict] = None
-    brand: Optional[dict] = None
-    model: Optional[dict] = None
-    city: Optional[dict] = None
+
+    # Related data (populated by service) - Fixed: Use proper types instead of dict
+    images: List[Any] = []  # Will be CarImage ORM objects or dicts
+    features: List[Any] = []  # Will be CarFeature ORM objects or dicts
+    seller: Optional[Any] = None  # Will be User ORM object or dict
+    brand: Optional[Any] = None  # Will be Brand ORM object or dict
+    model: Optional[Any] = None  # Will be Model ORM object or dict
+    city: Optional[Any] = None  # Will be PhCity ORM object or dict
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class CarImageUpload(BaseModel):
