@@ -36,21 +36,21 @@ class CarCreate(BaseModel):
     
     # Technical Specifications
     mileage: int = Field(..., ge=0)
-    fuel_type: str = Field(..., pattern="^(gasoline|diesel|hybrid|electric|cng|lpg|plugin_hybrid)$")
-    transmission: str = Field(..., pattern="^(manual|automatic|semi_automatic|cvt)$")
+    fuel_type: str = Field(..., pattern="^(GASOLINE|DIESEL|ELECTRIC|HYBRID)$")  # Fixed: UPPERCASE to match SQL schema
+    transmission: str = Field(..., pattern="^(MANUAL|AUTOMATIC|CVT|DCT)$")  # Fixed: UPPERCASE to match SQL schema
     engine_size: Optional[str] = Field(None, max_length=20)
     horsepower: Optional[int] = Field(None, ge=0)
     torque: Optional[int] = Field(None, ge=0)
-    drivetrain: Optional[str] = Field(None, pattern="^(fwd|rwd|awd|4wd)$")
+    drivetrain: Optional[str] = Field(None, pattern="^(FWD|RWD|AWD|4WD)$")  # Fixed: UPPERCASE to match SQL schema
     seats: Optional[int] = Field(None, ge=2, le=50)
     doors: Optional[int] = Field(None, ge=2, le=6)
-    
+
     # Exterior
     exterior_color: Optional[str] = Field(None, max_length=50)
     color_type: Optional[str] = Field(None, pattern="^(solid|metallic|pearl|matte)$")
-    
+
     # Condition
-    condition_rating: str = Field(..., pattern="^(excellent|very_good|good|fair|poor)$")
+    condition_rating: str = Field(..., pattern="^(BRAND_NEW|LIKE_NEW|EXCELLENT|GOOD|FAIR|POOR)$")  # Fixed: UPPERCASE to match SQL schema
     accident_history: bool = False
     accident_details: Optional[str] = Field(None, max_length=1000)
     flood_history: bool = False
@@ -119,21 +119,21 @@ class CarUpdate(BaseModel):
     
     # Technical Specifications
     mileage: Optional[int] = Field(None, ge=0)
-    fuel_type: Optional[str] = Field(None, pattern="^(gasoline|diesel|hybrid|electric|cng|lpg|plugin_hybrid)$")
-    transmission: Optional[str] = Field(None, pattern="^(manual|automatic|semi_automatic|cvt)$")
+    fuel_type: Optional[str] = Field(None, pattern="^(GASOLINE|DIESEL|ELECTRIC|HYBRID)$")  # Fixed: UPPERCASE to match SQL schema
+    transmission: Optional[str] = Field(None, pattern="^(MANUAL|AUTOMATIC|CVT|DCT)$")  # Fixed: UPPERCASE to match SQL schema
     engine_size: Optional[str] = Field(None, max_length=20)
     horsepower: Optional[int] = Field(None, ge=0)
     torque: Optional[int] = Field(None, ge=0)
-    drivetrain: Optional[str] = Field(None, pattern="^(fwd|rwd|awd|4wd)$")
+    drivetrain: Optional[str] = Field(None, pattern="^(FWD|RWD|AWD|4WD)$")  # Fixed: UPPERCASE to match SQL schema
     seats: Optional[int] = Field(None, ge=2, le=50)
     doors: Optional[int] = Field(None, ge=2, le=6)
-    
+
     # Exterior
     exterior_color: Optional[str] = Field(None, max_length=50)
     color_type: Optional[str] = Field(None, pattern="^(solid|metallic|pearl|matte)$")
-    
+
     # Condition
-    condition_rating: Optional[str] = Field(None, pattern="^(excellent|very_good|good|fair|poor)$")
+    condition_rating: Optional[str] = Field(None, pattern="^(BRAND_NEW|LIKE_NEW|EXCELLENT|GOOD|FAIR|POOR)$")  # Fixed: UPPERCASE to match SQL schema
     accident_history: Optional[bool] = None
     accident_details: Optional[str] = Field(None, max_length=1000)
     flood_history: Optional[bool] = None
@@ -165,7 +165,7 @@ class CarUpdate(BaseModel):
     feature_ids: Optional[List[int]] = None
     
     # Status
-    status: Optional[str] = Field(None, pattern="^(draft|pending|active|sold|reserved|expired|removed)$")
+    status: Optional[str] = Field(None, pattern="^(DRAFT|PENDING|ACTIVE|SOLD|RESERVED|INACTIVE|REJECTED|EXPIRED)$")  # Fixed: UPPERCASE to match SQL schema
     
     # SEO
     seo_slug: Optional[str] = Field(None, max_length=255)
