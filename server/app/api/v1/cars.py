@@ -163,7 +163,20 @@ async def search_cars(
 
     # Search cars
     cars, total = CarService.search_cars(db, filters, page, page_size)
-    
+
+    # Normalize enum values for each car before validation
+    for car in cars:
+        if hasattr(car, 'status') and car.status:
+            car.status = normalize_enum_value('status', car.status)
+        if hasattr(car, 'approval_status') and car.approval_status:
+            car.approval_status = normalize_enum_value('approval_status', car.approval_status)
+        if hasattr(car, 'fuel_type') and car.fuel_type:
+            car.fuel_type = normalize_enum_value('fuel_type', car.fuel_type)
+        if hasattr(car, 'transmission') and car.transmission:
+            car.transmission = normalize_enum_value('transmission', car.transmission)
+        if hasattr(car, 'condition_rating') and car.condition_rating:
+            car.condition_rating = normalize_enum_value('condition_rating', car.condition_rating)
+
     # Convert to response models
     items = [CarResponse.model_validate(car) for car in cars]
     
@@ -209,22 +222,23 @@ async def get_car(
         logger = logging.getLogger(__name__)
 
         # Normalize all enum fields directly on the car object attributes
+        # The normalizer handles both Python enum objects and string values
         if hasattr(car, 'status') and car.status:
-            car.status = normalize_enum_value('status', str(car.status))
+            car.status = normalize_enum_value('status', car.status)
         if hasattr(car, 'approval_status') and car.approval_status:
-            car.approval_status = normalize_enum_value('approval_status', str(car.approval_status))
+            car.approval_status = normalize_enum_value('approval_status', car.approval_status)
         if hasattr(car, 'fuel_type') and car.fuel_type:
-            car.fuel_type = normalize_enum_value('fuel_type', str(car.fuel_type))
+            car.fuel_type = normalize_enum_value('fuel_type', car.fuel_type)
         if hasattr(car, 'transmission') and car.transmission:
-            car.transmission = normalize_enum_value('transmission', str(car.transmission))
+            car.transmission = normalize_enum_value('transmission', car.transmission)
         if hasattr(car, 'drivetrain') and car.drivetrain:
-            car.drivetrain = normalize_enum_value('drivetrain', str(car.drivetrain))
+            car.drivetrain = normalize_enum_value('drivetrain', car.drivetrain)
         if hasattr(car, 'condition_rating') and car.condition_rating:
-            car.condition_rating = normalize_enum_value('condition_rating', str(car.condition_rating))
+            car.condition_rating = normalize_enum_value('condition_rating', car.condition_rating)
         if hasattr(car, 'body_type') and car.body_type:
-            car.body_type = normalize_enum_value('body_type', str(car.body_type))
+            car.body_type = normalize_enum_value('body_type', car.body_type)
         if hasattr(car, 'visibility') and car.visibility:
-            car.visibility = normalize_enum_value('visibility', str(car.visibility))
+            car.visibility = normalize_enum_value('visibility', car.visibility)
 
         return CarDetailResponse.model_validate(car)
     except Exception as e:
@@ -263,6 +277,19 @@ async def update_car(
         normalized_update = normalize_car_data(update_dict)
 
         car = CarService.update_car(db, car_id, user_id, normalized_update)
+
+        # Normalize enum values in response
+        if hasattr(car, 'status') and car.status:
+            car.status = normalize_enum_value('status', car.status)
+        if hasattr(car, 'approval_status') and car.approval_status:
+            car.approval_status = normalize_enum_value('approval_status', car.approval_status)
+        if hasattr(car, 'fuel_type') and car.fuel_type:
+            car.fuel_type = normalize_enum_value('fuel_type', car.fuel_type)
+        if hasattr(car, 'transmission') and car.transmission:
+            car.transmission = normalize_enum_value('transmission', car.transmission)
+        if hasattr(car, 'condition_rating') and car.condition_rating:
+            car.condition_rating = normalize_enum_value('condition_rating', car.condition_rating)
+
         return CarResponse.model_validate(car)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
@@ -416,6 +443,19 @@ async def boost_car(
         # FIX: Use getattr
         user_id = int(getattr(current_user, 'id', 0))
         car = CarService.boost_car(db, car_id, user_id, boost_data.duration_hours)
+
+        # Normalize enum values in response
+        if hasattr(car, 'status') and car.status:
+            car.status = normalize_enum_value('status', car.status)
+        if hasattr(car, 'approval_status') and car.approval_status:
+            car.approval_status = normalize_enum_value('approval_status', car.approval_status)
+        if hasattr(car, 'fuel_type') and car.fuel_type:
+            car.fuel_type = normalize_enum_value('fuel_type', car.fuel_type)
+        if hasattr(car, 'transmission') and car.transmission:
+            car.transmission = normalize_enum_value('transmission', car.transmission)
+        if hasattr(car, 'condition_rating') and car.condition_rating:
+            car.condition_rating = normalize_enum_value('condition_rating', car.condition_rating)
+
         return CarResponse.model_validate(car)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
@@ -455,10 +495,22 @@ async def feature_car(
     # Update ranking score - FIX: use getattr
     current_ranking = int(getattr(car, 'ranking_score', 0))
     setattr(car, 'ranking_score', current_ranking + 50)
-    
+
     db.commit()
     db.refresh(car)
-    
+
+    # Normalize enum values in response
+    if hasattr(car, 'status') and car.status:
+        car.status = normalize_enum_value('status', car.status)
+    if hasattr(car, 'approval_status') and car.approval_status:
+        car.approval_status = normalize_enum_value('approval_status', car.approval_status)
+    if hasattr(car, 'fuel_type') and car.fuel_type:
+        car.fuel_type = normalize_enum_value('fuel_type', car.fuel_type)
+    if hasattr(car, 'transmission') and car.transmission:
+        car.transmission = normalize_enum_value('transmission', car.transmission)
+    if hasattr(car, 'condition_rating') and car.condition_rating:
+        car.condition_rating = normalize_enum_value('condition_rating', car.condition_rating)
+
     return CarResponse.model_validate(car)
 
 
