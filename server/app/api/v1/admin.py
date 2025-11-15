@@ -2053,6 +2053,16 @@ async def moderate_review(
 
         db.commit()
 
+    # Send notifications to buyer
+    buyer_id = int(getattr(review, 'buyer_id', 0))
+    from app.services.notification_service import NotificationService
+
+    if action == 'approved':
+        NotificationService.notify_review_approved(db, buyer_id, review_id)
+    elif action == 'rejected':
+        admin_notes = moderation_data.get('admin_notes', '')
+        NotificationService.notify_review_rejected(db, buyer_id, review_id, admin_notes if admin_notes else None)
+
     return MessageResponse(
         message=f"Review {action} successfully",
         success=True

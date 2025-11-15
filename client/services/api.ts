@@ -575,6 +575,114 @@ class ApiService {
     return this.request('/admin/fraud-indicators/statistics');
   }
 
+  // ==================== REVIEWS ====================
+
+  async createReview(data: {
+    car_id?: number;
+    seller_id: number;
+    rating: number;
+    title?: string;
+    comment?: string;
+    pros?: string;
+    cons?: string;
+    would_recommend?: boolean;
+    transaction_id?: number;
+  }): Promise<ApiResponse<any>> {
+    return this.request('/reviews', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getReviews(params?: {
+    car_id?: number;
+    seller_id?: number;
+    buyer_id?: number;
+    status?: string;
+    min_rating?: number;
+    verified_only?: boolean;
+    limit?: number;
+    offset?: number;
+  }): Promise<ApiResponse<any[]>> {
+    const searchParams = new URLSearchParams();
+    if (params?.car_id) searchParams.append('car_id', String(params.car_id));
+    if (params?.seller_id) searchParams.append('seller_id', String(params.seller_id));
+    if (params?.buyer_id) searchParams.append('buyer_id', String(params.buyer_id));
+    if (params?.status) searchParams.append('status', params.status);
+    if (params?.min_rating) searchParams.append('min_rating', String(params.min_rating));
+    if (params?.verified_only) searchParams.append('verified_only', 'true');
+    if (params?.limit) searchParams.append('limit', String(params.limit));
+    if (params?.offset) searchParams.append('offset', String(params.offset));
+
+    const queryString = searchParams.toString();
+    return this.request<any[]>(`/reviews${queryString ? '?' + queryString : ''}`);
+  }
+
+  async getReview(reviewId: number): Promise<ApiResponse<any>> {
+    return this.request(`/reviews/${reviewId}`);
+  }
+
+  async updateReview(reviewId: number, data: {
+    rating?: number;
+    title?: string;
+    comment?: string;
+    pros?: string;
+    cons?: string;
+    would_recommend?: boolean;
+  }): Promise<ApiResponse<any>> {
+    return this.request(`/reviews/${reviewId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteReview(reviewId: number): Promise<ApiResponse<any>> {
+    return this.request(`/reviews/${reviewId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async markReviewHelpful(reviewId: number): Promise<ApiResponse<any>> {
+    return this.request(`/reviews/${reviewId}/helpful`, {
+      method: 'POST',
+      body: JSON.stringify({ helpful: true }),
+    });
+  }
+
+  // ==================== ADMIN REVIEWS ====================
+
+  async getAdminReviews(params?: {
+    status?: string;
+    car_id?: number;
+    seller_id?: number;
+    limit?: number;
+    offset?: number;
+  }): Promise<ApiResponse<any[]>> {
+    const searchParams = new URLSearchParams();
+    if (params?.status) searchParams.append('status', params.status);
+    if (params?.car_id) searchParams.append('car_id', String(params.car_id));
+    if (params?.seller_id) searchParams.append('seller_id', String(params.seller_id));
+    if (params?.limit) searchParams.append('limit', String(params.limit));
+    if (params?.offset) searchParams.append('offset', String(params.offset));
+
+    const queryString = searchParams.toString();
+    return this.request<any[]>(`/admin/reviews${queryString ? '?' + queryString : ''}`);
+  }
+
+  async moderateReview(reviewId: number, data: {
+    status: 'pending' | 'approved' | 'rejected' | 'hidden';
+    admin_notes?: string;
+  }): Promise<ApiResponse<any>> {
+    return this.request(`/admin/reviews/${reviewId}/moderate`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getReviewStatistics(): Promise<ApiResponse<any>> {
+    return this.request('/admin/reviews/statistics');
+  }
+
   // ==================== LOCATIONS ====================
   
   async getRegions(): Promise<ApiResponse<any[]>> {
