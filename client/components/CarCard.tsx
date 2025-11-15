@@ -64,38 +64,48 @@ export default function CarCard({ car, onFavoriteChange }: CarCardProps) {
     <Card
       isPressable
       onPress={() => router.push(`/cars/${car.id}`)}
-      className="card-hover-lift group relative overflow-hidden"
+      className="group relative overflow-hidden bg-dark-900 border border-dark-700 hover:border-primary-600 transition-all duration-300 hover:shadow-red-glow"
     >
       {/* Image Section */}
-      <div className="relative h-48 overflow-hidden">
+      <div className="relative h-56 overflow-hidden bg-dark-800">
         <Image
           src={mainImage}
           alt={car.title}
-          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
           removeWrapper
         />
+
+        {/* Overlay Gradient */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
         {/* Favorite Button */}
         <Button
           isIconOnly
           size="sm"
           variant="flat"
-          className="absolute top-2 right-2 bg-white/90 dark:bg-black/90 backdrop-blur-sm z-10"
+          className="absolute top-3 right-3 bg-black/70 dark:bg-black/90 backdrop-blur-sm z-10 border border-primary-900/50 hover:bg-primary-600 hover:border-primary-500 transition-all"
           onPress={handleFavoriteToggle}
           isLoading={isLoading}
         >
           <Heart
-            className={`w-4 h-4 ${isFavorite ? 'fill-red-500 text-red-500' : 'text-gray-600'}`}
+            className={`w-4 h-4 transition-all ${
+              isFavorite
+                ? 'fill-primary-500 text-primary-500'
+                : 'text-gray-300 hover:text-primary-500'
+            }`}
           />
         </Button>
 
         {/* Status Badge */}
-        <div className="absolute top-2 left-2 z-10">
+        <div className="absolute top-3 left-3 z-10">
           <Chip
             size="sm"
-            color={getStatusColor(car.status)}
-            variant="flat"
-            className="capitalize"
+            className={`
+              ${status === 'active' ? 'bg-green-600/90 text-white' : ''}
+              ${status === 'pending' ? 'bg-yellow-600/90 text-white' : ''}
+              ${status === 'sold' ? 'bg-gray-600/90 text-white' : ''}
+              backdrop-blur-sm capitalize font-semibold
+            `}
           >
             {car.status}
           </Chip>
@@ -103,45 +113,43 @@ export default function CarCard({ car, onFavoriteChange }: CarCardProps) {
 
         {/* Featured Badge */}
         {car.is_featured && (
-          <div className="absolute bottom-2 left-2 z-10">
+          <div className="absolute bottom-3 left-3 z-10">
             <Chip
               size="sm"
-              className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white"
-              variant="flat"
+              className="bg-gradient-red-dark text-white font-bold shadow-red-glow"
             >
-              ⭐ Featured
+              ⭐ FEATURED
             </Chip>
           </div>
         )}
 
         {/* Boosted Badge */}
         {car.is_boosted && (
-          <div className="absolute bottom-2 right-2 z-10">
+          <div className="absolute bottom-3 right-3 z-10">
             <Chip
               size="sm"
-              className="bg-gradient-to-r from-purple-500 to-pink-500 text-white"
-              variant="flat"
+              className="bg-purple-600 text-white font-bold"
             >
-              🚀 Boosted
+              🚀 BOOSTED
             </Chip>
           </div>
         )}
       </div>
 
-      <CardBody className="p-4">
+      <CardBody className="p-5 bg-dark-900 border-t border-dark-800">
         {/* Title */}
-        <h3 className="text-lg font-bold mb-2 line-clamp-1 group-hover:text-primary transition-colors">
+        <h3 className="text-lg font-bold mb-2 line-clamp-1 text-white group-hover:text-primary-500 transition-colors">
           {car.title}
         </h3>
 
         {/* Brand & Model */}
-        <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
-          {car.brand?.name} {car.model?.name} {car.year}
+        <p className="text-sm text-gray-400 mb-3">
+          {car.brand?.name} {car.model?.name} • {car.year}
         </p>
 
         {/* Price */}
-        <div className="mb-3">
-          <p className="text-2xl font-bold text-primary">
+        <div className="mb-4">
+          <p className="text-2xl font-black text-gradient-red">
             {formatPrice(car.price)}
           </p>
           {car.original_price && car.original_price > car.price && (
@@ -152,39 +160,38 @@ export default function CarCard({ car, onFavoriteChange }: CarCardProps) {
         </div>
 
         {/* Key Specs */}
-        <div className="grid grid-cols-2 gap-2 text-sm">
-          <div className="flex items-center gap-1 text-gray-600 dark:text-gray-400">
-            <Gauge className="w-4 h-4" />
+        <div className="grid grid-cols-2 gap-2 text-sm mb-3">
+          <div className="flex items-center gap-2 text-gray-400">
+            <Gauge className="w-4 h-4 text-primary-500" />
             <span>{formatMileage(car.mileage_km)}</span>
           </div>
-          <div className="flex items-center gap-1 text-gray-600 dark:text-gray-400">
-            <Calendar className="w-4 h-4" />
+          <div className="flex items-center gap-2 text-gray-400">
+            <Calendar className="w-4 h-4 text-primary-500" />
             <span>{car.year}</span>
           </div>
-          <div className="flex items-center gap-1 text-gray-600 dark:text-gray-400">
-            <Settings2 className="w-4 h-4" />
+          <div className="flex items-center gap-2 text-gray-400">
+            <Settings2 className="w-4 h-4 text-primary-500" />
             <span className="capitalize">{car.transmission}</span>
           </div>
-          <div className="flex items-center gap-1 text-gray-600 dark:text-gray-400">
-            <Fuel className="w-4 h-4" />
+          <div className="flex items-center gap-2 text-gray-400">
+            <Fuel className="w-4 h-4 text-primary-500" />
             <span className="capitalize">{car.fuel_type}</span>
           </div>
         </div>
 
         {/* Location */}
         {car.city && (
-          <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-400 mt-3">
-            <MapPin className="w-4 h-4" />
+          <div className="flex items-center gap-2 text-sm text-gray-500 pt-2 border-t border-dark-800">
+            <MapPin className="w-4 h-4 text-primary-500" />
             <span>{car.city.name}</span>
           </div>
         )}
       </CardBody>
 
-      <CardFooter className="p-4 pt-0">
+      <CardFooter className="p-4 pt-0 bg-dark-900">
         <Button
           fullWidth
-          color="primary"
-          variant="flat"
+          className="bg-gradient-red-dark text-white font-bold hover:shadow-red-glow transition-all"
           onPress={() => router.push(`/cars/${car.id}`)}
         >
           View Details
