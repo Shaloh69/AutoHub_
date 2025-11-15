@@ -372,7 +372,7 @@ def create_sample_cars(db):
             "mileage": 68000,
             "fuel_type": FuelType.DIESEL,
             "transmission": TransmissionType.AUTOMATIC,
-            "condition_rating": ConditionRating.VERY_GOOD,
+            "condition_rating": ConditionRating.EXCELLENT,  # FIXED: Changed from VERY_GOOD (not in SQL)
             "exterior_color": "Gray",
             "status": CarStatus.ACTIVE,
             "approval_status": ApprovalStatus.APPROVED,
@@ -402,7 +402,7 @@ def create_sample_cars(db):
             "mileage": 75000,
             "fuel_type": FuelType.GASOLINE,
             "transmission": TransmissionType.AUTOMATIC,
-            "condition_rating": ConditionRating.VERY_GOOD,
+            "condition_rating": ConditionRating.EXCELLENT,  # FIXED: Changed from VERY_GOOD (not in SQL)
             "exterior_color": "Silver",
             "status": CarStatus.ACTIVE,
             "approval_status": ApprovalStatus.APPROVED,
