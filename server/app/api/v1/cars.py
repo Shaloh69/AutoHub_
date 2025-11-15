@@ -15,6 +15,7 @@ from app.core.dependencies import get_current_user, get_current_seller, get_opti
 from app.models.user import User
 from app.models.car import CarImage, Car, Brand, Model, Category, Feature
 from app.models.transaction import PriceHistory
+from app.utils.enum_normalizer import normalize_car_data, normalize_enum_value
 
 router = APIRouter()
 
@@ -27,14 +28,19 @@ async def create_car(
 ):
     """
     Create new car listing
-    
+
     Requires seller/dealer role and verified account.
     Checks subscription limits before creating.
     """
     try:
         # FIX: Use getattr for user.id
         user_id = int(getattr(current_user, 'id', 0))
-        car = CarService.create_car(db, user_id, car_data.model_dump())
+
+        # Normalize enum values before saving
+        car_dict = car_data.model_dump()
+        normalized_data = normalize_car_data(car_dict)
+
+        car = CarService.create_car(db, user_id, normalized_data)
         # FIX: Use getattr for car.id
         car_id = int(getattr(car, 'id', 0))
         return IDResponse(id=car_id, message="Car listing created successfully")
@@ -123,6 +129,11 @@ async def search_cars(
     if not sort_order:
         sort_order = "desc"
 
+    # Normalize enum filter values before search
+    normalized_fuel_type = normalize_enum_value('fuel_type', fuel_type) if fuel_type else None
+    normalized_transmission = normalize_enum_value('transmission', transmission) if transmission else None
+    normalized_condition = normalize_enum_value('condition_rating', condition_rating) if condition_rating else None
+
     filters = {
         "q": q,
         "brand_id": brand_id,
@@ -132,11 +143,11 @@ async def search_cars(
         "max_price": max_price,
         "min_year": min_year,
         "max_year": max_year,
-        "fuel_type": fuel_type,
-        "transmission": transmission,
+        "fuel_type": normalized_fuel_type,
+        "transmission": normalized_transmission,
         "min_mileage": min_mileage,
         "max_mileage": max_mileage,
-        "condition_rating": condition_rating,
+        "condition_rating": normalized_condition,
         "city_id": city_id,
         "province_id": province_id,
         "region_id": region_id,
@@ -149,7 +160,7 @@ async def search_cars(
         "sort_by": sort_by,
         "sort_order": sort_order
     }
-    
+
     # Search cars
     cars, total = CarService.search_cars(db, filters, page, page_size)
     
@@ -216,15 +227,19 @@ async def update_car(
 ):
     """
     Update car listing
-    
+
     Only the car owner can update the listing.
     Tracks price changes in price history.
     """
     try:
         # FIX: Use getattr
         user_id = int(getattr(current_user, 'id', 0))
+
+        # Normalize enum values before updating
         update_dict = car_data.model_dump(exclude_unset=True)
-        car = CarService.update_car(db, car_id, user_id, update_dict)
+        normalized_update = normalize_car_data(update_dict)
+
+        car = CarService.update_car(db, car_id, user_id, normalized_update)
         return CarResponse.model_validate(car)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
