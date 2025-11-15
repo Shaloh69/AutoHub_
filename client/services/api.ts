@@ -508,6 +508,38 @@ class ApiService {
     });
   }
 
+  // ==================== ADMIN PAYMENTS ====================
+
+  async getPendingPayments(limit: number = 100, offset: number = 0): Promise<ApiResponse<any[]>> {
+    return this.request<any[]>(`/admin/payments/pending?limit=${limit}&offset=${offset}`);
+  }
+
+  async getPaymentDetails(paymentId: number): Promise<ApiResponse<any>> {
+    return this.request(`/admin/payments/${paymentId}`);
+  }
+
+  async verifyPayment(paymentId: number, data: {
+    action: 'verify' | 'reject';
+    admin_notes?: string;
+    rejection_reason?: string;
+  }): Promise<ApiResponse<any>> {
+    return this.request('/admin/payments/verify', {
+      method: 'POST',
+      body: JSON.stringify({
+        payment_id: paymentId,
+        ...data,
+      }),
+    });
+  }
+
+  async getPaymentStatistics(): Promise<ApiResponse<any>> {
+    return this.request('/admin/payments/statistics');
+  }
+
+  async getPaymentLogs(paymentId: number): Promise<ApiResponse<any[]>> {
+    return this.request<any[]>(`/admin/payments/${paymentId}/logs`);
+  }
+
   // ==================== LOCATIONS ====================
   
   async getRegions(): Promise<ApiResponse<any[]>> {
