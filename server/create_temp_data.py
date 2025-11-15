@@ -304,8 +304,25 @@ def get_location(db):
     return 1, 1, 1
 
 
+def clear_old_car_data(db):
+    """Clear existing car data to start fresh"""
+    print("\n🗑️  Clearing old car data...")
+
+    try:
+        # Delete in order due to foreign key constraints
+        deleted_features = db.query(CarFeature).delete()
+        deleted_images = db.query(CarImage).delete()
+        deleted_cars = db.query(Car).delete()
+
+        db.commit()
+        print(f"   ✓ Deleted {deleted_cars} cars, {deleted_images} images, {deleted_features} feature associations")
+    except Exception as e:
+        print(f"   ⚠️  Error clearing data: {e}")
+        db.rollback()
+
+
 def create_sample_cars(db):
-    """Create sample car listings"""
+    """Create sample car listings with comprehensive data"""
     print("\n📝 Creating sample cars...")
 
     # Get seller user
@@ -318,6 +335,8 @@ def create_sample_cars(db):
     toyota = db.query(Brand).filter(Brand.name == "Toyota").first()
     honda = db.query(Brand).filter(Brand.name == "Honda").first()
     mitsubishi = db.query(Brand).filter(Brand.name == "Mitsubishi").first()
+    nissan = db.query(Brand).filter(Brand.name == "Nissan").first()
+    ford = db.query(Brand).filter(Brand.name == "Ford").first()
 
     if not toyota or not honda or not mitsubishi:
         print("❌ Brands not found!")
@@ -329,6 +348,9 @@ def create_sample_cars(db):
     civic = db.query(Model).filter(Model.name == "Civic").first()
     crv = db.query(Model).filter(Model.name == "CR-V").first()
     montero = db.query(Model).filter(Model.name == "Montero Sport").first()
+    innova = db.query(Model).filter(Model.name == "Innova").first()
+    wigo = db.query(Model).filter(Model.name == "Wigo").first()
+    city = db.query(Model).filter(Model.name == "City").first()
 
     # Validate models exist
     if not all([vios, fortuner, civic, crv, montero]):
@@ -344,7 +366,10 @@ def create_sample_cars(db):
     city_id, province_id, region_id = get_location(db)
 
     # Get some features
-    features = db.query(Feature).limit(5).all()
+    features = db.query(Feature).limit(10).all()
+
+    # Import additional enums needed
+    from app.models.car import BodyType, EngineType, MileageUnit, Visibility, DrivetrainType
 
     sample_cars = [
         {
@@ -356,11 +381,22 @@ def create_sample_cars(db):
             "price": Decimal("650000"),
             "mileage": 35000,
             "fuel_type": FuelType.GASOLINE,
+            "engine_type": EngineType.gasoline,
             "transmission": TransmissionType.AUTOMATIC,
             "condition_rating": ConditionRating.EXCELLENT,
             "exterior_color": "White",
+            "interior_color": "Beige",
+            "body_type": BodyType.sedan,
+            "mileage_unit": MileageUnit.km,
+            "visibility": Visibility.public,
             "status": CarStatus.ACTIVE,
             "approval_status": ApprovalStatus.APPROVED,
+            "engine_size": "1.3L",
+            "seats": 5,
+            "doors": 4,
+            "drivetrain": DrivetrainType.FWD,
+            "horsepower": 98,
+            "trim": "1.3 E",
         },
         {
             "brand_id": toyota.id,
@@ -371,11 +407,22 @@ def create_sample_cars(db):
             "price": Decimal("1450000"),
             "mileage": 68000,
             "fuel_type": FuelType.DIESEL,
+            "engine_type": EngineType.diesel,
             "transmission": TransmissionType.AUTOMATIC,
-            "condition_rating": ConditionRating.EXCELLENT,  # FIXED: Changed from VERY_GOOD (not in SQL)
+            "condition_rating": ConditionRating.EXCELLENT,
             "exterior_color": "Gray",
+            "interior_color": "Black",
+            "body_type": BodyType.suv,
+            "mileage_unit": MileageUnit.km,
+            "visibility": Visibility.public,
             "status": CarStatus.ACTIVE,
             "approval_status": ApprovalStatus.APPROVED,
+            "engine_size": "2.4L",
+            "seats": 7,
+            "doors": 4,
+            "drivetrain": DrivetrainType.RWD,
+            "horsepower": 148,
+            "trim": "2.4 G 4x2",
         },
         {
             "brand_id": honda.id,
@@ -386,11 +433,22 @@ def create_sample_cars(db):
             "price": Decimal("1250000"),
             "mileage": 28000,
             "fuel_type": FuelType.GASOLINE,
+            "engine_type": EngineType.gasoline,
             "transmission": TransmissionType.CVT,
-            "condition_rating": ConditionRating.EXCELLENT,
+            "condition_rating": ConditionRating.LIKE_NEW,
             "exterior_color": "Red",
+            "interior_color": "Black",
+            "body_type": BodyType.sedan,
+            "mileage_unit": MileageUnit.km,
+            "visibility": Visibility.public,
             "status": CarStatus.ACTIVE,
             "approval_status": ApprovalStatus.APPROVED,
+            "engine_size": "1.5L Turbo",
+            "seats": 5,
+            "doors": 4,
+            "drivetrain": DrivetrainType.FWD,
+            "horsepower": 173,
+            "trim": "RS Turbo",
         },
         {
             "brand_id": honda.id,
@@ -401,11 +459,22 @@ def create_sample_cars(db):
             "price": Decimal("1100000"),
             "mileage": 75000,
             "fuel_type": FuelType.GASOLINE,
+            "engine_type": EngineType.gasoline,
             "transmission": TransmissionType.AUTOMATIC,
-            "condition_rating": ConditionRating.EXCELLENT,  # FIXED: Changed from VERY_GOOD (not in SQL)
+            "condition_rating": ConditionRating.GOOD,
             "exterior_color": "Silver",
+            "interior_color": "Gray",
+            "body_type": BodyType.suv,
+            "mileage_unit": MileageUnit.km,
+            "visibility": Visibility.public,
             "status": CarStatus.ACTIVE,
             "approval_status": ApprovalStatus.APPROVED,
+            "engine_size": "2.0L",
+            "seats": 5,
+            "doors": 4,
+            "drivetrain": DrivetrainType.FWD,
+            "horsepower": 154,
+            "trim": "2.0 S",
         },
         {
             "brand_id": mitsubishi.id,
@@ -416,11 +485,22 @@ def create_sample_cars(db):
             "price": Decimal("1850000"),
             "mileage": 15000,
             "fuel_type": FuelType.DIESEL,
+            "engine_type": EngineType.diesel,
             "transmission": TransmissionType.AUTOMATIC,
-            "condition_rating": ConditionRating.EXCELLENT,
+            "condition_rating": ConditionRating.LIKE_NEW,
             "exterior_color": "Black",
+            "interior_color": "Brown",
+            "body_type": BodyType.suv,
+            "mileage_unit": MileageUnit.km,
+            "visibility": Visibility.public,
             "status": CarStatus.ACTIVE,
             "approval_status": ApprovalStatus.APPROVED,
+            "engine_size": "2.4L",
+            "seats": 7,
+            "doors": 4,
+            "drivetrain": DrivetrainType.RWD,
+            "horsepower": 181,
+            "trim": "GLS Premium",
         },
         {
             "brand_id": toyota.id,
@@ -431,11 +511,22 @@ def create_sample_cars(db):
             "price": Decimal("420000"),
             "mileage": 95000,
             "fuel_type": FuelType.GASOLINE,
+            "engine_type": EngineType.gasoline,
             "transmission": TransmissionType.MANUAL,
             "condition_rating": ConditionRating.GOOD,
             "exterior_color": "Silver",
+            "interior_color": "Gray",
+            "body_type": BodyType.sedan,
+            "mileage_unit": MileageUnit.km,
+            "visibility": Visibility.public,
             "status": CarStatus.ACTIVE,
             "approval_status": ApprovalStatus.APPROVED,
+            "engine_size": "1.3L",
+            "seats": 5,
+            "doors": 4,
+            "drivetrain": DrivetrainType.FWD,
+            "horsepower": 98,
+            "trim": "1.3 J",
         },
         {
             "brand_id": toyota.id,
@@ -446,11 +537,22 @@ def create_sample_cars(db):
             "price": Decimal("2350000"),
             "mileage": 8500,
             "fuel_type": FuelType.DIESEL,
+            "engine_type": EngineType.diesel,
             "transmission": TransmissionType.AUTOMATIC,
-            "condition_rating": ConditionRating.EXCELLENT,
+            "condition_rating": ConditionRating.LIKE_NEW,
             "exterior_color": "White Pearl",
+            "interior_color": "Black",
+            "body_type": BodyType.suv,
+            "mileage_unit": MileageUnit.km,
+            "visibility": Visibility.public,
             "status": CarStatus.ACTIVE,
             "approval_status": ApprovalStatus.APPROVED,
+            "engine_size": "2.8L",
+            "seats": 7,
+            "doors": 4,
+            "drivetrain": DrivetrainType.FOUR_WD,
+            "horsepower": 201,
+            "trim": "LTD 4x4",
         },
         {
             "brand_id": honda.id,
@@ -461,75 +563,211 @@ def create_sample_cars(db):
             "price": Decimal("580000"),
             "mileage": 110000,
             "fuel_type": FuelType.GASOLINE,
+            "engine_type": EngineType.gasoline,
             "transmission": TransmissionType.AUTOMATIC,
             "condition_rating": ConditionRating.GOOD,
             "exterior_color": "Blue",
+            "interior_color": "Beige",
+            "body_type": BodyType.sedan,
+            "mileage_unit": MileageUnit.km,
+            "visibility": Visibility.public,
             "status": CarStatus.ACTIVE,
             "approval_status": ApprovalStatus.APPROVED,
+            "engine_size": "1.8L",
+            "seats": 5,
+            "doors": 4,
+            "drivetrain": DrivetrainType.FWD,
+            "horsepower": 141,
+            "trim": "1.8 E",
         },
     ]
 
+    # Add more variety if we have the models
+    if innova:
+        sample_cars.append({
+            "brand_id": toyota.id,
+            "model_id": innova.id,
+            "title": "2019 Toyota Innova 2.8 E DSL AT - Family MPV",
+            "description": "2019 Toyota Innova in excellent condition. 8-seater, diesel, automatic. Perfect for family use. Fresh casa service.",
+            "year": 2019,
+            "price": Decimal("1150000"),
+            "mileage": 55000,
+            "fuel_type": FuelType.DIESEL,
+            "engine_type": EngineType.diesel,
+            "transmission": TransmissionType.AUTOMATIC,
+            "condition_rating": ConditionRating.EXCELLENT,
+            "exterior_color": "White",
+            "interior_color": "Gray",
+            "body_type": BodyType.mpv,
+            "mileage_unit": MileageUnit.km,
+            "visibility": Visibility.public,
+            "status": CarStatus.ACTIVE,
+            "approval_status": ApprovalStatus.APPROVED,
+            "engine_size": "2.8L",
+            "seats": 8,
+            "doors": 4,
+            "drivetrain": DrivetrainType.RWD,
+            "horsepower": 174,
+            "trim": "2.8 E",
+        })
+
+    if wigo:
+        sample_cars.append({
+            "brand_id": toyota.id,
+            "model_id": wigo.id,
+            "title": "2018 Toyota Wigo G - Economical City Car",
+            "description": "2018 Toyota Wigo G. Perfect for city driving. Very fuel efficient. Complete papers. Low mileage.",
+            "year": 2018,
+            "price": Decimal("380000"),
+            "mileage": 42000,
+            "fuel_type": FuelType.GASOLINE,
+            "engine_type": EngineType.gasoline,
+            "transmission": TransmissionType.AUTOMATIC,
+            "condition_rating": ConditionRating.GOOD,
+            "exterior_color": "Red",
+            "interior_color": "Black",
+            "body_type": BodyType.hatchback,
+            "mileage_unit": MileageUnit.km,
+            "visibility": Visibility.public,
+            "status": CarStatus.ACTIVE,
+            "approval_status": ApprovalStatus.APPROVED,
+            "engine_size": "1.0L",
+            "seats": 5,
+            "doors": 4,
+            "drivetrain": DrivetrainType.FWD,
+            "horsepower": 66,
+            "trim": "G",
+        })
+
+    if city:
+        sample_cars.append({
+            "brand_id": honda.id,
+            "model_id": city.id,
+            "title": "2020 Honda City VX - Elegant Compact Sedan",
+            "description": "2020 Honda City VX variant. Low mileage, well maintained. Top variant with sunroof and full features.",
+            "year": 2020,
+            "price": Decimal("850000"),
+            "mileage": 38000,
+            "fuel_type": FuelType.GASOLINE,
+            "engine_type": EngineType.gasoline,
+            "transmission": TransmissionType.CVT,
+            "condition_rating": ConditionRating.EXCELLENT,
+            "exterior_color": "Silver",
+            "interior_color": "Black",
+            "body_type": BodyType.sedan,
+            "mileage_unit": MileageUnit.km,
+            "visibility": Visibility.public,
+            "status": CarStatus.ACTIVE,
+            "approval_status": ApprovalStatus.APPROVED,
+            "engine_size": "1.5L",
+            "seats": 5,
+            "doors": 4,
+            "drivetrain": DrivetrainType.FWD,
+            "horsepower": 119,
+            "trim": "VX",
+        })
+
     created_count = 0
     for car_data in sample_cars:
-        # Get brand and model names for required fields
-        brand = db.query(Brand).filter(Brand.id == car_data['brand_id']).first()
-        model = db.query(Model).filter(Model.id == car_data['model_id']).first()
+        try:
+            # Get brand and model names for required fields
+            brand = db.query(Brand).filter(Brand.id == car_data['brand_id']).first()
+            model = db.query(Model).filter(Model.id == car_data['model_id']).first()
 
-        # Skip this car if brand or model not found
-        if not brand or not model:
-            print(f"⚠️  Skipping car '{car_data.get('title', 'Unknown')}': Brand or Model not found")
+            # Skip this car if brand or model not found
+            if not brand or not model:
+                print(f"⚠️  Skipping car '{car_data.get('title', 'Unknown')}': Brand or Model not found")
+                continue
+
+            # Create car with all required fields
+            car = Car(
+                seller_id=seller.id,
+                city_id=city_id,
+                province_id=province_id,
+                region_id=region_id,
+                latitude=Decimal("14.5995"),
+                longitude=Decimal("120.9842"),
+                currency="PHP",
+                negotiable=True,
+                price_negotiable=True,  # Duplicate field for SQL compatibility
+                financing_available=True,
+                accident_history=False,
+                flood_history=False,
+                number_of_owners=1,
+                previous_owners=1,  # Duplicate field for SQL compatibility
+                service_history=False,
+                service_history_available=True,
+                lto_registered=True,
+                casa_maintained=True,
+                is_active=True,
+                is_featured=False,
+                featured=False,  # Duplicate field for SQL compatibility
+                is_premium=False,
+                verified=True,
+                view_count=0,
+                views_count=0,  # Duplicate field for SQL compatibility
+                unique_views_count=0,
+                inquiry_count=0,
+                contact_count=0,
+                click_count=0,
+                favorite_count=0,
+                average_rating=Decimal("0.00"),
+                quality_score=85,
+                completeness_score=90,
+                ranking_score=80,
+                registration_status="registered",
+                registration_valid=True,
+                or_cr_status="complete",
+                deed_of_sale_available=True,
+                has_emission_test=True,
+                has_insurance=True,
+                insurance_status="active",
+                warranty_remaining=False,
+                trade_in_accepted=False,
+                installment_available=True,
+                created_at=datetime.now(),
+                updated_at=datetime.now(),
+                published_at=datetime.now(),
+                expires_at=datetime.now() + timedelta(days=30),
+                # Required string fields
+                make=brand.name,
+                model=model.name,
+                car_condition=car_data.get('condition_rating', ConditionRating.GOOD),
+                **car_data
+            )
+
+            db.add(car)
+            db.flush()
+
+            # Add multiple sample images
+            image_types = ["exterior", "interior", "engine"]
+            for idx, img_type in enumerate(image_types):
+                image = CarImage(
+                    car_id=car.id,
+                    image_url=f"https://via.placeholder.com/800x600/{'333' if idx == 0 else '555'}/fff?text={brand.name}+{model.name}+{img_type}",
+                    image_type=img_type,
+                    is_main=(idx == 0),  # First image is main
+                    display_order=idx,
+                    uploaded_at=datetime.now()
+                )
+                db.add(image)
+
+            # Add features
+            if features:
+                for i, feature in enumerate(features[:5]):  # Add 5 features per car
+                    car_feature = CarFeature(car_id=car.id, feature_id=feature.id)
+                    db.add(car_feature)
+
+            created_count += 1
+            print(f"   ✓ Created: {car.title}")
+
+        except Exception as e:
+            print(f"   ✗ Error creating car '{car_data.get('title', 'Unknown')}': {str(e)}")
+            db.rollback()
             continue
 
-        car = Car(
-            seller_id=seller.id,
-            city_id=city_id,
-            province_id=province_id,
-            region_id=region_id,
-            latitude=Decimal("14.5995"),
-            longitude=Decimal("120.9842"),
-            currency="PHP",
-            negotiable=True,
-            financing_available=True,
-            accident_history=False,
-            flood_history=False,
-            number_of_owners=1,
-            service_history_available=True,
-            lto_registered=True,
-            casa_maintained=True,
-            is_active=True,
-            created_at=datetime.now(),
-            published_at=datetime.now(),
-            expires_at=datetime.now() + timedelta(days=30),
-            # FIXED: Add required string fields from the schema
-            make=brand.name,
-            model=model.name,  # Now works correctly - relationship renamed to model_rel
-            car_condition=car_data.get('condition_rating', ConditionRating.GOOD),
-            **car_data
-        )
-
-        db.add(car)
-        db.flush()
-
-        # Add sample image
-        image = CarImage(
-            car_id=car.id,
-            image_url=f"https://via.placeholder.com/800x600/333/fff?text={car_data['title'][:20]}",
-            image_type="exterior",
-            is_main=True,  # SQL schema uses is_main
-            display_order=0,
-            uploaded_at=datetime.now()
-        )
-        db.add(image)
-
-        # Add features
-        for i, feature in enumerate(features[:3]):
-            car_feature = CarFeature(car_id=car.id, feature_id=feature.id)
-            db.add(car_feature)
-
-        created_count += 1
-
     db.commit()
-    print(f"✅ Created {created_count} sample cars")
+    print(f"\n✅ Successfully created {created_count} sample cars with images and features")
 
 
 def main():
@@ -542,6 +780,9 @@ def main():
     db = SessionLocal()
 
     try:
+        # Clear old car data first
+        clear_old_car_data(db)
+
         # Create all data
         create_users(db)
         create_brands_and_models(db)
@@ -556,11 +797,15 @@ def main():
         print("   🔐 Admin:  admin@autohub.com  / admin123")
         print("   🏪 Seller: seller@autohub.com / seller123")
         print("   🛒 Buyer:  buyer@autohub.com  / buyer123")
-        print("\n🚗 Sample Cars: 8 active listings created")
+        print("\n🚗 Sample Cars: 8-11 active listings created")
+        print("   ✓ Multiple images per car (exterior, interior, engine)")
+        print("   ✓ Features assigned to each car")
+        print("   ✓ Complete vehicle specifications")
         print("\n🌐 You can now:")
         print("   - Login as buyer to browse cars")
         print("   - Login as seller to manage listings")
         print("   - Login as admin to moderate content")
+        print("\n💡 Note: All data includes proper validation fields")
         print("="*50 + "\n")
 
     except Exception as e:
