@@ -64,24 +64,26 @@ class ApprovalStatus(str, enum.Enum):
 
 
 class BodyType(str, enum.Enum):
-    SEDAN = "sedan"
-    SUV = "suv"
-    PICKUP = "pickup"
-    VAN = "van"
-    HATCHBACK = "hatchback"
-    COUPE = "coupe"
-    MPV = "mpv"
-    CROSSOVER = "crossover"
-    WAGON = "wagon"
-    CONVERTIBLE = "convertible"
+    """Body type enum - lowercase to match SQL schema exactly"""
+    sedan = "sedan"
+    suv = "suv"
+    pickup = "pickup"
+    van = "van"
+    hatchback = "hatchback"
+    coupe = "coupe"
+    mpv = "mpv"
+    crossover = "crossover"
+    wagon = "wagon"
+    convertible = "convertible"
 
 
 class EngineType(str, enum.Enum):
-    GASOLINE = "gasoline"
-    DIESEL = "diesel"
-    ELECTRIC = "electric"
-    HYBRID = "hybrid"
-    PLUGIN_HYBRID = "plug-in-hybrid"
+    """Engine type enum - lowercase to match SQL schema exactly"""
+    gasoline = "gasoline"
+    diesel = "diesel"
+    electric = "electric"
+    hybrid = "hybrid"
+    plugin_hybrid = "plug-in-hybrid"
 
 
 class MileageUnit(str, enum.Enum):
@@ -91,9 +93,10 @@ class MileageUnit(str, enum.Enum):
 
 
 class Visibility(str, enum.Enum):
-    PUBLIC = "public"
-    PRIVATE = "private"
-    UNLISTED = "unlisted"
+    """Visibility enum - lowercase to match SQL schema exactly"""
+    public = "public"
+    private = "private"
+    unlisted = "unlisted"
 
 
 class Brand(Base):
@@ -288,7 +291,7 @@ class Car(Base):
     # Status & Visibility
     status = Column(Enum(CarStatus), default=CarStatus.PENDING, nullable=False, index=True)
     approval_status = Column(Enum(ApprovalStatus), default=ApprovalStatus.PENDING, nullable=False, index=True)
-    visibility = Column(Enum(Visibility), default=Visibility.PUBLIC)
+    visibility = Column(Enum(Visibility), default=Visibility.public)
     rejection_reason = Column(Text)
     rejected_reason = Column(Text)  # SQL uses this name
     admin_notes = Column(Text)
