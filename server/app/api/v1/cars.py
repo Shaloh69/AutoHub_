@@ -427,7 +427,7 @@ async def get_brands(
     query = db.query(Brand)
 
     if is_popular is not None:
-        query = query.filter(Brand.is_popular_in_ph == is_popular)
+        query = query.filter(Brand.is_popular == is_popular)
 
     brands = query.order_by(Brand.name).all()
 
@@ -450,8 +450,9 @@ async def get_models(
     if brand_id is not None:
         query = query.filter(Model.brand_id == brand_id)
 
-    if is_popular is not None:
-        query = query.filter(Model.is_popular_in_ph == is_popular)
+    # Note: is_popular filter removed as Model table doesn't have is_popular field
+    # if is_popular is not None:
+    #     query = query.filter(Model.is_popular == is_popular)
 
     models = query.order_by(Model.name).all()
 
@@ -471,8 +472,9 @@ async def get_models_by_brand(
     """
     query = db.query(Model).filter(Model.brand_id == brand_id)
 
-    if is_popular is not None:
-        query = query.filter(Model.is_popular_in_ph == is_popular)
+    # Note: is_popular filter removed as Model table doesn't have is_popular field
+    # if is_popular is not None:
+    #     query = query.filter(Model.is_popular == is_popular)
 
     models = query.order_by(Model.name).all()
 
@@ -516,8 +518,9 @@ async def get_features(
     if category:
         query = query.filter(Feature.category == category)
 
-    if is_popular is not None:
-        query = query.filter(Feature.is_popular == is_popular)
+    # Note: is_popular filter removed as Feature table doesn't have is_popular field
+    # if is_popular is not None:
+    #     query = query.filter(Feature.is_popular == is_popular)
 
     features = query.order_by(Feature.name).all()
 

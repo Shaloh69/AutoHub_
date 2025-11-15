@@ -93,67 +93,79 @@ class Visibility(str, enum.Enum):
 
 class Brand(Base):
     __tablename__ = "brands"
-    
+
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(100), unique=True, nullable=False, index=True)
+    slug = Column(String(100), unique=True, nullable=False, index=True)
     logo_url = Column(String(500))
-    country_origin = Column(String(100))
-    brand_type = Column(Enum("mainstream", "luxury", "commercial", "sports", "electric"), default="mainstream")
-    is_popular_in_ph = Column(Boolean, default=False)
+    country_of_origin = Column(String(100))
+    website = Column(String(255))
+    description = Column(Text)
+    is_popular = Column(Boolean, default=False, index=True)
     display_order = Column(Integer, default=0)
-    
+    total_models = Column(Integer, default=0)
+    total_listings = Column(Integer, default=0)
+    is_active = Column(Boolean, default=True, index=True)
+    created_at = Column(TIMESTAMP, default=datetime.now, index=True)
+
     # Relationships
     models = relationship("Model", back_populates="brand")
-    
+
     def __repr__(self):
         return f"<Brand {self.name}>"
 
 
 class Model(Base):
     __tablename__ = "models"
-    
+
     id = Column(Integer, primary_key=True, autoincrement=True)
-    brand_id = Column(Integer, ForeignKey("brands.id"), nullable=False, index=True)
+    brand_id = Column(Integer, ForeignKey("brands.id", ondelete="CASCADE"), nullable=False, index=True)
     name = Column(String(100), nullable=False, index=True)
-    body_type = Column(Enum("sedan", "suv", "hatchback", "pickup", "van", "coupe", "convertible", "wagon", "mpv"), nullable=False)
-    generation = Column(String(50))
-    year_start = Column(Integer)
-    year_end = Column(Integer)
-    is_popular_in_ph = Column(Boolean, default=False)
-    
+    slug = Column(String(100), nullable=False)
+    model_type = Column(Enum("sedan", "suv", "pickup", "van", "hatchback", "coupe", "mpv", "crossover"), default="sedan")
+    description = Column(Text)
+    year_introduced = Column(Integer)
+    is_active = Column(Boolean, default=True)
+    total_listings = Column(Integer, default=0)
+    created_at = Column(TIMESTAMP, default=datetime.now)
+
     # Relationships
     brand = relationship("Brand", back_populates="models")
-    
+
     def __repr__(self):
         return f"<Model {self.brand.name} {self.name}>"
 
 
 class Category(Base):
     __tablename__ = "categories"
-    
+
     id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String(100), unique=True, nullable=False, index=True)
-    slug = Column(String(100), unique=True, nullable=False)
+    parent_id = Column(Integer, ForeignKey("categories.id", ondelete="SET NULL"), index=True)
+    name = Column(String(100), nullable=False)
+    slug = Column(String(100), unique=True, nullable=False, index=True)
     description = Column(Text)
     icon = Column(String(100))
     display_order = Column(Integer, default=0)
-    is_active = Column(Boolean, default=True)
-    
+    is_active = Column(Boolean, default=True, index=True)
+    total_listings = Column(Integer, default=0)
+    created_at = Column(TIMESTAMP, default=datetime.now)
+
     def __repr__(self):
         return f"<Category {self.name}>"
 
 
 class Feature(Base):
     __tablename__ = "features"
-    
+
     id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String(100), nullable=False, index=True)
-    category = Column(Enum("safety", "comfort", "entertainment", "technology", "performance", "exterior", "interior"), nullable=False)
+    name = Column(String(100), unique=True, nullable=False)
+    slug = Column(String(100), unique=True, nullable=False, index=True)
+    category = Column(Enum("safety", "comfort", "technology", "performance", "exterior", "interior"), default="comfort", index=True)
     description = Column(Text)
     icon = Column(String(100))
     is_premium = Column(Boolean, default=False)
-    is_popular = Column(Boolean, default=False)
-    
+    display_order = Column(Integer, default=0)
+
     def __repr__(self):
         return f"<Feature {self.name}>"
 
@@ -302,8 +314,8 @@ class Car(Base):
     ranking_score = Column(Integer, default=0)
     
     # Timestamps
-    created_at = Column(TIMESTAMP, default=datetime.utcnow, index=True)
-    updated_at = Column(TIMESTAMP, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(TIMESTAMP, default=datetime.now, index=True)
+    updated_at = Column(TIMESTAMP, default=datetime.now, onupdate=datetime.now)
     published_at = Column(TIMESTAMP)
     expires_at = Column(TIMESTAMP, index=True)
     sold_at = Column(TIMESTAMP)
@@ -356,7 +368,7 @@ class CarImage(Base):
     exif_data = Column(JSON)
     
     # Timestamps
-    uploaded_at = Column(TIMESTAMP, default=datetime.utcnow)
+    uploaded_at = Column(TIMESTAMP, default=datetime.now)
     
     # Relationships
     car = relationship("Car", back_populates="images")
