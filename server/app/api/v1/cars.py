@@ -240,6 +240,13 @@ async def get_car(
         if hasattr(car, 'visibility') and car.visibility:
             car.visibility = normalize_enum_value('visibility', car.visibility)
 
+        # Manually populate relationship fields for API response
+        # Since 'brand' and 'model' Column names conflict with schema expectations,
+        # we manually set them from the relationships
+        car.brand = car.brand_rel  # Map brand_rel relationship to brand for schema
+        car.model = car.model_rel  # Map model_rel relationship to model for schema
+        # city is already correctly named
+
         return CarDetailResponse.model_validate(car)
     except Exception as e:
         # Log validation error details for debugging

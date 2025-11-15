@@ -351,9 +351,10 @@ class Car(Base):
     def __repr__(self):
         return f"<Car {self.id}: {self.title}>"
 
-    # Note: The 'make' and 'model' Columns (String fields) are used for storing brand/model names
-    # The 'brand_rel' and 'model_rel' relationships are used for foreign key relationships
-    # No property aliases needed - columns are accessed directly
+    # Note: No property aliases for 'brand' and 'model'
+    # - Columns 'make' and 'model' store string names
+    # - Relationships 'brand_rel' and 'model_rel' provide FK access
+    # - API layer manually maps these for responses
 
 
 class CarImage(Base):
