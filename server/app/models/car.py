@@ -36,10 +36,10 @@ class ConditionRating(str, enum.Enum):
     BRAND_NEW = "BRAND_NEW"
     LIKE_NEW = "LIKE_NEW"
     EXCELLENT = "EXCELLENT"
-    VERY_GOOD = "VERY_GOOD"  # Not in SQL, but keeping for compatibility
     GOOD = "GOOD"
     FAIR = "FAIR"
     POOR = "POOR"
+    # REMOVED: VERY_GOOD - not in SQL schema (line 457-458)
 
 
 class CarStatus(str, enum.Enum):
