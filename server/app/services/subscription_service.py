@@ -540,7 +540,108 @@ class SubscriptionService:
         user = db.query(User).filter(User.id == user_id).first()
         if user:
             setattr(user, 'subscription_status', 'cancelled')
-        
+
         db.commit()
-        
+
         return True
+
+    # ========================================
+    # SUBSCRIPTION USAGE TRACKING (NEW)
+    # ========================================
+
+    @staticmethod
+    def get_current_usage(db: Session, user_id: int):
+        """Get current subscription usage for user"""
+        from app.models.subscription import SubscriptionUsage
+        from sqlalchemy import desc
+
+        # Get user's current subscription
+        subscription = SubscriptionService.get_user_subscription(db, user_id)
+        if not subscription:
+            return None
+
+        subscription_id = int(getattr(subscription, 'id', 0))
+
+        # Get current usage record (most recent)
+        usage = db.query(SubscriptionUsage).filter(
+            SubscriptionUsage.user_id == user_id,
+            SubscriptionUsage.subscription_id == subscription_id
+        ).order_by(desc(SubscriptionUsage.period_start)).first()
+
+        return usage
+
+    @staticmethod
+    def get_usage_history(db: Session, user_id: int, limit: int = 12):
+        """Get subscription usage history"""
+        from app.models.subscription import SubscriptionUsage
+        from sqlalchemy import desc
+
+        usage_records = db.query(SubscriptionUsage).filter(
+            SubscriptionUsage.user_id == user_id
+        ).order_by(desc(SubscriptionUsage.period_start)).limit(limit).all()
+
+        return usage_records
+
+    @staticmethod
+    def get_feature_usage(db: Session, user_id: int):
+        """Get detailed feature usage breakdown"""
+        from app.models.subscription import SubscriptionUsage, SubscriptionFeatureUsage
+        from app.models.car import Car
+
+        # Get current subscription
+        subscription = SubscriptionService.get_user_subscription(db, user_id)
+        if not subscription:
+            return {"error": "No active subscription"}
+
+        subscription_id = int(getattr(subscription, 'id', 0))
+        plan = getattr(subscription, 'plan', None)
+
+        # Calculate real-time usage from cars table
+        active_listings = db.query(Car).filter(
+            Car.seller_id == user_id,
+            Car.status == "active"
+        ).count()
+
+        featured_listings = db.query(Car).filter(
+            Car.seller_id == user_id,
+            Car.status == "active",
+            Car.is_featured == True
+        ).count()
+
+        premium_listings = db.query(Car).filter(
+            Car.seller_id == user_id,
+            Car.status == "active",
+            Car.is_premium == True
+        ).count()
+
+        # Get plan limits
+        max_active = int(getattr(plan, 'max_active_listings', 0)) if plan else 0
+        max_featured = int(getattr(plan, 'max_featured_listings', 0)) if plan else 0
+        max_premium = int(getattr(plan, 'max_premium_listings', 0)) if plan else 0
+        max_images = int(getattr(plan, 'max_images_per_listing', 0)) if plan else 0
+        boost_credits = int(getattr(plan, 'boost_credits_monthly', 0)) if plan else 0
+
+        return {
+            "active_listings": {
+                "used": active_listings,
+                "limit": max_active,
+                "percentage": round((active_listings / max_active * 100) if max_active > 0 else 0, 1)
+            },
+            "featured_listings": {
+                "used": featured_listings,
+                "limit": max_featured,
+                "percentage": round((featured_listings / max_featured * 100) if max_featured > 0 else 0, 1)
+            },
+            "premium_listings": {
+                "used": premium_listings,
+                "limit": max_premium,
+                "percentage": round((premium_listings / max_premium * 100) if max_premium > 0 else 0, 1)
+            },
+            "images_per_listing": {
+                "limit": max_images
+            },
+            "boost_credits": {
+                "remaining": boost_credits,  # Would need boost usage tracking
+                "total": boost_credits
+            }
+        }
