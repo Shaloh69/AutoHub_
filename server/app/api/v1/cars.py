@@ -84,29 +84,45 @@ async def search_cars(
     negotiable: Optional[bool] = None,
     financing_available: Optional[bool] = None,
     
-    # Sorting
-    sort_by: str = Query("created_at", pattern="^(created_at|price|year|mileage|views_count)$"),
-    sort_order: str = Query("desc", pattern="^(asc|desc)$"),
-    
+    # Sorting - Support both legacy (sort_by/sort_order) and new (sort) formats
+    sort: Optional[str] = None,  # Frontend sends: "-created_at", "price", etc.
+    sort_by: Optional[str] = Query(None, pattern="^(created_at|price|year|mileage|views_count)$"),
+    sort_order: Optional[str] = Query(None, pattern="^(asc|desc)$"),
+
     # Pagination
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
-    
+
     # Dependencies
     current_user: Optional[User] = Depends(get_optional_user),
     db: Session = Depends(get_db)
 ):
     """
     Search cars with advanced filters
-    
+
     Supports:
     - Full-text search
     - Price/year/mileage range filtering
     - Location-based search with radius
     - Multiple filter combinations
-    - Sorting options
+    - Sorting options (sort="-created_at" or sort_by/sort_order)
     - Pagination
     """
+    # Parse sort parameter if provided (e.g., "-created_at" -> sort_by="created_at", sort_order="desc")
+    if sort:
+        if sort.startswith('-'):
+            sort_by = sort[1:]  # Remove the '-' prefix
+            sort_order = "desc"
+        else:
+            sort_by = sort
+            sort_order = "asc"
+
+    # Set defaults if still not set
+    if not sort_by:
+        sort_by = "created_at"
+    if not sort_order:
+        sort_order = "desc"
+
     filters = {
         "q": q,
         "brand_id": brand_id,
