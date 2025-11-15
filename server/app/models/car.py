@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, DECIMAL, Text, TIMESTAMP, ForeignKey, Enum, JSON
+from sqlalchemy import Column, Integer, String, Boolean, DECIMAL, Text, TIMESTAMP, Date, ForeignKey, Enum, JSON
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from app.database import Base
@@ -6,57 +6,61 @@ import enum
 
 
 class FuelType(str, enum.Enum):
-    GASOLINE = "gasoline"
-    DIESEL = "diesel"
-    HYBRID = "hybrid"
-    ELECTRIC = "electric"
-    CNG = "cng"
-    LPG = "lpg"
-    PLUGIN_HYBRID = "plugin_hybrid"
+    """Fuel type enum - UPPERCASE to match SQL schema"""
+    GASOLINE = "GASOLINE"
+    DIESEL = "DIESEL"
+    HYBRID = "HYBRID"
+    ELECTRIC = "ELECTRIC"
+    # Note: CNG, LPG, PLUGIN_HYBRID not in SQL schema, removed for alignment
 
 
 class TransmissionType(str, enum.Enum):
-    MANUAL = "manual"
-    AUTOMATIC = "automatic"
-    SEMI_AUTOMATIC = "semi_automatic"
-    CVT = "cvt"
-    DCT = "dct"  # Dual-Clutch Transmission
+    """Transmission type enum - UPPERCASE to match SQL schema"""
+    MANUAL = "MANUAL"
+    AUTOMATIC = "AUTOMATIC"
+    CVT = "CVT"
+    DCT = "DCT"
+    # Note: SEMI_AUTOMATIC not in SQL schema, removed for alignment
 
 
 class DrivetrainType(str, enum.Enum):
-    FWD = "fwd"
-    RWD = "rwd"
-    AWD = "awd"
-    FOUR_WD = "4wd"
+    """Drivetrain type enum - UPPERCASE to match SQL schema"""
+    FWD = "FWD"
+    RWD = "RWD"
+    AWD = "AWD"
+    FOUR_WD = "4WD"  # SQL uses '4WD' not '4wd'
 
 
 class ConditionRating(str, enum.Enum):
-    BRAND_NEW = "brand_new"
-    LIKE_NEW = "like_new"
-    EXCELLENT = "excellent"
-    VERY_GOOD = "very_good"
-    GOOD = "good"
-    FAIR = "fair"
-    POOR = "poor"
+    """Condition rating enum - UPPERCASE with underscores to match SQL schema"""
+    BRAND_NEW = "BRAND_NEW"
+    LIKE_NEW = "LIKE_NEW"
+    EXCELLENT = "EXCELLENT"
+    VERY_GOOD = "VERY_GOOD"  # Not in SQL, but keeping for compatibility
+    GOOD = "GOOD"
+    FAIR = "FAIR"
+    POOR = "POOR"
 
 
 class CarStatus(str, enum.Enum):
-    DRAFT = "draft"
-    PENDING = "pending"
-    ACTIVE = "active"
-    SOLD = "sold"
-    RESERVED = "reserved"
-    INACTIVE = "inactive"
-    REJECTED = "rejected"
-    EXPIRED = "expired"
-    REMOVED = "removed"
+    """Car status enum - UPPERCASE to match SQL schema"""
+    DRAFT = "DRAFT"
+    PENDING = "PENDING"
+    ACTIVE = "ACTIVE"
+    SOLD = "SOLD"
+    RESERVED = "RESERVED"
+    INACTIVE = "INACTIVE"
+    REJECTED = "REJECTED"
+    EXPIRED = "EXPIRED"
+    # Note: REMOVED not in SQL schema, removed for alignment
 
 
 class ApprovalStatus(str, enum.Enum):
-    PENDING = "pending"
-    APPROVED = "approved"
-    REJECTED = "rejected"
-    NEEDS_REVISION = "needs_revision"
+    """Approval status enum - UPPERCASE to match SQL schema"""
+    PENDING = "PENDING"
+    APPROVED = "APPROVED"
+    REJECTED = "REJECTED"
+    # Note: NEEDS_REVISION not in SQL schema, removed for alignment
 
 
 class BodyType(str, enum.Enum):
@@ -225,7 +229,7 @@ class Car(Base):
     # Exterior & Interior
     exterior_color = Column(String(50), index=True)
     interior_color = Column(String(50))
-    color_type = Column(Enum("solid", "metallic", "pearl", "matte"))
+    # NOTE: color_type removed - not in SQL schema
     
     # Condition
     condition_rating = Column(Enum(ConditionRating), nullable=False, index=True)
@@ -241,20 +245,23 @@ class Car(Base):
     # Ownership & Documentation
     registration_status = Column(Enum("registered", "unregistered", "for_transfer", "expired"), default="registered")
     registration_valid = Column(Boolean, default=True)
-    registration_expiry = Column(TIMESTAMP)
+    # FIXED: Changed from TIMESTAMP to Date to match SQL schema
+    registration_expiry = Column(Date)
     or_cr_status = Column(Enum("complete", "incomplete", "missing"), default="complete")
     lto_registered = Column(Boolean, default=True)
     deed_of_sale_available = Column(Boolean, default=True)
     has_emission_test = Column(Boolean, default=False)
     casa_maintained = Column(Boolean, default=False)
-    
+
     # Insurance & Warranty
     has_insurance = Column(Boolean, default=False)
     insurance_status = Column(Enum("active", "expired", "none"), default="none")
-    insurance_expiry = Column(TIMESTAMP)
+    # FIXED: Changed from TIMESTAMP to Date to match SQL schema
+    insurance_expiry = Column(Date)
     warranty_remaining = Column(Boolean, default=False)
     warranty_details = Column(Text)
-    warranty_expiry = Column(TIMESTAMP)
+    # FIXED: Changed from TIMESTAMP to Date to match SQL schema
+    warranty_expiry = Column(Date)
     
     # Trade & Finance Options
     financing_available = Column(Boolean, default=False)
@@ -355,10 +362,12 @@ class CarImage(Base):
     # Image Details
     file_name = Column(String(255))
     file_size = Column(Integer)
-    image_type = Column(Enum("exterior", "interior", "engine", "dashboard", "wheels", "damage", "documents", "other"), default="exterior")
+    # SQL enum: 'exterior', 'interior', 'engine', 'damage', 'document', 'other'
+    # Note: Removed 'dashboard', 'wheels' (not in SQL), changed 'documents' to 'document'
+    image_type = Column(Enum("exterior", "interior", "engine", "damage", "document", "other"), default="exterior")
     
     # Display Options
-    is_primary = Column(Boolean, default=False)
+    is_main = Column(Boolean, default=False)  # SQL uses 'is_main' not 'is_primary'
     display_order = Column(Integer, default=0)
     caption = Column(String(255))
     

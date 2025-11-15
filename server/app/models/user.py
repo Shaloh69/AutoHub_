@@ -126,7 +126,11 @@ class User(Base):
     
     # Subscription
     current_subscription_id = Column(Integer, ForeignKey("user_subscriptions.id"))
-    subscription_status = Column(String(50))
+    # FIXED: Changed from String(50) to ENUM to match SQL schema
+    subscription_status = Column(
+        SQLEnum("free", "trial", "active", "cancelled", "expired", name="user_subscription_status", native_enum=False),
+        default="free"
+    )
     subscription_expires_at = Column(TIMESTAMP)
     
     # Security & Session

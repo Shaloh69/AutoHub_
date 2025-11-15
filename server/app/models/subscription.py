@@ -62,13 +62,14 @@ class UserSubscription(Base):
     plan_id = Column(Integer, ForeignKey("subscription_plans.id"), nullable=False)
     
     # Subscription Details
+    # FIXED: Changed to UPPERCASE to match SQL schema
     status = Column(
-        Enum("active", "cancelled", "expired", "suspended", "pending", name="subscription_status"),
-        default="pending"
+        Enum("ACTIVE", "CANCELLED", "EXPIRED", "SUSPENDED", "PENDING", name="subscription_status"),
+        default="PENDING"
     )
     billing_cycle = Column(
-        Enum("monthly", "quarterly", "yearly", "one_time", name="billing_cycle"),
-        default="monthly"
+        Enum("MONTHLY", "QUARTERLY", "YEARLY", "ONE_TIME", name="billing_cycle"),
+        default="MONTHLY"
     )
     auto_renew = Column(Boolean, default=True)
     
@@ -138,23 +139,20 @@ class SubscriptionPayment(Base):
 
 class SubscriptionUsage(Base):
     __tablename__ = "subscription_usage"
-    
+
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     subscription_id = Column(Integer, ForeignKey("user_subscriptions.id"), nullable=False)
-    
-    # Usage Metrics
-    active_listings = Column(Integer, default=0)
-    featured_listings = Column(Integer, default=0)
-    premium_listings = Column(Integer, default=0)
-    boost_credits_used = Column(Integer, default=0)
-    storage_used_mb = Column(Integer, default=0)
-    
-    # Period
-    period_start = Column(TIMESTAMP, nullable=False)
-    period_end = Column(TIMESTAMP, nullable=False)
+
+    # FIXED: Usage Metrics - aligned with SQL schema
+    current_listings = Column(Integer, default=0)  # was 'active_listings'
+    current_featured = Column(Integer, default=0)  # was 'featured_listings'
+    total_listings_created = Column(Integer, default=0)  # NEW - from SQL
+
+    # FIXED: Reset tracking - aligned with SQL schema
+    reset_at = Column(TIMESTAMP)  # NEW - from SQL
     updated_at = Column(TIMESTAMP, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
+
     # Relationships
     subscription = relationship("UserSubscription", back_populates="usage")
 
@@ -189,7 +187,8 @@ class PromotionCode(Base):
     description = Column(Text)
     
     # Discount Details
-    discount_type = Column(Enum("percentage", "fixed_amount"), nullable=False)
+    # FIXED: Added 'free_feature' to match SQL schema
+    discount_type = Column(Enum("percentage", "fixed_amount", "free_feature"), nullable=False)
     discount_value = Column(DECIMAL(10, 2), nullable=False)
     
     # Validity
