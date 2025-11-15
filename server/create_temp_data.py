@@ -109,12 +109,6 @@ def create_brands_and_models(db):
     """Create popular car brands and models in Philippines"""
     print("\n📝 Creating brands and models...")
 
-    # Check if brands already exist
-    existing = db.query(Brand).first()
-    if existing:
-        print("⚠️  Brands already exist. Skipping.")
-        return
-
     brands_data = [
         {
             "name": "Toyota",
@@ -190,23 +184,47 @@ def create_brands_and_models(db):
         },
     ]
 
-    for brand_data in brands_data:
-        models = brand_data.pop("models")
-        brand = Brand(**brand_data)
-        db.add(brand)
-        db.flush()
+    brands_created = 0
+    models_created = 0
 
-        for model_data in models:
-            model = Model(
-                brand_id=brand.id,
-                name=model_data["name"],
-                slug=model_data["slug"],
-                model_type=model_data["model_type"]
-            )
-            db.add(model)
+    for brand_data in brands_data:
+        models_data = brand_data.pop("models")
+
+        # Check if brand already exists
+        existing_brand = db.query(Brand).filter(Brand.name == brand_data["name"]).first()
+
+        if existing_brand:
+            brand = existing_brand
+        else:
+            brand = Brand(**brand_data)
+            db.add(brand)
+            db.flush()
+            brands_created += 1
+
+        # Create models for this brand
+        for model_data in models_data:
+            # Check if model already exists for this brand
+            existing_model = db.query(Model).filter(
+                Model.brand_id == brand.id,
+                Model.name == model_data["name"]
+            ).first()
+
+            if not existing_model:
+                model = Model(
+                    brand_id=brand.id,
+                    name=model_data["name"],
+                    slug=model_data["slug"],
+                    model_type=model_data["model_type"]
+                )
+                db.add(model)
+                models_created += 1
 
     db.commit()
-    print("✅ Created brands and models")
+
+    if brands_created > 0 or models_created > 0:
+        print(f"✅ Created {brands_created} brands and {models_created} models")
+    else:
+        print("⚠️  Brands and models already exist. Skipping.")
 
 
 def create_categories(db):
