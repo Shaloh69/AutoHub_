@@ -295,25 +295,95 @@ async def get_car(
         # Build response dict with proper relationship mappings
         logger.info(f"\n  🔨 Building response dictionary...")
 
-        # CarDetailResponse expects 'brand', 'model', 'city' as objects
-        # But Car model has 'brand_rel', 'model_rel' relationships
+        # Convert relationship objects to dicts for JSON serialization
+        # CarDetailResponse expects these as objects, but they need to be serializable
+        brand_dict = None
+        if car.brand_rel:
+            brand_dict = {
+                'id': car.brand_rel.id,
+                'name': car.brand_rel.name,
+                'slug': car.brand_rel.slug,
+                'logo_url': car.brand_rel.logo_url,
+                'country_of_origin': car.brand_rel.country_of_origin,
+            }
+            logger.info(f"    Converted brand_rel: {brand_dict['name']}")
+
+        model_dict = None
+        if car.model_rel:
+            model_dict = {
+                'id': car.model_rel.id,
+                'name': car.model_rel.name,
+                'slug': car.model_rel.slug,
+                'model_type': car.model_rel.model_type,
+            }
+            logger.info(f"    Converted model_rel: {model_dict['name']}")
+
+        city_dict = None
+        if car.city:
+            city_dict = {
+                'id': car.city.id,
+                'name': car.city.name,
+                'province_id': car.city.province_id,
+            }
+            logger.info(f"    Converted city: {city_dict['name']}")
+
+        seller_dict = None
+        if car.seller:
+            seller_dict = {
+                'id': car.seller.id,
+                'email': car.seller.email,
+                'first_name': car.seller.first_name,
+                'last_name': car.seller.last_name,
+                'business_name': car.seller.business_name,
+                'phone': car.seller.phone,
+            }
+            logger.info(f"    Converted seller: {seller_dict['email']}")
+
+        # Convert images to dicts
+        images_list = []
+        if car.images:
+            for img in car.images:
+                images_list.append({
+                    'id': img.id,
+                    'car_id': img.car_id,
+                    'image_url': img.image_url,
+                    'image_type': img.image_type,
+                    'is_main': img.is_main,
+                    'display_order': img.display_order,
+                })
+            logger.info(f"    Converted {len(images_list)} images")
+
+        # Convert features to dicts
+        features_list = []
+        if car.features:
+            for cf in car.features:
+                if cf.feature:
+                    features_list.append({
+                        'id': cf.feature.id,
+                        'name': cf.feature.name,
+                        'slug': cf.feature.slug,
+                        'category': cf.feature.category,
+                    })
+            logger.info(f"    Converted {len(features_list)} features")
+
         car_dict = {
             # Copy all attributes from car
             **{k: v for k, v in car.__dict__.items() if not k.startswith('_')},
-            # Override with relationship objects for the response
-            'brand': car.brand_rel,
-            'model': car.model_rel,
-            'city': car.city,
-            'seller': car.seller,
-            'images': car.images,
-            'features': car.features,
+            # Override with serializable relationship dicts
+            'brand': brand_dict,
+            'model': model_dict,
+            'city': city_dict,
+            'seller': seller_dict,
+            'images': images_list,
+            'features': features_list,
         }
 
         logger.info(f"  📦 Response dict has {len(car_dict)} keys")
         logger.info(f"  ✅ Attempting Pydantic validation...")
 
         result = CarDetailResponse.model_validate(car_dict)
-        logger.info(f"  ✅ SUCCESS! Returning 200 OK")
+        logger.info(f"  ✅ Pydantic validation successful!")
+        logger.info(f"  🚀 Returning CarDetailResponse (should be 200 OK)")
         logger.info(f"{'='*60}\n")
         return result
 
