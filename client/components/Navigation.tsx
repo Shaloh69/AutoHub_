@@ -16,9 +16,9 @@ import {
   NavbarMenuItem,
   NavbarMenuToggle,
 } from '@heroui/navbar';
-import { Button } from '@heroui/button';
-import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from '@heroui/dropdown';
-import { Badge } from '@heroui/badge';
+import {Button} from "@heroui/button";
+import {Dropdown, DropdownTrigger, DropdownMenu, DropdownItem} from "@heroui/dropdown";
+import {Badge} from "@heroui/badge";
 import {
   Car, Heart, User, LogOut, Settings, Bell,
   Plus, LayoutDashboard, MessageCircle, Package,
@@ -78,7 +78,7 @@ export default function Navigation() {
       isMenuOpen={isMenuOpen}
       onMenuOpenChange={setIsMenuOpen}
       classNames={{
-        base: 'bg-white dark:bg-gray-900',
+        base: 'bg-black border-b border-dark-700',
         wrapper: 'px-4',
       }}
     >
@@ -93,9 +93,9 @@ export default function Navigation() {
       {/* Logo */}
       <NavbarContent className="sm:hidden pr-3" justify="center">
         <NavbarBrand>
-          <Link href="/" className="font-bold text-xl flex items-center gap-2">
-            <Car className="text-blue-600" size={28} />
-            <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+          <Link href="/" className="font-bold text-xl flex items-center gap-2 group">
+            <Car className="text-primary-600 group-hover:text-primary-500 transition-colors" size={28} />
+            <span className="text-gradient-red font-black tracking-tight">
               AutoHub
             </span>
           </Link>
@@ -104,9 +104,9 @@ export default function Navigation() {
 
       <NavbarContent className="hidden sm:flex gap-4" justify="start">
         <NavbarBrand>
-          <Link href="/" className="font-bold text-xl flex items-center gap-2">
-            <Car className="text-blue-600" size={28} />
-            <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+          <Link href="/" className="font-bold text-xl flex items-center gap-2 group">
+            <Car className="text-primary-600 group-hover:text-primary-500 transition-colors" size={28} />
+            <span className="text-gradient-red font-black tracking-tight">
               AutoHub
             </span>
           </Link>
@@ -115,10 +115,10 @@ export default function Navigation() {
         <NavbarItem>
           <Link
             href="/cars"
-            className={`text-sm ${
+            className={`text-sm font-medium transition-colors ${
               pathname === '/cars'
-                ? 'text-blue-600 font-semibold'
-                : 'text-gray-600 hover:text-blue-600'
+                ? 'text-primary-500 font-bold'
+                : 'text-gray-300 hover:text-primary-500'
             }`}
           >
             Browse Cars
@@ -129,10 +129,10 @@ export default function Navigation() {
           <NavbarItem>
             <Link
               href="/seller/dashboard"
-              className={`text-sm ${
+              className={`text-sm font-medium transition-colors ${
                 pathname.startsWith('/seller')
-                  ? 'text-blue-600 font-semibold'
-                  : 'text-gray-600 hover:text-blue-600'
+                  ? 'text-primary-500 font-bold'
+                  : 'text-gray-300 hover:text-primary-500'
               }`}
             >
               Seller Dashboard
@@ -144,10 +144,10 @@ export default function Navigation() {
           <NavbarItem>
             <Link
               href="/admin"
-              className={`text-sm flex items-center gap-1 ${
+              className={`text-sm flex items-center gap-1 font-medium transition-colors ${
                 pathname.startsWith('/admin')
-                  ? 'text-blue-600 font-semibold'
-                  : 'text-gray-600 hover:text-blue-600'
+                  ? 'text-primary-500 font-bold'
+                  : 'text-gray-300 hover:text-primary-500'
               }`}
             >
               <Shield size={16} />
@@ -168,7 +168,7 @@ export default function Navigation() {
                 variant="light"
                 as={Link}
                 href="/notifications"
-                className="relative"
+                className="relative text-gray-300 hover:text-primary-500 transition-colors"
               >
                 <Badge
                   content={unreadCount}
@@ -188,6 +188,7 @@ export default function Navigation() {
                 variant="light"
                 as={Link}
                 href="/favorites"
+                className="text-gray-300 hover:text-primary-500 transition-colors"
               >
                 <Heart size={20} />
               </Button>
@@ -199,9 +200,9 @@ export default function Navigation() {
                 <DropdownTrigger>
                   <Button
                     variant="flat"
-                    className="flex items-center gap-2"
+                    className="flex items-center gap-2 bg-dark-800 border border-dark-700 hover:border-primary-600 text-white transition-all"
                   >
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-purple-600 flex items-center justify-center text-white text-sm font-bold overflow-hidden">
+                    <div className="w-8 h-8 rounded-full bg-gradient-red-dark flex items-center justify-center text-white text-sm font-bold overflow-hidden shadow-red-glow">
                       {user?.profile_image ? (
                         <img
                           src={user.profile_image}
@@ -212,7 +213,7 @@ export default function Navigation() {
                         `${user?.first_name[0]}${user?.last_name[0]}`
                       )}
                     </div>
-                    <span className="hidden md:inline">
+                    <span className="hidden md:inline text-white font-medium">
                       {user?.first_name}
                     </span>
                   </Button>
@@ -285,6 +286,7 @@ export default function Navigation() {
                 as={Link}
                 href="/auth/login"
                 variant="flat"
+                className="bg-dark-800 border border-dark-700 hover:border-primary-600 text-white font-medium transition-all"
               >
                 Login
               </Button>
@@ -293,7 +295,7 @@ export default function Navigation() {
               <Button
                 as={Link}
                 href="/auth/register"
-                color="primary"
+                className="bg-gradient-red-dark text-white font-bold shadow-red-glow hover:shadow-red-glow-lg transition-all hover:scale-105"
               >
                 Sign Up
               </Button>
@@ -303,7 +305,7 @@ export default function Navigation() {
       </NavbarContent>
 
       {/* Mobile Menu */}
-      <NavbarMenu>
+      <NavbarMenu className="bg-dark-900 border-r border-dark-700">
         {menuItems.map((item, index) => {
           if (item.requireAuth && !isAuthenticated) return null;
           if (!item.public && !isAuthenticated) return null;
@@ -312,7 +314,7 @@ export default function Navigation() {
             <NavbarMenuItem key={`${item.label}-${index}`}>
               <Link
                 href={item.href}
-                className="w-full text-lg"
+                className="w-full text-lg text-gray-300 hover:text-primary-500 font-medium transition-colors"
                 onClick={() => setIsMenuOpen(false)}
               >
                 {item.label}
@@ -324,7 +326,7 @@ export default function Navigation() {
         {isSeller && (
           <>
             <NavbarMenuItem>
-              <p className="text-xs text-gray-500 uppercase mt-4 mb-2">
+              <p className="text-xs text-primary-500 uppercase mt-4 mb-2 font-bold">
                 Seller Menu
               </p>
             </NavbarMenuItem>
@@ -332,7 +334,7 @@ export default function Navigation() {
               <NavbarMenuItem key={`seller-${index}`}>
                 <Link
                   href={item.href}
-                  className="w-full flex items-center gap-2"
+                  className="w-full flex items-center gap-2 text-gray-300 hover:text-primary-500 font-medium transition-colors"
                   onClick={() => setIsMenuOpen(false)}
                 >
                   {item.icon}
@@ -350,7 +352,7 @@ export default function Navigation() {
                 as={Link}
                 href="/auth/login"
                 variant="flat"
-                className="w-full"
+                className="w-full bg-dark-800 border border-dark-700 hover:border-primary-600 text-white font-medium"
                 onClick={() => setIsMenuOpen(false)}
               >
                 Login
@@ -360,8 +362,7 @@ export default function Navigation() {
               <Button
                 as={Link}
                 href="/auth/register"
-                color="primary"
-                className="w-full"
+                className="w-full bg-gradient-red-dark text-white font-bold shadow-red-glow"
                 onClick={() => setIsMenuOpen(false)}
               >
                 Sign Up
