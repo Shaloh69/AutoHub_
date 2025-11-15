@@ -1,0 +1,1662 @@
+{
+  "info": {
+    "name": "AutoHub - Car Marketplace Philippines API",
+    "description": "Complete API documentation for AutoHub Car Marketplace Platform.\n\n## Authentication\nMost endpoints require JWT Bearer token authentication. Get your token from the `/api/v1/auth/login` or `/api/v1/auth/register` endpoints.\n\n## Base URL\nLocal: `http://localhost:8000`\n\n## User Roles\n- **buyer**: Can browse cars, create inquiries, favorites\n- **seller**: Can list and manage cars\n- **dealer**: Business account with enhanced features\n- **moderator**: Can moderate content\n- **admin**: Full system access",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "1.0.0"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000",
+      "type": "string"
+    },
+    {
+      "key": "access_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refresh_token",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health & Info",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": ["{{base_url}}"],
+              "path": ["health"]
+            },
+            "description": "Check if the API is running and healthy"
+          }
+        },
+        {
+          "name": "API Root",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/",
+              "host": ["{{base_url}}"],
+              "path": [""]
+            },
+            "description": "Get API information and available endpoints"
+          }
+        }
+      ],
+      "description": "Basic health and information endpoints"
+    },
+    {
+      "name": "1. Authentication",
+      "item": [
+        {
+          "name": "Register",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('access_token', jsonData.access_token);",
+                  "    pm.collectionVariables.set('refresh_token', jsonData.refresh_token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"SecurePassword123\",\n  \"first_name\": \"John\",\n  \"last_name\": \"Doe\",\n  \"phone\": \"+639123456789\",\n  \"city_id\": 1,\n  \"role\": \"buyer\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/register",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "register"]
+            },
+            "description": "Register a new user account. Returns JWT tokens."
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('access_token', jsonData.access_token);",
+                  "    pm.collectionVariables.set('refresh_token', jsonData.refresh_token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"SecurePassword123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "login"]
+            },
+            "description": "Login with email and password. Returns access and refresh tokens."
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('access_token', jsonData.access_token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh_token\": \"{{refresh_token}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/refresh",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "refresh"]
+            },
+            "description": "Refresh access token using refresh token"
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{access_token}}"}
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/logout",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "logout"]
+            },
+            "description": "Logout current user and revoke refresh token"
+          }
+        },
+        {
+          "name": "Get Current User Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{access_token}}"}
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/me",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "me"]
+            },
+            "description": "Get current authenticated user's profile"
+          }
+        },
+        {
+          "name": "Verify Email",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"verification-token-from-email\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/verify-email",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "verify-email"]
+            },
+            "description": "Verify email address with token from email"
+          }
+        },
+        {
+          "name": "Forgot Password",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/forgot-password",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "forgot-password"]
+            },
+            "description": "Request password reset. Sends email with reset token."
+          }
+        },
+        {
+          "name": "Reset Password",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"reset-token-from-email\",\n  \"new_password\": \"NewSecurePassword123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/reset-password",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "reset-password"]
+            },
+            "description": "Reset password using token from email"
+          }
+        },
+        {
+          "name": "Change Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{access_token}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"old_password\": \"OldPassword123\",\n  \"new_password\": \"NewSecurePassword123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/change-password",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "change-password"]
+            },
+            "description": "Change password (requires current password)"
+          }
+        },
+        {
+          "name": "Resend Verification Email",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{access_token}}"}
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/resend-verification",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "resend-verification"]
+            },
+            "description": "Resend email verification link"
+          }
+        },
+        {
+          "name": "Check Email Availability",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/check-email/test@example.com",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "check-email", "test@example.com"]
+            },
+            "description": "Check if email is available for registration"
+          }
+        },
+        {
+          "name": "Get Verification Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{access_token}}"}
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/verification-status",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "verification-status"]
+            },
+            "description": "Get all verification statuses for current user"
+          }
+        }
+      ],
+      "description": "User authentication and account management"
+    },
+    {
+      "name": "2. Cars",
+      "item": [
+        {
+          "name": "Search Cars",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/cars?page=1&page_size=20&sort_by=created_at&sort_order=desc",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "cars"],
+              "query": [
+                {"key": "page", "value": "1"},
+                {"key": "page_size", "value": "20"},
+                {"key": "q", "value": "", "disabled": true, "description": "Search query"},
+                {"key": "brand_id", "value": "", "disabled": true},
+                {"key": "model_id", "value": "", "disabled": true},
+                {"key": "min_price", "value": "", "disabled": true},
+                {"key": "max_price", "value": "", "disabled": true},
+                {"key": "min_year", "value": "", "disabled": true},
+                {"key": "max_year", "value": "", "disabled": true},
+                {"key": "fuel_type", "value": "", "disabled": true},
+                {"key": "transmission", "value": "", "disabled": true},
+                {"key": "city_id", "value": "", "disabled": true},
+                {"key": "latitude", "value": "", "disabled": true},
+                {"key": "longitude", "value": "", "disabled": true},
+                {"key": "radius_km", "value": "25", "disabled": true},
+                {"key": "sort_by", "value": "created_at"},
+                {"key": "sort_order", "value": "desc"}
+              ]
+            },
+            "description": "Search cars with advanced filters including location-based search"
+          }
+        },
+        {
+          "name": "Create Car Listing",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{access_token}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"2020 Toyota Fortuner\",\n  \"description\": \"Well-maintained SUV in excellent condition\",\n  \"brand_id\": 1,\n  \"model_id\": 1,\n  \"year\": 2020,\n  \"price\": 1500000,\n  \"mileage\": 45000,\n  \"fuel_type\": \"diesel\",\n  \"transmission\": \"automatic\",\n  \"condition_rating\": \"excellent\",\n  \"city_id\": 1,\n  \"negotiable\": true,\n  \"financing_available\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/cars",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "cars"]
+            },
+            "description": "Create new car listing (requires seller/dealer role)"
+          }
+        },
+        {
+          "name": "Get Car Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/cars/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "cars", "1"]
+            },
+            "description": "Get detailed information about a car. Records view count."
+          }
+        },
+        {
+          "name": "Update Car Listing",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{access_token}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"price\": 1450000,\n  \"description\": \"Updated description\",\n  \"status\": \"active\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/cars/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "cars", "1"]
+            },
+            "description": "Update car listing (only owner can update)"
+          }
+        },
+        {
+          "name": "Delete Car Listing",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{access_token}}"}
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/cars/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "cars", "1"]
+            },
+            "description": "Soft delete car listing (only owner can delete)"
+          }
+        },
+        {
+          "name": "Upload Car Image",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{access_token}}"}
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": []
+                },
+                {
+                  "key": "image_type",
+                  "value": "exterior",
+                  "type": "text"
+                },
+                {
+                  "key": "is_primary",
+                  "value": "false",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/cars/1/images",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "cars", "1", "images"]
+            },
+            "description": "Upload image for car listing. Creates thumbnails automatically."
+          }
+        },
+        {
+          "name": "Delete Car Image",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{access_token}}"}
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/cars/1/images/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "cars", "1", "images", "1"]
+            },
+            "description": "Delete car image (only owner)"
+          }
+        },
+        {
+          "name": "Boost Car Listing",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{access_token}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"duration_hours\": 24\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/cars/1/boost",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "cars", "1", "boost"]
+            },
+            "description": "Boost car for increased visibility (requires subscription)"
+          }
+        },
+        {
+          "name": "Feature Car Listing",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{access_token}}"}
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/cars/1/feature?duration_days=30",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "cars", "1", "feature"],
+              "query": [{"key": "duration_days", "value": "30"}]
+            },
+            "description": "Make car listing featured (requires subscription)"
+          }
+        },
+        {
+          "name": "Get Price History",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/cars/1/price-history",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "cars", "1", "price-history"]
+            },
+            "description": "Get price change history for a car"
+          }
+        },
+        {
+          "name": "Get All Brands",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/cars/brands/all",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "cars", "brands", "all"]
+            },
+            "description": "Get all car brands"
+          }
+        },
+        {
+          "name": "Get Models by Brand",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/cars/brands/1/models",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "cars", "brands", "1", "models"]
+            },
+            "description": "Get all models for a specific brand"
+          }
+        },
+        {
+          "name": "Get All Features",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/cars/features/all",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "cars", "features", "all"]
+            },
+            "description": "Get all available car features"
+          }
+        }
+      ],
+      "description": "Car listings management and search"
+    },
+    {
+      "name": "3. Users",
+      "item": [
+        {
+          "name": "Get User Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{access_token}}"}
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/users/profile",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "users", "profile"]
+            },
+            "description": "Get current user's profile"
+          }
+        },
+        {
+          "name": "Update User Profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{access_token}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"first_name\": \"John\",\n  \"last_name\": \"Doe\",\n  \"phone\": \"+639123456789\",\n  \"bio\": \"Car enthusiast\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/users/profile",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "users", "profile"]
+            },
+            "description": "Update user profile information"
+          }
+        },
+        {
+          "name": "Upload Profile Photo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{access_token}}"}
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/users/profile/photo",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "users", "profile", "photo"]
+            },
+            "description": "Upload profile photo"
+          }
+        },
+        {
+          "name": "Upgrade User Role",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{access_token}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"new_role\": \"seller\",\n  \"business_name\": \"My Car Business\",\n  \"business_permit_number\": \"BP-12345\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/users/upgrade-role",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "users", "upgrade-role"]
+            },
+            "description": "Upgrade buyer to seller or dealer role"
+          }
+        },
+        {
+          "name": "Request Identity Verification",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{access_token}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id_type\": \"drivers_license\",\n  \"id_number\": \"N01-12-345678\",\n  \"id_front_image\": \"url-to-front-image\",\n  \"id_back_image\": \"url-to-back-image\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/users/verify-identity",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "users", "verify-identity"]
+            },
+            "description": "Submit identity verification request"
+          }
+        },
+        {
+          "name": "Get My Listings",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{access_token}}"}
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/users/listings?status=active",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "users", "listings"],
+              "query": [{"key": "status", "value": "active"}]
+            },
+            "description": "Get current user's car listings"
+          }
+        },
+        {
+          "name": "Get Favorites",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{access_token}}"}
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/users/favorites",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "users", "favorites"]
+            },
+            "description": "Get user's favorite cars"
+          }
+        },
+        {
+          "name": "Add to Favorites",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{access_token}}"}
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/users/favorites/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "users", "favorites", "1"]
+            },
+            "description": "Add car to favorites"
+          }
+        },
+        {
+          "name": "Remove from Favorites",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{access_token}}"}
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/users/favorites/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "users", "favorites", "1"]
+            },
+            "description": "Remove car from favorites"
+          }
+        },
+        {
+          "name": "Get Notifications",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{access_token}}"}
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/users/notifications?unread_only=false",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "users", "notifications"],
+              "query": [{"key": "unread_only", "value": "false"}]
+            },
+            "description": "Get user notifications"
+          }
+        },
+        {
+          "name": "Mark Notification as Read",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{access_token}}"}
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/users/notifications/1/read",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "users", "notifications", "1", "read"]
+            },
+            "description": "Mark specific notification as read"
+          }
+        },
+        {
+          "name": "Mark All Notifications Read",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{access_token}}"}
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/users/notifications/read-all",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "users", "notifications", "read-all"]
+            },
+            "description": "Mark all notifications as read"
+          }
+        }
+      ],
+      "description": "User profile and account management"
+    },
+    {
+      "name": "4. Subscriptions",
+      "item": [
+        {
+          "name": "Get Subscription Plans",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/subscriptions/plans",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "subscriptions", "plans"]
+            },
+            "description": "Get all available subscription plans"
+          }
+        },
+        {
+          "name": "Get Current Subscription",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{access_token}}"}
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/subscriptions/current",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "subscriptions", "current"]
+            },
+            "description": "Get user's current active subscription"
+          }
+        },
+        {
+          "name": "Subscribe to Plan",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{access_token}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"plan_id\": 1,\n  \"billing_cycle\": \"monthly\",\n  \"payment_method\": \"qr_code\",\n  \"promo_code\": \"\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/subscriptions/subscribe",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "subscriptions", "subscribe"]
+            },
+            "description": "Subscribe to a plan. Returns QR code for payment if payment_method is qr_code."
+          }
+        },
+        {
+          "name": "Submit Payment Reference",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{access_token}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"payment_id\": 1,\n  \"reference_number\": \"GCash-1234567890\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/subscriptions/submit-reference",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "subscriptions", "submit-reference"]
+            },
+            "description": "Submit payment reference number after QR code payment"
+          }
+        },
+        {
+          "name": "Validate Promo Code",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{access_token}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"PROMO2024\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/subscriptions/validate-promo",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "subscriptions", "validate-promo"]
+            },
+            "description": "Validate promo code and get discount amount"
+          }
+        },
+        {
+          "name": "Get Payment History",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{access_token}}"}
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/subscriptions/payments",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "subscriptions", "payments"]
+            },
+            "description": "Get user's payment history"
+          }
+        },
+        {
+          "name": "Get Payment Details",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{access_token}}"}
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/subscriptions/payment/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "subscriptions", "payment", "1"]
+            },
+            "description": "Get detailed payment information"
+          }
+        },
+        {
+          "name": "Upgrade Subscription",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{access_token}}"}
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/subscriptions/upgrade?plan_id=2",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "subscriptions", "upgrade"],
+              "query": [{"key": "plan_id", "value": "2"}]
+            },
+            "description": "Upgrade to a higher subscription plan"
+          }
+        },
+        {
+          "name": "Cancel Subscription",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{access_token}}"}
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/subscriptions/cancel",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "subscriptions", "cancel"]
+            },
+            "description": "Cancel current subscription"
+          }
+        }
+      ],
+      "description": "Subscription and payment management"
+    },
+    {
+      "name": "5. Inquiries",
+      "item": [
+        {
+          "name": "Create Inquiry",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"car_id\": 1,\n  \"subject\": \"Interested in this car\",\n  \"message\": \"Is this car still available?\",\n  \"buyer_name\": \"John Doe\",\n  \"buyer_email\": \"john@example.com\",\n  \"buyer_phone\": \"+639123456789\",\n  \"inquiry_type\": \"general\",\n  \"test_drive_requested\": false\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/inquiries",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "inquiries"]
+            },
+            "description": "Create inquiry about a car (authenticated or guest)"
+          }
+        },
+        {
+          "name": "Get My Inquiries (Sent)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{access_token}}"}
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/inquiries?role=sent",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "inquiries"],
+              "query": [{"key": "role", "value": "sent"}]
+            },
+            "description": "Get inquiries sent by current user"
+          }
+        },
+        {
+          "name": "Get My Inquiries (Received)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{access_token}}"}
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/inquiries?role=received&status=new",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "inquiries"],
+              "query": [
+                {"key": "role", "value": "received"},
+                {"key": "status", "value": "new", "disabled": true}
+              ]
+            },
+            "description": "Get inquiries received by current user (as seller)"
+          }
+        },
+        {
+          "name": "Get Inquiry Details",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{access_token}}"}
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/inquiries/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "inquiries", "1"]
+            },
+            "description": "Get inquiry details with responses"
+          }
+        },
+        {
+          "name": "Respond to Inquiry",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{access_token}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"Yes, the car is still available. When would you like to view it?\",\n  \"response_type\": \"reply\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/inquiries/1/respond",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "inquiries", "1", "respond"]
+            },
+            "description": "Respond to an inquiry"
+          }
+        },
+        {
+          "name": "Update Inquiry Status",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{access_token}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"closed\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/inquiries/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "inquiries", "1"]
+            },
+            "description": "Update inquiry status (seller only)"
+          }
+        },
+        {
+          "name": "Rate Inquiry",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{access_token}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rating\": 5\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/inquiries/1/rate",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "inquiries", "1", "rate"]
+            },
+            "description": "Rate inquiry interaction"
+          }
+        },
+        {
+          "name": "Delete Inquiry",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{access_token}}"}
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/inquiries/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "inquiries", "1"]
+            },
+            "description": "Delete/close inquiry"
+          }
+        }
+      ],
+      "description": "Car inquiries and buyer-seller communication"
+    },
+    {
+      "name": "6. Transactions",
+      "item": [
+        {
+          "name": "Create Transaction",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{access_token}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"car_id\": 1,\n  \"agreed_price\": 1450000,\n  \"payment_method\": \"cash\",\n  \"deposit_amount\": 145000\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/transactions",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "transactions"]
+            },
+            "description": "Create new transaction (reserves car)"
+          }
+        },
+        {
+          "name": "Get My Transactions (Buyer)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{access_token}}"}
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/transactions?role=buyer",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "transactions"],
+              "query": [{"key": "role", "value": "buyer"}]
+            },
+            "description": "Get transactions as buyer"
+          }
+        },
+        {
+          "name": "Get My Transactions (Seller)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{access_token}}"}
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/transactions?role=seller",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "transactions"],
+              "query": [{"key": "role", "value": "seller"}]
+            },
+            "description": "Get transactions as seller"
+          }
+        },
+        {
+          "name": "Get Transaction Details",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{access_token}}"}
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/transactions/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "transactions", "1"]
+            },
+            "description": "Get detailed transaction information"
+          }
+        },
+        {
+          "name": "Update Transaction",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{access_token}}"},
+              {"key": "Content-Type", "value": "application/json"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"completed\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/transactions/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "transactions", "1"]
+            },
+            "description": "Update transaction status"
+          }
+        }
+      ],
+      "description": "Car purchase transactions"
+    },
+    {
+      "name": "7. Analytics",
+      "item": [
+        {
+          "name": "Get Dashboard Stats",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{access_token}}"}
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/analytics/dashboard",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "analytics", "dashboard"]
+            },
+            "description": "Get dashboard statistics for seller"
+          }
+        },
+        {
+          "name": "Get Car View Analytics",
+          "request": {
+            "method": "GET",
+            "header": [
+              {"key": "Authorization", "value": "Bearer {{access_token}}"}
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/v1/analytics/cars/1/views?days=30",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "analytics", "cars", "1", "views"],
+              "query": [{"key": "days", "value": "30"}]
+            },
+            "description": "Get view analytics for a specific car"
+          }
+        },
+        {
+          "name": "Get Market Insights",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/analytics/market-insights?brand_id=1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "analytics", "market-insights"],
+              "query": [
+                {"key": "brand_id", "value": "1", "disabled": true},
+                {"key": "model_id", "value": "", "disabled": true}
+              ]
+            },
+            "description": "Get market insights and pricing data"
+          }
+        }
+      ],
+      "description": "Analytics and statistics"
+    },
+    {
+      "name": "8. Admin",
+      "item": [
+        {
+          "name": "Dashboard",
+          "item": [
+            {
+              "name": "Get Admin Dashboard",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {"key": "Authorization", "value": "Bearer {{access_token}}"}
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/admin/dashboard",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "admin", "dashboard"]
+                },
+                "description": "Get comprehensive admin dashboard statistics"
+              }
+            }
+          ]
+        },
+        {
+          "name": "User Management",
+          "item": [
+            {
+              "name": "List Users",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {"key": "Authorization", "value": "Bearer {{access_token}}"}
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/admin/users?page=1&page_size=20",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "admin", "users"],
+                  "query": [
+                    {"key": "page", "value": "1"},
+                    {"key": "page_size", "value": "20"},
+                    {"key": "role", "value": "", "disabled": true},
+                    {"key": "user_status", "value": "", "disabled": true},
+                    {"key": "search", "value": "", "disabled": true},
+                    {"key": "verified_only", "value": "false", "disabled": true}
+                  ]
+                },
+                "description": "List all users with filtering options"
+              }
+            },
+            {
+              "name": "Get User Details",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {"key": "Authorization", "value": "Bearer {{access_token}}"}
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/admin/users/1",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "admin", "users", "1"]
+                },
+                "description": "Get detailed user information"
+              }
+            },
+            {
+              "name": "Ban User",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {"key": "Authorization", "value": "Bearer {{access_token}}"},
+                  {"key": "Content-Type", "value": "application/json"}
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"reason\": \"Violation of terms of service\",\n  \"duration_days\": 30\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/v1/admin/users/1/ban",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "admin", "users", "1", "ban"]
+                },
+                "description": "Ban a user account"
+              }
+            },
+            {
+              "name": "Unban User",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {"key": "Authorization", "value": "Bearer {{access_token}}"}
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/admin/users/1/unban",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "admin", "users", "1", "unban"]
+                },
+                "description": "Unban a user account"
+              }
+            },
+            {
+              "name": "Verify User",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {"key": "Authorization", "value": "Bearer {{access_token}}"},
+                  {"key": "Content-Type", "value": "application/json"}
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"verification_type\": \"identity\",\n  \"notes\": \"Documents verified successfully\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/v1/admin/users/1/verify",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "admin", "users", "1", "verify"]
+                },
+                "description": "Verify user's identity or business"
+              }
+            },
+            {
+              "name": "Change User Role",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {"key": "Authorization", "value": "Bearer {{access_token}}"},
+                  {"key": "Content-Type", "value": "application/json"}
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"new_role\": \"seller\",\n  \"reason\": \"User requested role upgrade\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/v1/admin/users/1/change-role",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "admin", "users", "1", "change-role"]
+                },
+                "description": "Change user's role"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reports Management",
+          "item": [
+            {
+              "name": "List Reports",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {"key": "Authorization", "value": "Bearer {{access_token}}"}
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/admin/reports?page=1&page_size=20",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "admin", "reports"],
+                  "query": [
+                    {"key": "page", "value": "1"},
+                    {"key": "page_size", "value": "20"}
+                  ]
+                },
+                "description": "List all reports"
+              }
+            },
+            {
+              "name": "Get Report Details",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {"key": "Authorization", "value": "Bearer {{access_token}}"}
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/admin/reports/1",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "admin", "reports", "1"]
+                },
+                "description": "Get detailed report information"
+              }
+            },
+            {
+              "name": "Resolve Report",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {"key": "Authorization", "value": "Bearer {{access_token}}"},
+                  {"key": "Content-Type", "value": "application/json"}
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"status\": \"resolved\",\n  \"resolution\": \"Report was reviewed and appropriate action taken\",\n  \"action_taken\": \"warning_issued\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/v1/admin/reports/1/resolve",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "admin", "reports", "1", "resolve"]
+                },
+                "description": "Resolve a report"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Car Moderation",
+          "item": [
+            {
+              "name": "List Pending Cars",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {"key": "Authorization", "value": "Bearer {{access_token}}"}
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/admin/cars/pending?page=1&page_size=20",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "admin", "cars", "pending"],
+                  "query": [
+                    {"key": "page", "value": "1"},
+                    {"key": "page_size", "value": "20"}
+                  ]
+                },
+                "description": "List cars pending approval"
+              }
+            },
+            {
+              "name": "Approve/Reject Car",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {"key": "Authorization", "value": "Bearer {{access_token}}"},
+                  {"key": "Content-Type", "value": "application/json"}
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"approved\": true,\n  \"notes\": \"Car listing meets all requirements\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/v1/admin/cars/1/approve",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "admin", "cars", "1", "approve"]
+                },
+                "description": "Approve or reject car listing"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Payment Verification",
+          "item": [
+            {
+              "name": "Get Pending Payments",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {"key": "Authorization", "value": "Bearer {{access_token}}"}
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/admin/payments/pending?limit=100",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "admin", "payments", "pending"],
+                  "query": [{"key": "limit", "value": "100"}]
+                },
+                "description": "Get payments pending verification"
+              }
+            },
+            {
+              "name": "Get Payment Details",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {"key": "Authorization", "value": "Bearer {{access_token}}"}
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/admin/payments/1",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "admin", "payments", "1"]
+                },
+                "description": "Get detailed payment information"
+              }
+            },
+            {
+              "name": "Verify Payment",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {"key": "Authorization", "value": "Bearer {{access_token}}"},
+                  {"key": "Content-Type", "value": "application/json"}
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"payment_id\": 1,\n  \"action\": \"verify\",\n  \"admin_notes\": \"Payment verified successfully\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/v1/admin/payments/verify",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "admin", "payments", "verify"]
+                },
+                "description": "Verify or reject a payment"
+              }
+            },
+            {
+              "name": "Get Payment Statistics",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {"key": "Authorization", "value": "Bearer {{access_token}}"}
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/admin/payments/statistics",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "admin", "payments", "statistics"]
+                },
+                "description": "Get payment statistics"
+              }
+            },
+            {
+              "name": "Get Payment Logs",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {"key": "Authorization", "value": "Bearer {{access_token}}"}
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/admin/payments/1/logs",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "admin", "payments", "1", "logs"]
+                },
+                "description": "Get verification logs for a payment"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Security & Audit",
+          "item": [
+            {
+              "name": "Get Fraud Indicators",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {"key": "Authorization", "value": "Bearer {{access_token}}"}
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/admin/fraud-indicators?limit=50",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "admin", "fraud-indicators"],
+                  "query": [
+                    {"key": "limit", "value": "50"},
+                    {"key": "severity", "value": "", "disabled": true}
+                  ]
+                },
+                "description": "List fraud indicators"
+              }
+            },
+            {
+              "name": "Get Audit Logs",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {"key": "Authorization", "value": "Bearer {{access_token}}"}
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/admin/audit-logs?limit=100",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "admin", "audit-logs"],
+                  "query": [
+                    {"key": "limit", "value": "100"},
+                    {"key": "action", "value": "", "disabled": true},
+                    {"key": "entity_type", "value": "", "disabled": true}
+                  ]
+                },
+                "description": "View audit logs"
+              }
+            }
+          ]
+        },
+        {
+          "name": "System Configuration",
+          "item": [
+            {
+              "name": "List System Configs",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {"key": "Authorization", "value": "Bearer {{access_token}}"}
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/admin/system-config",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "admin", "system-config"]
+                },
+                "description": "List all system configurations"
+              }
+            },
+            {
+              "name": "Update System Config",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {"key": "Authorization", "value": "Bearer {{access_token}}"},
+                  {"key": "Content-Type", "value": "application/json"}
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"config_value\": \"new_value\",\n  \"data_type\": \"string\",\n  \"description\": \"Configuration description\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/v1/admin/system-config/config_key",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "admin", "system-config", "config_key"]
+                },
+                "description": "Update system configuration"
+              }
+            },
+            {
+              "name": "Get Payment Settings",
+              "request": {
+                "method": "GET",
+                "header": [
+                  {"key": "Authorization", "value": "Bearer {{access_token}}"}
+                ],
+                "url": {
+                  "raw": "{{base_url}}/api/v1/admin/settings/payment",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "admin", "settings", "payment"]
+                },
+                "description": "Get payment settings"
+              }
+            },
+            {
+              "name": "Update Payment Setting",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {"key": "Authorization", "value": "Bearer {{access_token}}"},
+                  {"key": "Content-Type", "value": "application/json"}
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"setting_value\": \"new_value\",\n  \"is_active\": true\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/api/v1/admin/settings/payment/setting_key",
+                  "host": ["{{base_url}}"],
+                  "path": ["api", "v1", "admin", "settings", "payment", "setting_key"]
+                },
+                "description": "Update payment setting"
+              }
+            }
+          ]
+        }
+      ],
+      "description": "Admin endpoints for managing users, payments, reports, and system configuration"
+    }
+  ]
+}
