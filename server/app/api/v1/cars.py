@@ -188,11 +188,23 @@ async def get_car(
     # FIX: Use getattr for user_id
     user_id: Optional[int] = int(getattr(current_user, 'id', 0)) if current_user else None
     car = CarService.get_car(db, car_id, user_id)
-    
+
     if not car:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Car not found")
-    
-    return CarDetailResponse.model_validate(car)
+
+    try:
+        return CarDetailResponse.model_validate(car)
+    except Exception as e:
+        # Log validation error details for debugging
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Failed to validate car {car_id}: {str(e)}")
+        logger.error(f"Car status: {car.status}, approval: {car.approval_status}")
+        logger.error(f"Car fuel_type: {car.fuel_type}, transmission: {car.transmission}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Car data validation failed: {str(e)}"
+        )
 
 
 @router.put("/{car_id}", response_model=CarResponse)
