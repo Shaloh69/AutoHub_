@@ -13,38 +13,36 @@ from app.database import Base
 
 
 class SubscriptionPlan(Base):
+    """Subscription plan model - 100% aligned with SQL schema (lines 842-876)"""
     __tablename__ = "subscription_plans"
-    
+
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(100), nullable=False)
-    slug = Column(String(100), nullable=False, unique=True)
+    slug = Column(String(100), nullable=False, unique=True, index=True)
     description = Column(Text)
-    plan_type = Column(String(50), default="standard")
-    
-    # Pricing
-    monthly_price = Column(DECIMAL(10, 2), nullable=False)
-    yearly_price = Column(DECIMAL(10, 2))
-    currency = Column(String(3), default="PHP")
-    
-    # Limits
-    max_active_listings = Column(Integer, default=5)
+
+    # Pricing - FIXED: Match SQL schema exactly
+    price = Column(DECIMAL(10, 2), nullable=False)  # Not monthly_price/yearly_price
+    currency_id = Column(Integer, ForeignKey("currencies.id"), default=1)
+    billing_cycle = Column(Enum("monthly", "quarterly", "yearly", "lifetime"), default="monthly")
+
+    # Limits - FIXED: Match SQL column names exactly
+    max_listings = Column(Integer, default=5)  # Not max_active_listings
+    max_photos_per_listing = Column(Integer, default=10)  # Not max_images_per_listing
     max_featured_listings = Column(Integer, default=0)
-    max_premium_listings = Column(Integer, default=0)
-    max_images_per_listing = Column(Integer, default=10)
-    storage_mb = Column(Integer, default=100)
-    boost_credits_monthly = Column(Integer, default=0)
-    
-    # Features
-    priority_ranking = Column(Integer, default=0)
-    advanced_analytics = Column(Boolean, default=False)
-    homepage_featured = Column(Boolean, default=False)
-    verified_badge = Column(Boolean, default=False)
+
+    # Features - FIXED: Match SQL schema exactly
+    can_add_video = Column(Boolean, default=False)
+    can_add_virtual_tour = Column(Boolean, default=False)
     priority_support = Column(Boolean, default=False)
-    
+    advanced_analytics = Column(Boolean, default=False)
+    featured_badge = Column(Boolean, default=False)
+
     # Status
-    is_active = Column(Boolean, default=True)
     is_popular = Column(Boolean, default=False)
-    
+    display_order = Column(Integer, default=0)
+    is_active = Column(Boolean, default=True, index=True)
+
     # Timestamps
     created_at = Column(TIMESTAMP, default=datetime.utcnow)
     updated_at = Column(TIMESTAMP, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -55,31 +53,39 @@ class SubscriptionPlan(Base):
 
 
 class UserSubscription(Base):
+    """User subscription model - 100% aligned with SQL schema (lines 888-920)"""
     __tablename__ = "user_subscriptions"
-    
+
     id = Column(Integer, primary_key=True, autoincrement=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     plan_id = Column(Integer, ForeignKey("subscription_plans.id"), nullable=False)
-    
+
     # Subscription Details
-    # FIXED: Changed to UPPERCASE to match SQL schema
     status = Column(
         Enum("ACTIVE", "CANCELLED", "EXPIRED", "SUSPENDED", "PENDING", name="subscription_status"),
-        default="PENDING"
+        default="ACTIVE",
+        index=True
     )
     billing_cycle = Column(
         Enum("MONTHLY", "QUARTERLY", "YEARLY", "ONE_TIME", name="billing_cycle"),
-        default="MONTHLY"
+        default="MONTHLY",
+        index=True
     )
     auto_renew = Column(Boolean, default=True)
-    
-    # Dates
+
+    # Dates - FIXED: Added missing columns from SQL schema
     subscribed_at = Column(TIMESTAMP, default=datetime.utcnow)
     current_period_start = Column(TIMESTAMP)
     current_period_end = Column(TIMESTAMP)
-    next_billing_date = Column(TIMESTAMP)
+    next_billing_date = Column(TIMESTAMP, index=True)
+    started_at = Column(TIMESTAMP, default=datetime.utcnow)
+    expires_at = Column(TIMESTAMP)
     cancelled_at = Column(TIMESTAMP)
-    
+
+    # Legacy billing fields (kept for compatibility)
+    last_billing_at = Column(TIMESTAMP)
+    next_billing_at = Column(TIMESTAMP)
+
     # Timestamps
     created_at = Column(TIMESTAMP, default=datetime.utcnow)
     updated_at = Column(TIMESTAMP, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -94,40 +100,37 @@ class UserSubscription(Base):
 
 
 class SubscriptionPayment(Base):
+    """Subscription payment model - 100% aligned with SQL schema (lines 925-954)"""
     __tablename__ = "subscription_payments"
-    
+
     id = Column(Integer, primary_key=True, autoincrement=True)
-    subscription_id = Column(Integer, ForeignKey("user_subscriptions.id"), nullable=False, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    subscription_id = Column(Integer, ForeignKey("user_subscriptions.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     plan_id = Column(Integer, ForeignKey("subscription_plans.id"), nullable=False)
-    
+
     # Payment Details
     amount = Column(DECIMAL(10, 2), nullable=False)
-    currency = Column(String(3), default="PHP")
+    currency_id = Column(Integer, ForeignKey("currencies.id"), default=1)  # FIXED: Use FK not string
     payment_method = Column(String(50))
-    status = Column(Enum("pending", "completed", "failed", "refunded"), default="pending")
-    
-    # Provider Details (for credit card, GCash, etc.)
-    provider = Column(String(50))
-    provider_transaction_id = Column(String(255))
-    transaction_id = Column(String(255))  # Legacy field
-    
-    # NEW: QR Code Payment Fields
-    reference_number = Column(String(100), index=True)  # User-submitted reference number
-    qr_code_shown = Column(Boolean, default=False)  # Track if QR was shown
-    submitted_at = Column(TIMESTAMP)  # When user submitted reference number
-    
-    # NEW: Admin Verification Fields
-    admin_verified_by = Column(Integer, ForeignKey("users.id"), index=True)
+    transaction_id = Column(String(255))
+    status = Column(Enum("pending", "completed", "failed", "refunded"), default="pending", index=True)
+
+    # QR Code Payment Fields (from SQL migration)
+    reference_number = Column(String(100), index=True)
+    qr_code_shown = Column(Boolean, default=False)
+    submitted_at = Column(TIMESTAMP)
+
+    # Admin Verification Fields (from SQL migration)
+    admin_verified_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), index=True)
     admin_verified_at = Column(TIMESTAMP)
     admin_notes = Column(Text)
     rejection_reason = Column(Text)
-    
+
     # Billing Period
     billing_period_start = Column(Date)
     billing_period_end = Column(Date)
     paid_at = Column(TIMESTAMP)
-    
+
     # Timestamps
     created_at = Column(TIMESTAMP, default=datetime.utcnow)
     
@@ -158,75 +161,49 @@ class SubscriptionUsage(Base):
 
 
 class SubscriptionFeatureUsage(Base):
+    """Subscription feature usage model - 100% aligned with SQL schema (lines 983-995)"""
     __tablename__ = "subscription_feature_usage"
-    
+
     id = Column(Integer, primary_key=True, autoincrement=True)
-    subscription_id = Column(Integer, ForeignKey("user_subscriptions.id"), nullable=False)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    
-    # Feature tracking
-    feature_name = Column(String(100), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    subscription_id = Column(Integer, ForeignKey("user_subscriptions.id", ondelete="CASCADE"), nullable=False)
+    feature_name = Column(String(100), nullable=False, index=True)
     usage_count = Column(Integer, default=0)
-    limit_count = Column(Integer)
     last_used_at = Column(TIMESTAMP)
-    reset_at = Column(TIMESTAMP)
-    
-    # Timestamps
-    created_at = Column(TIMESTAMP, default=datetime.utcnow)
-    updated_at = Column(TIMESTAMP, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Relationships
     subscription = relationship("UserSubscription", back_populates="feature_usage")
 
 
 class PromotionCode(Base):
+    """Promotion code model - 100% aligned with SQL schema (lines 1000-1015)"""
     __tablename__ = "promotion_codes"
-    
+
     id = Column(Integer, primary_key=True, autoincrement=True)
     code = Column(String(50), nullable=False, unique=True, index=True)
     description = Column(Text)
-    
-    # Discount Details
-    # FIXED: Added 'free_feature' to match SQL schema
-    discount_type = Column(Enum("percentage", "fixed_amount", "free_feature"), nullable=False)
+    discount_type = Column(Enum("percentage", "fixed_amount", "free_feature"), default="percentage")
     discount_value = Column(DECIMAL(10, 2), nullable=False)
-    
-    # Validity
+    max_uses = Column(Integer)
+    current_uses = Column(Integer, default=0)
     valid_from = Column(TIMESTAMP)
     valid_until = Column(TIMESTAMP)
-    max_uses = Column(Integer)
-    max_uses_per_user = Column(Integer, default=1)
-    current_uses = Column(Integer, default=0)
-    
-    # Restrictions
-    min_purchase_amount = Column(DECIMAL(10, 2))
-    applicable_plans = Column(String(255))  # Comma-separated plan IDs
-    
-    # Status
-    is_active = Column(Boolean, default=True)
-    
-    # Timestamps
+    is_active = Column(Boolean, default=True, index=True)
     created_at = Column(TIMESTAMP, default=datetime.utcnow)
-    created_by = Column(Integer, ForeignKey("users.id"))
     
     # Relationships
     usages = relationship("PromotionCodeUsage", back_populates="promo_code")
 
 
 class PromotionCodeUsage(Base):
+    """Promotion code usage model - 100% aligned with SQL schema (lines 1020-1034)"""
     __tablename__ = "promotion_code_usage"
-    
+
     id = Column(Integer, primary_key=True, autoincrement=True)
-    promo_code_id = Column(Integer, ForeignKey("promotion_codes.id"), nullable=False)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    code_id = Column(Integer, ForeignKey("promotion_codes.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     subscription_id = Column(Integer, ForeignKey("user_subscriptions.id"))
-    
-    # Usage Details
-    discount_applied = Column(DECIMAL(10, 2))
-    original_amount = Column(DECIMAL(10, 2))
-    final_amount = Column(DECIMAL(10, 2))
-    
-    # Timestamp
+    discount_amount = Column(DECIMAL(10, 2))  # FIXED: Was discount_applied
     used_at = Column(TIMESTAMP, default=datetime.utcnow)
     
     # Relationships
