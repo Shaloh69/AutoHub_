@@ -1,0 +1,2052 @@
+{
+	"info": {
+		"_postman_id": "autohub-api-collection-2025",
+		"name": "AutoHub Philippines API - Complete Collection",
+		"description": "Complete Postman collection for AutoHub Car Marketplace Philippines API\n\n## Overview\n- **Base URL**: `http://localhost:8000`\n- **API Version**: v1\n- **Authentication**: JWT Bearer Token\n- **Content-Type**: application/json\n\n## Getting Started\n1. Register a new user via `/api/v1/auth/register`\n2. Login via `/api/v1/auth/login` to get access token\n3. Set the `{{access_token}}` variable with the token from login response\n4. Use the token in Authorization header for protected endpoints\n\n## Environment Variables\nCreate these variables in Postman:\n- `base_url`: http://localhost:8000\n- `access_token`: (will be set automatically after login)\n- `refresh_token`: (will be set automatically after login)\n- `user_id`: (will be set automatically after login)\n- `car_id`: (set after creating a car)\n- `inquiry_id`: (set after creating an inquiry)\n\n## Author\nAutoHub Team - Complete API Testing Suite",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{access_token}}",
+				"type": "string"
+			}
+		]
+	},
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8000",
+			"type": "string"
+		},
+		{
+			"key": "access_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "refresh_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "user_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "car_id",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "Health Check",
+			"item": [
+				{
+					"name": "Health Check",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/health",
+							"host": ["{{base_url}}"],
+							"path": ["health"]
+						},
+						"description": "Check if the API server is healthy and running"
+					},
+					"response": []
+				},
+				{
+					"name": "Root Endpoint",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/",
+							"host": ["{{base_url}}"],
+							"path": [""]
+						},
+						"description": "Get API welcome message and documentation links"
+					},
+					"response": []
+				}
+			],
+			"description": "Basic health check and status endpoints"
+		},
+		{
+			"name": "1. Authentication",
+			"item": [
+				{
+					"name": "Register User (Buyer)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200 || pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('access_token', jsonData.access_token);",
+									"    pm.collectionVariables.set('refresh_token', jsonData.refresh_token);",
+									"    pm.collectionVariables.set('user_id', jsonData.user_id);",
+									"    pm.environment.set('access_token', jsonData.access_token);",
+									"    pm.environment.set('refresh_token', jsonData.refresh_token);",
+									"    pm.environment.set('user_id', jsonData.user_id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"buyer@example.com\",\n    \"password\": \"SecurePass123!\",\n    \"first_name\": \"John\",\n    \"last_name\": \"Buyer\",\n    \"phone\": \"+639171234567\",\n    \"city_id\": 1\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/register",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "auth", "register"]
+						},
+						"description": "Register a new buyer account. Returns access_token and refresh_token."
+					},
+					"response": []
+				},
+				{
+					"name": "Register Seller",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"seller@example.com\",\n    \"password\": \"SecurePass123!\",\n    \"first_name\": \"Maria\",\n    \"last_name\": \"Seller\",\n    \"phone\": \"+639181234567\",\n    \"city_id\": 1,\n    \"business_name\": \"Maria's Auto Sales\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/register",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "auth", "register"]
+						},
+						"description": "Register a new seller account with business name"
+					},
+					"response": []
+				},
+				{
+					"name": "Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('access_token', jsonData.access_token);",
+									"    pm.collectionVariables.set('refresh_token', jsonData.refresh_token);",
+									"    pm.collectionVariables.set('user_id', jsonData.user_id);",
+									"    pm.environment.set('access_token', jsonData.access_token);",
+									"    pm.environment.set('refresh_token', jsonData.refresh_token);",
+									"    pm.environment.set('user_id', jsonData.user_id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"buyer@example.com\",\n    \"password\": \"SecurePass123!\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/login",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "auth", "login"]
+						},
+						"description": "Login with email and password to get JWT tokens"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Current User (Me)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/me",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "auth", "me"]
+						},
+						"description": "Get currently authenticated user profile"
+					},
+					"response": []
+				},
+				{
+					"name": "Check Email Availability",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/check-email/test@example.com",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "auth", "check-email", "test@example.com"]
+						},
+						"description": "Check if email is available for registration"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Verification Status",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/verification-status",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "auth", "verification-status"]
+						},
+						"description": "Get current user's verification status (email, phone, identity, business)"
+					},
+					"response": []
+				},
+				{
+					"name": "Refresh Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('access_token', jsonData.access_token);",
+									"    pm.environment.set('access_token', jsonData.access_token);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"refresh_token\": \"{{refresh_token}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/refresh",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "auth", "refresh"]
+						},
+						"description": "Refresh access token using refresh token"
+					},
+					"response": []
+				},
+				{
+					"name": "Change Password",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"old_password\": \"SecurePass123!\",\n    \"new_password\": \"NewSecurePass456!\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/change-password",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "auth", "change-password"]
+						},
+						"description": "Change password for authenticated user"
+					},
+					"response": []
+				},
+				{
+					"name": "Forgot Password",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"email\": \"buyer@example.com\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/forgot-password",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "auth", "forgot-password"]
+						},
+						"description": "Request password reset email"
+					},
+					"response": []
+				},
+				{
+					"name": "Resend Verification Email",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/resend-verification",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "auth", "resend-verification"]
+						},
+						"description": "Resend email verification link"
+					},
+					"response": []
+				},
+				{
+					"name": "Logout",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/auth/logout",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "auth", "logout"]
+						},
+						"description": "Logout and invalidate current token"
+					},
+					"response": []
+				}
+			],
+			"description": "User authentication and registration endpoints"
+		},
+		{
+			"name": "2. User Management",
+			"item": [
+				{
+					"name": "Get User Profile",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/profile",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "users", "profile"]
+						},
+						"description": "Get current user's detailed profile"
+					},
+					"response": []
+				},
+				{
+					"name": "Update User Profile",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"first_name\": \"John\",\n    \"last_name\": \"Updated\",\n    \"phone\": \"+639171234567\",\n    \"bio\": \"Car enthusiast and buyer\",\n    \"city_id\": 1\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/profile",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "users", "profile"]
+						},
+						"description": "Update user profile information"
+					},
+					"response": []
+				},
+				{
+					"name": "Upload Profile Photo",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": "/path/to/profile-photo.jpg"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/profile/photo",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "users", "profile", "photo"]
+						},
+						"description": "Upload user profile photo (max 5MB, JPEG/PNG/WebP)"
+					},
+					"response": []
+				},
+				{
+					"name": "Upgrade to Seller",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"new_role\": \"seller\",\n    \"business_name\": \"John's Auto Sales\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/upgrade-role",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "users", "upgrade-role"]
+						},
+						"description": "Upgrade user from buyer to seller"
+					},
+					"response": []
+				},
+				{
+					"name": "Upgrade to Dealer",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"new_role\": \"dealer\",\n    \"business_name\": \"Premium Auto Dealership\",\n    \"business_permit_number\": \"BP-2024-12345\",\n    \"tin_number\": \"123-456-789-000\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/upgrade-role",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "users", "upgrade-role"]
+						},
+						"description": "Upgrade user to dealer with business verification"
+					},
+					"response": []
+				},
+				{
+					"name": "Submit Identity Verification",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "id_type",
+									"value": "drivers_license",
+									"type": "text"
+								},
+								{
+									"key": "id_number",
+									"value": "N01-12-123456",
+									"type": "text"
+								},
+								{
+									"key": "id_front_image",
+									"type": "file",
+									"src": "/path/to/id-front.jpg"
+								},
+								{
+									"key": "id_back_image",
+									"type": "file",
+									"src": "/path/to/id-back.jpg"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/verify-identity",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "users", "verify-identity"]
+						},
+						"description": "Submit identity verification documents"
+					},
+					"response": []
+				},
+				{
+					"name": "Get My Listings",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/listings?status=active&skip=0&limit=20",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "users", "listings"],
+							"query": [
+								{
+									"key": "status",
+									"value": "active"
+								},
+								{
+									"key": "skip",
+									"value": "0"
+								},
+								{
+									"key": "limit",
+									"value": "20"
+								}
+							]
+						},
+						"description": "Get current user's car listings"
+					},
+					"response": []
+				},
+				{
+					"name": "Get My Favorites",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/favorites",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "users", "favorites"]
+						},
+						"description": "Get user's favorite/saved cars"
+					},
+					"response": []
+				},
+				{
+					"name": "Add to Favorites",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/favorites/{{car_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "users", "favorites", "{{car_id}}"]
+						},
+						"description": "Add a car to favorites"
+					},
+					"response": []
+				},
+				{
+					"name": "Remove from Favorites",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/favorites/{{car_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "users", "favorites", "{{car_id}}"]
+						},
+						"description": "Remove a car from favorites"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Notifications",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/notifications?unread_only=true&skip=0&limit=20",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "users", "notifications"],
+							"query": [
+								{
+									"key": "unread_only",
+									"value": "true"
+								},
+								{
+									"key": "skip",
+									"value": "0"
+								},
+								{
+									"key": "limit",
+									"value": "20"
+								}
+							]
+						},
+						"description": "Get user notifications"
+					},
+					"response": []
+				},
+				{
+					"name": "Mark Notification as Read",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/notifications/1/read",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "users", "notifications", "1", "read"]
+						},
+						"description": "Mark a specific notification as read"
+					},
+					"response": []
+				},
+				{
+					"name": "Mark All Notifications as Read",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/users/notifications/read-all",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "users", "notifications", "read-all"]
+						},
+						"description": "Mark all notifications as read"
+					},
+					"response": []
+				}
+			],
+			"description": "User profile and account management"
+		},
+		{
+			"name": "3. Cars & Listings",
+			"item": [
+				{
+					"name": "Create Car Listing",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200 || pm.response.code === 201) {",
+									"    var jsonData = pm.response.json();",
+									"    pm.collectionVariables.set('car_id', jsonData.id);",
+									"    pm.environment.set('car_id', jsonData.id);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"brand_id\": 1,\n    \"model_id\": 1,\n    \"year\": 2020,\n    \"price\": 850000,\n    \"title\": \"2020 Toyota Vios 1.3E MT - Well Maintained\",\n    \"description\": \"Excellent condition, single owner, complete papers, casa maintained. Low mileage, no accident history.\",\n    \"mileage\": 35000,\n    \"fuel_type\": \"gasoline\",\n    \"transmission\": \"manual\",\n    \"city_id\": 1,\n    \"latitude\": 14.5995,\n    \"longitude\": 120.9842,\n    \"features\": [1, 2, 3, 5, 8]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/cars",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "cars"]
+						},
+						"description": "Create a new car listing (requires seller/dealer role)"
+					},
+					"response": []
+				},
+				{
+					"name": "Search Cars",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/cars?q=toyota&min_price=500000&max_price=1000000&fuel_type=gasoline&transmission=automatic&page=1&page_size=20&sort_by=price&sort_order=asc",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "cars"],
+							"query": [
+								{
+									"key": "q",
+									"value": "toyota",
+									"description": "Search query"
+								},
+								{
+									"key": "brand_id",
+									"value": "1",
+									"disabled": true
+								},
+								{
+									"key": "model_id",
+									"value": "1",
+									"disabled": true
+								},
+								{
+									"key": "min_price",
+									"value": "500000"
+								},
+								{
+									"key": "max_price",
+									"value": "1000000"
+								},
+								{
+									"key": "min_year",
+									"value": "2015",
+									"disabled": true
+								},
+								{
+									"key": "max_year",
+									"value": "2024",
+									"disabled": true
+								},
+								{
+									"key": "fuel_type",
+									"value": "gasoline"
+								},
+								{
+									"key": "transmission",
+									"value": "automatic"
+								},
+								{
+									"key": "city_id",
+									"value": "1",
+									"disabled": true
+								},
+								{
+									"key": "latitude",
+									"value": "14.5995",
+									"disabled": true
+								},
+								{
+									"key": "longitude",
+									"value": "120.9842",
+									"disabled": true
+								},
+								{
+									"key": "radius_km",
+									"value": "50",
+									"disabled": true
+								},
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "page_size",
+									"value": "20"
+								},
+								{
+									"key": "sort_by",
+									"value": "price",
+									"description": "price, year, mileage, created_at"
+								},
+								{
+									"key": "sort_order",
+									"value": "asc",
+									"description": "asc or desc"
+								}
+							]
+						},
+						"description": "Search and filter car listings (public endpoint)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Car Details",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/cars/{{car_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "cars", "{{car_id}}"]
+						},
+						"description": "Get detailed information about a specific car"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Car Listing",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"price\": 820000,\n    \"title\": \"2020 Toyota Vios 1.3E MT - Price Reduced!\",\n    \"description\": \"Excellent condition, single owner, complete papers, casa maintained. Low mileage, no accident history. PRICE REDUCED FOR QUICK SALE!\",\n    \"mileage\": 36000,\n    \"status\": \"active\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/cars/{{car_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "cars", "{{car_id}}"]
+						},
+						"description": "Update car listing (owner only)"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Car Listing",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/cars/{{car_id}}",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "cars", "{{car_id}}"]
+						},
+						"description": "Delete/remove car listing (owner only)"
+					},
+					"response": []
+				},
+				{
+					"name": "Upload Car Image",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": "/path/to/car-photo.jpg"
+								},
+								{
+									"key": "image_type",
+									"value": "exterior",
+									"type": "text",
+									"description": "exterior/interior/engine/dashboard/wheels/damage/documents/other"
+								},
+								{
+									"key": "is_primary",
+									"value": "true",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/cars/{{car_id}}/images",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "cars", "{{car_id}}", "images"]
+						},
+						"description": "Upload car image (max 20 images per car)"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Car Image",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/cars/{{car_id}}/images/1",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "cars", "{{car_id}}", "images", "1"]
+						},
+						"description": "Delete a car image"
+					},
+					"response": []
+				},
+				{
+					"name": "Boost Car Listing",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"duration_hours\": 24\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/cars/{{car_id}}/boost",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "cars", "{{car_id}}", "boost"]
+						},
+						"description": "Boost car listing for better visibility"
+					},
+					"response": []
+				},
+				{
+					"name": "Feature Car Listing",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"duration_days\": 7\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/cars/{{car_id}}/feature",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "cars", "{{car_id}}", "feature"]
+						},
+						"description": "Feature car listing on homepage"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Price History",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/cars/{{car_id}}/price-history",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "cars", "{{car_id}}", "price-history"]
+						},
+						"description": "Get price history for a car"
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Brands",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/cars/brands/all?is_popular=true",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "cars", "brands", "all"],
+							"query": [
+								{
+									"key": "is_popular",
+									"value": "true",
+									"description": "Filter only popular brands"
+								}
+							]
+						},
+						"description": "Get list of all car brands"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Models by Brand",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/cars/brands/1/models?is_popular=true",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "cars", "brands", "1", "models"],
+							"query": [
+								{
+									"key": "is_popular",
+									"value": "true"
+								}
+							]
+						},
+						"description": "Get all models for a specific brand"
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Features",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/cars/features/all?category=safety&is_popular=true",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "cars", "features", "all"],
+							"query": [
+								{
+									"key": "category",
+									"value": "safety",
+									"description": "Filter by category"
+								},
+								{
+									"key": "is_popular",
+									"value": "true"
+								}
+							]
+						},
+						"description": "Get all available car features"
+					},
+					"response": []
+				}
+			],
+			"description": "Car listing management and search"
+		},
+		{
+			"name": "4. Subscriptions",
+			"item": [
+				{
+					"name": "Get Subscription Plans",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/subscriptions/plans",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "subscriptions", "plans"]
+						},
+						"description": "Get all available subscription plans"
+					},
+					"response": []
+				},
+				{
+					"name": "Subscribe to Plan",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"plan_id\": 2,\n    \"billing_cycle\": \"monthly\",\n    \"payment_method\": \"qr_code\",\n    \"promo_code\": \"WELCOME10\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/subscriptions/subscribe",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "subscriptions", "subscribe"]
+						},
+						"description": "Subscribe to a plan (returns QR code for payment)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Current Subscription",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/subscriptions/current",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "subscriptions", "current"]
+						},
+						"description": "Get user's current subscription details"
+					},
+					"response": []
+				},
+				{
+					"name": "Cancel Subscription",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/subscriptions/cancel",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "subscriptions", "cancel"]
+						},
+						"description": "Cancel current subscription"
+					},
+					"response": []
+				},
+				{
+					"name": "Upgrade Subscription",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"plan_id\": 3\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/subscriptions/upgrade",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "subscriptions", "upgrade"]
+						},
+						"description": "Upgrade to a higher plan"
+					},
+					"response": []
+				},
+				{
+					"name": "Validate Promo Code",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"code\": \"WELCOME10\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/subscriptions/validate-promo",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "subscriptions", "validate-promo"]
+						},
+						"description": "Validate a promo code"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Payment History",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/subscriptions/payments",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "subscriptions", "payments"]
+						},
+						"description": "Get user's payment history"
+					},
+					"response": []
+				},
+				{
+					"name": "Submit Payment Reference",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"payment_id\": 1,\n    \"reference_number\": \"GCASH-123456789\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/subscriptions/submit-reference",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "subscriptions", "submit-reference"]
+						},
+						"description": "Submit payment reference number after QR code payment"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Payment Details",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/subscriptions/payment/1",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "subscriptions", "payment", "1"]
+						},
+						"description": "Get detailed information about a specific payment"
+					},
+					"response": []
+				}
+			],
+			"description": "Subscription and payment management"
+		},
+		{
+			"name": "5. Inquiries",
+			"item": [
+				{
+					"name": "Create Inquiry",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{access_token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"car_id\": 1,\n    \"subject\": \"Interested in your 2020 Toyota Vios\",\n    \"message\": \"Hi, I'm interested in this car. Is it still available? Can I schedule a test drive?\",\n    \"buyer_name\": \"John Doe\",\n    \"buyer_email\": \"buyer@example.com\",\n    \"buyer_phone\": \"+639171234567\",\n    \"inquiry_type\": \"general\",\n    \"test_drive_requested\": true,\n    \"inspection_requested\": false,\n    \"financing_needed\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/inquiries",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "inquiries"]
+						},
+						"description": "Create a new inquiry about a car (auth optional)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get My Inquiries (Sent)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/inquiries?role=sent&status=new",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "inquiries"],
+							"query": [
+								{
+									"key": "role",
+									"value": "sent",
+									"description": "sent or received"
+								},
+								{
+									"key": "status",
+									"value": "new",
+									"description": "new, replied, negotiating, closed"
+								}
+							]
+						},
+						"description": "Get inquiries sent by current user"
+					},
+					"response": []
+				},
+				{
+					"name": "Get My Inquiries (Received)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/inquiries?role=received",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "inquiries"],
+							"query": [
+								{
+									"key": "role",
+									"value": "received"
+								}
+							]
+						},
+						"description": "Get inquiries received by current user (as seller)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Inquiry Details",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/inquiries/1",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "inquiries", "1"]
+						},
+						"description": "Get detailed information about a specific inquiry"
+					},
+					"response": []
+				},
+				{
+					"name": "Respond to Inquiry",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"message\": \"Yes, the car is still available! We can schedule a test drive this weekend. The car is in excellent condition.\",\n    \"response_type\": \"positive\",\n    \"counter_offer_price\": 800000\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/inquiries/1/respond",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "inquiries", "1", "respond"]
+						},
+						"description": "Respond to an inquiry (seller)"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Inquiry Status",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"status\": \"closed\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/inquiries/1",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "inquiries", "1"]
+						},
+						"description": "Update inquiry status (seller only)"
+					},
+					"response": []
+				},
+				{
+					"name": "Rate Inquiry Experience",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"rating\": 5\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/inquiries/1/rate",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "inquiries", "1", "rate"]
+						},
+						"description": "Rate the inquiry experience (1-5 stars)"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Inquiry",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/inquiries/1",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "inquiries", "1"]
+						},
+						"description": "Delete an inquiry"
+					},
+					"response": []
+				}
+			],
+			"description": "Buyer-seller inquiry management"
+		},
+		{
+			"name": "6. Transactions",
+			"item": [
+				{
+					"name": "Create Transaction",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"car_id\": 1,\n    \"agreed_price\": 800000,\n    \"payment_method\": \"bank_transfer\",\n    \"deposit_amount\": 50000,\n    \"financing_provider\": \"BPI Auto Loan\",\n    \"down_payment\": 200000,\n    \"monthly_installment\": 18500\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/transactions",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "transactions"]
+						},
+						"description": "Create a new transaction for car purchase"
+					},
+					"response": []
+				},
+				{
+					"name": "Get My Transactions (Buyer)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/transactions?role=buyer",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "transactions"],
+							"query": [
+								{
+									"key": "role",
+									"value": "buyer"
+								}
+							]
+						},
+						"description": "Get transactions where user is the buyer"
+					},
+					"response": []
+				},
+				{
+					"name": "Get My Transactions (Seller)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/transactions?role=seller",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "transactions"],
+							"query": [
+								{
+									"key": "role",
+									"value": "seller"
+								}
+							]
+						},
+						"description": "Get transactions where user is the seller"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Transaction Details",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/transactions/1",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "transactions", "1"]
+						},
+						"description": "Get detailed information about a transaction"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Transaction Status",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"status\": \"deposit_paid\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/transactions/1",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "transactions", "1"]
+						},
+						"description": "Update transaction status (buyer/seller)"
+					},
+					"response": []
+				}
+			],
+			"description": "Transaction management for car sales"
+		},
+		{
+			"name": "7. Analytics",
+			"item": [
+				{
+					"name": "Get Dashboard Stats",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/analytics/dashboard",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "analytics", "dashboard"]
+						},
+						"description": "Get user dashboard statistics"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Car Views Analytics",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/analytics/cars/{{car_id}}/views?days=30",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "analytics", "cars", "{{car_id}}", "views"],
+							"query": [
+								{
+									"key": "days",
+									"value": "30",
+									"description": "1-365 days"
+								}
+							]
+						},
+						"description": "Get view analytics for a specific car (owner only)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Market Insights",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/analytics/market-insights?brand_id=1&model_id=1",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "analytics", "market-insights"],
+							"query": [
+								{
+									"key": "brand_id",
+									"value": "1"
+								},
+								{
+									"key": "model_id",
+									"value": "1"
+								}
+							]
+						},
+						"description": "Get market insights (average prices, listing counts)"
+					},
+					"response": []
+				}
+			],
+			"description": "Analytics and insights"
+		},
+		{
+			"name": "8. Admin",
+			"item": [
+				{
+					"name": "Admin Dashboard",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/admin/dashboard",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "admin", "dashboard"]
+						},
+						"description": "Get comprehensive admin dashboard statistics (admin only)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Users",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/admin/users?page=1&page_size=20&role=seller&user_status=active&search=john&verified_only=false",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "admin", "users"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "page_size",
+									"value": "20"
+								},
+								{
+									"key": "role",
+									"value": "seller",
+									"description": "buyer/seller/dealer/admin/moderator"
+								},
+								{
+									"key": "user_status",
+									"value": "active",
+									"description": "active/banned"
+								},
+								{
+									"key": "search",
+									"value": "john"
+								},
+								{
+									"key": "verified_only",
+									"value": "false"
+								}
+							]
+						},
+						"description": "Get paginated list of all users with filters (admin only)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get User Details",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/admin/users/1",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "admin", "users", "1"]
+						},
+						"description": "Get detailed user information (admin only)"
+					},
+					"response": []
+				},
+				{
+					"name": "Ban User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"reason\": \"Fraudulent activity detected\",\n    \"duration_days\": 30\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/admin/users/1/ban",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "admin", "users", "1", "ban"]
+						},
+						"description": "Ban a user (admin only)"
+					},
+					"response": []
+				},
+				{
+					"name": "Unban User",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/admin/users/1/unban",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "admin", "users", "1", "unban"]
+						},
+						"description": "Unban a user (admin only)"
+					},
+					"response": []
+				},
+				{
+					"name": "Verify User",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"verification_type\": \"identity\",\n    \"notes\": \"Valid driver's license verified\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/admin/users/1/verify",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "admin", "users", "1", "verify"]
+						},
+						"description": "Manually verify user (email/phone/identity/business) (admin only)"
+					},
+					"response": []
+				},
+				{
+					"name": "Change User Role",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"new_role\": \"moderator\",\n    \"reason\": \"Promoted to moderator for good community contribution\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/admin/users/1/change-role",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "admin", "users", "1", "change-role"]
+						},
+						"description": "Change user role (admin only)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Reports",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/admin/reports?page=1&page_size=20&user_status=pending&report_type=fraud",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "admin", "reports"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "page_size",
+									"value": "20"
+								},
+								{
+									"key": "user_status",
+									"value": "pending",
+									"description": "pending/resolved"
+								},
+								{
+									"key": "report_type",
+									"value": "fraud"
+								}
+							]
+						},
+						"description": "Get all user reports (moderator/admin)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Report Details",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/admin/reports/1",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "admin", "reports", "1"]
+						},
+						"description": "Get detailed report information (moderator/admin)"
+					},
+					"response": []
+				},
+				{
+					"name": "Resolve Report",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"status\": \"resolved\",\n    \"resolution\": \"User has been warned and listing removed\",\n    \"action_taken\": \"warning_issued\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/admin/reports/1/resolve",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "admin", "reports", "1", "resolve"]
+						},
+						"description": "Resolve a report (moderator/admin)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Pending Cars",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/admin/cars/pending?page=1&page_size=20",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "admin", "cars", "pending"],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "page_size",
+									"value": "20"
+								}
+							]
+						},
+						"description": "Get cars pending approval (moderator/admin)"
+					},
+					"response": []
+				},
+				{
+					"name": "Approve/Reject Car",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"approved\": true,\n    \"notes\": \"Listing approved - all details verified\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/admin/cars/1/approve",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "admin", "cars", "1", "approve"]
+						},
+						"description": "Approve or reject car listing (moderator/admin)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Fraud Indicators",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/admin/fraud-indicators?limit=50&severity=high",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "admin", "fraud-indicators"],
+							"query": [
+								{
+									"key": "limit",
+									"value": "50"
+								},
+								{
+									"key": "severity",
+									"value": "high",
+									"description": "low/medium/high"
+								}
+							]
+						},
+						"description": "Get fraud detection indicators (admin only)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Audit Logs",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/admin/audit-logs?limit=100&action=user_ban&entity_type=user",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "admin", "audit-logs"],
+							"query": [
+								{
+									"key": "limit",
+									"value": "100"
+								},
+								{
+									"key": "action",
+									"value": "user_ban"
+								},
+								{
+									"key": "entity_type",
+									"value": "user"
+								}
+							]
+						},
+						"description": "Get system audit logs (admin only)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get System Config",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/admin/system-config",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "admin", "system-config"]
+						},
+						"description": "Get system configuration (admin only)"
+					},
+					"response": []
+				},
+				{
+					"name": "Update System Config",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"config_value\": \"10\",\n    \"data_type\": \"integer\",\n    \"description\": \"Maximum car images per listing\",\n    \"is_public\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/admin/system-config/max_car_images",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "admin", "system-config", "max_car_images"]
+						},
+						"description": "Update system configuration (admin only)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Pending Payments",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/admin/payments/pending?limit=20&offset=0",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "admin", "payments", "pending"],
+							"query": [
+								{
+									"key": "limit",
+									"value": "20"
+								},
+								{
+									"key": "offset",
+									"value": "0"
+								}
+							]
+						},
+						"description": "Get pending payments for verification (admin only)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Payment Details (Admin)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/admin/payments/1",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "admin", "payments", "1"]
+						},
+						"description": "Get payment details for verification (admin only)"
+					},
+					"response": []
+				},
+				{
+					"name": "Verify/Reject Payment",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"payment_id\": 1,\n    \"action\": \"verify\",\n    \"admin_notes\": \"Payment verified - GCash reference confirmed\",\n    \"rejection_reason\": \"\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/admin/payments/verify",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "admin", "payments", "verify"]
+						},
+						"description": "Verify or reject a payment (admin only)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Payment Statistics",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/admin/payments/statistics",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "admin", "payments", "statistics"]
+						},
+						"description": "Get payment statistics (admin only)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Payment Logs",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/admin/payments/1/logs",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "admin", "payments", "1", "logs"]
+						},
+						"description": "Get verification logs for a payment (admin only)"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Payment Settings",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/v1/admin/settings/payment",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "admin", "settings", "payment"]
+						},
+						"description": "Get payment settings (admin only)"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Payment Setting",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"setting_value\": \"0917-123-4567\",\n    \"setting_type\": \"string\",\n    \"description\": \"GCash payment number\",\n    \"is_active\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/v1/admin/settings/payment/gcash_number",
+							"host": ["{{base_url}}"],
+							"path": ["api", "v1", "admin", "settings", "payment", "gcash_number"]
+						},
+						"description": "Update payment setting (admin only)"
+					},
+					"response": []
+				}
+			],
+			"description": "Admin and moderation endpoints (requires admin/moderator role)"
+		}
+	]
+}
