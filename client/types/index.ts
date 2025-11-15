@@ -2,14 +2,19 @@
 // types/index.ts - Complete Type Definitions
 // ==========================================
 
+// User enums - lowercase to match SQL schema
 export type UserRole = 'buyer' | 'seller' | 'dealer' | 'admin' | 'moderator';
 
-export type CarStatus = 'draft' | 'pending' | 'active' | 'sold' | 'expired' | 'removed';
-export type ApprovalStatus = 'pending' | 'approved' | 'rejected';
-export type FuelType = 'gasoline' | 'diesel' | 'electric' | 'hybrid' | 'plug_in_hybrid';
-export type TransmissionType = 'manual' | 'automatic' | 'cvt' | 'dct' | 'amt';
-export type DrivetrainType = 'fwd' | 'rwd' | 'awd' | '4wd';
-export type ConditionRating = 'excellent' | 'very_good' | 'good' | 'fair' | 'poor';
+// Car enums - match SQL schema casing exactly
+export type CarStatus = 'DRAFT' | 'PENDING' | 'ACTIVE' | 'SOLD' | 'RESERVED' | 'INACTIVE' | 'REJECTED' | 'EXPIRED';
+export type ApprovalStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+export type FuelType = 'GASOLINE' | 'DIESEL' | 'ELECTRIC' | 'HYBRID';
+export type TransmissionType = 'MANUAL' | 'AUTOMATIC' | 'CVT' | 'DCT';
+export type DrivetrainType = 'FWD' | 'RWD' | 'AWD' | '4WD';
+export type ConditionRating = 'BRAND_NEW' | 'LIKE_NEW' | 'EXCELLENT' | 'GOOD' | 'FAIR' | 'POOR';
+export type BodyType = 'sedan' | 'suv' | 'pickup' | 'van' | 'hatchback' | 'coupe' | 'mpv' | 'crossover' | 'wagon' | 'convertible';
+export type EngineType = 'gasoline' | 'diesel' | 'electric' | 'hybrid' | 'plug-in-hybrid';
+export type Visibility = 'public' | 'private' | 'unlisted';
 
 export interface User {
   id: number;

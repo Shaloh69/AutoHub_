@@ -127,7 +127,7 @@ async def get_current_seller(
     # FIX: Use getattr to safely access Column role value
     user_role = getattr(current_user, 'role', None)
     
-    if user_role not in [UserRole.SELLER, UserRole.DEALER, UserRole.ADMIN]:
+    if user_role not in [UserRole.seller, UserRole.dealer, UserRole.admin]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Seller or dealer role required"
@@ -143,7 +143,7 @@ async def get_current_dealer(
     # FIX: Use getattr to safely access Column role value
     user_role = getattr(current_user, 'role', None)
     
-    if user_role not in [UserRole.DEALER, UserRole.ADMIN]:
+    if user_role not in [UserRole.dealer, UserRole.admin]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Dealer role required"
@@ -159,7 +159,7 @@ async def get_current_admin(
     # FIX: Use getattr to safely access Column role value
     user_role = getattr(current_user, 'role', None)
     
-    if user_role != UserRole.ADMIN:
+    if user_role != UserRole.admin:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin role required"
@@ -175,7 +175,7 @@ async def get_current_moderator(
     # FIX: Use getattr to safely access Column role value
     user_role = getattr(current_user, 'role', None)
     
-    if user_role not in [UserRole.MODERATOR, UserRole.ADMIN]:
+    if user_role not in [UserRole.moderator, UserRole.admin]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Moderator or admin role required"
