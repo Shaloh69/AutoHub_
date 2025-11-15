@@ -1460,6 +1460,474 @@ async def update_payment_setting(
     )
 
 
+# ========================================
+# CURRENCY MANAGEMENT (NEW)
+# ========================================
+
+@router.get("/currencies", response_model=List[dict])
+async def list_currencies(
+    is_active: Optional[bool] = None,
+    current_admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """List all currencies"""
+    from app.models.location import Currency
+
+    query = db.query(Currency)
+    if is_active is not None:
+        query = query.filter(Currency.is_active == is_active)
+
+    currencies = query.all()
+
+    return [
+        {
+            "id": int(getattr(c, 'id', 0)),
+            "code": str(getattr(c, 'code', '')),
+            "name": str(getattr(c, 'name', '')),
+            "symbol": str(getattr(c, 'symbol', '')),
+            "exchange_rate_to_php": float(getattr(c, 'exchange_rate_to_php', 1.0)),
+            "is_active": bool(getattr(c, 'is_active', True)),
+            "updated_at": getattr(c, 'updated_at', None)
+        }
+        for c in currencies
+    ]
+
+
+@router.post("/currencies", response_model=MessageResponse, status_code=status.HTTP_201_CREATED)
+async def create_currency(
+    currency_data: dict,
+    current_admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """Create new currency"""
+    from app.models.location import Currency
+
+    # Check if currency code already exists
+    existing = db.query(Currency).filter(Currency.code == currency_data.get('code')).first()
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Currency code already exists"
+        )
+
+    currency = Currency(
+        code=currency_data.get('code'),
+        name=currency_data.get('name'),
+        symbol=currency_data.get('symbol'),
+        exchange_rate_to_php=currency_data.get('exchange_rate_to_php', 1.0),
+        is_active=currency_data.get('is_active', True)
+    )
+
+    db.add(currency)
+
+    # Create audit log
+    admin_id = int(getattr(current_admin, 'id', 0))
+    audit = AuditLog(
+        user_id=admin_id,
+        action="create_currency",
+        entity_type="currency",
+        new_values=currency_data
+    )
+    db.add(audit)
+
+    db.commit()
+
+    return MessageResponse(message="Currency created successfully", success=True)
+
+
+@router.put("/currencies/{currency_id}", response_model=MessageResponse)
+async def update_currency(
+    currency_id: int,
+    currency_data: dict,
+    current_admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """Update currency"""
+    from app.models.location import Currency
+
+    currency = db.query(Currency).filter(Currency.id == currency_id).first()
+    if not currency:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Currency not found"
+        )
+
+    # Store old values for audit
+    old_values = {
+        "code": str(getattr(currency, 'code', '')),
+        "name": str(getattr(currency, 'name', '')),
+        "symbol": str(getattr(currency, 'symbol', '')),
+        "exchange_rate_to_php": float(getattr(currency, 'exchange_rate_to_php', 1.0)),
+        "is_active": bool(getattr(currency, 'is_active', True))
+    }
+
+    # Update fields
+    for key, value in currency_data.items():
+        if hasattr(currency, key):
+            setattr(currency, key, value)
+
+    setattr(currency, 'updated_at', datetime.utcnow())
+
+    # Create audit log
+    admin_id = int(getattr(current_admin, 'id', 0))
+    audit = AuditLog(
+        user_id=admin_id,
+        action="update_currency",
+        entity_type="currency",
+        entity_id=currency_id,
+        old_values=old_values,
+        new_values=currency_data
+    )
+    db.add(audit)
+
+    db.commit()
+
+    return MessageResponse(message="Currency updated successfully", success=True)
+
+
+@router.delete("/currencies/{currency_id}", response_model=MessageResponse)
+async def delete_currency(
+    currency_id: int,
+    current_admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """Delete/deactivate currency"""
+    from app.models.location import Currency
+
+    currency = db.query(Currency).filter(Currency.id == currency_id).first()
+    if not currency:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Currency not found"
+        )
+
+    # Soft delete by deactivating
+    setattr(currency, 'is_active', False)
+
+    # Create audit log
+    admin_id = int(getattr(current_admin, 'id', 0))
+    audit = AuditLog(
+        user_id=admin_id,
+        action="delete_currency",
+        entity_type="currency",
+        entity_id=currency_id
+    )
+    db.add(audit)
+
+    db.commit()
+
+    return MessageResponse(message="Currency deactivated successfully", success=True)
+
+
+# ========================================
+# PROMOTION CODE MANAGEMENT (NEW)
+# ========================================
+
+@router.get("/promotion-codes", response_model=List[dict])
+async def list_promotion_codes(
+    is_active: Optional[bool] = None,
+    current_admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """List all promotion codes"""
+    from app.models.subscription import PromotionCode
+
+    query = db.query(PromotionCode)
+    if is_active is not None:
+        query = query.filter(PromotionCode.is_active == is_active)
+
+    codes = query.order_by(PromotionCode.created_at.desc()).all()
+
+    return [
+        {
+            "id": int(getattr(c, 'id', 0)),
+            "code": str(getattr(c, 'code', '')),
+            "description": str(getattr(c, 'description', '') or ''),
+            "discount_type": str(getattr(c, 'discount_type', '')),
+            "discount_value": float(getattr(c, 'discount_value', 0)),
+            "valid_from": getattr(c, 'valid_from', None),
+            "valid_until": getattr(c, 'valid_until', None),
+            "max_uses": getattr(c, 'max_uses', None),
+            "max_uses_per_user": int(getattr(c, 'max_uses_per_user', 1)),
+            "current_uses": int(getattr(c, 'current_uses', 0)),
+            "min_purchase_amount": float(getattr(c, 'min_purchase_amount', 0)) if getattr(c, 'min_purchase_amount', None) else None,
+            "applicable_plans": str(getattr(c, 'applicable_plans', '') or ''),
+            "is_active": bool(getattr(c, 'is_active', True)),
+            "created_at": getattr(c, 'created_at', None),
+            "created_by": getattr(c, 'created_by', None)
+        }
+        for c in codes
+    ]
+
+
+@router.post("/promotion-codes", response_model=MessageResponse, status_code=status.HTTP_201_CREATED)
+async def create_promotion_code(
+    promo_data: dict,
+    current_admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """Create new promotion code"""
+    from app.models.subscription import PromotionCode
+
+    # Check if code already exists
+    existing = db.query(PromotionCode).filter(
+        PromotionCode.code == promo_data.get('code')
+    ).first()
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Promotion code already exists"
+        )
+
+    admin_id = int(getattr(current_admin, 'id', 0))
+
+    promo = PromotionCode(
+        code=promo_data.get('code'),
+        description=promo_data.get('description'),
+        discount_type=promo_data.get('discount_type'),
+        discount_value=promo_data.get('discount_value'),
+        valid_from=promo_data.get('valid_from'),
+        valid_until=promo_data.get('valid_until'),
+        max_uses=promo_data.get('max_uses'),
+        max_uses_per_user=promo_data.get('max_uses_per_user', 1),
+        min_purchase_amount=promo_data.get('min_purchase_amount'),
+        applicable_plans=promo_data.get('applicable_plans'),
+        is_active=promo_data.get('is_active', True),
+        created_by=admin_id
+    )
+
+    db.add(promo)
+
+    # Create audit log
+    audit = AuditLog(
+        user_id=admin_id,
+        action="create_promotion_code",
+        entity_type="promotion_code",
+        new_values=promo_data
+    )
+    db.add(audit)
+
+    db.commit()
+
+    return MessageResponse(message="Promotion code created successfully", success=True)
+
+
+@router.put("/promotion-codes/{promo_id}", response_model=MessageResponse)
+async def update_promotion_code(
+    promo_id: int,
+    promo_data: dict,
+    current_admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """Update promotion code"""
+    from app.models.subscription import PromotionCode
+
+    promo = db.query(PromotionCode).filter(PromotionCode.id == promo_id).first()
+    if not promo:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Promotion code not found"
+        )
+
+    # Update fields
+    for key, value in promo_data.items():
+        if hasattr(promo, key) and key != 'id' and key != 'created_by':
+            setattr(promo, key, value)
+
+    # Create audit log
+    admin_id = int(getattr(current_admin, 'id', 0))
+    audit = AuditLog(
+        user_id=admin_id,
+        action="update_promotion_code",
+        entity_type="promotion_code",
+        entity_id=promo_id,
+        new_values=promo_data
+    )
+    db.add(audit)
+
+    db.commit()
+
+    return MessageResponse(message="Promotion code updated successfully", success=True)
+
+
+@router.delete("/promotion-codes/{promo_id}", response_model=MessageResponse)
+async def delete_promotion_code(
+    promo_id: int,
+    current_admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """Deactivate promotion code"""
+    from app.models.subscription import PromotionCode
+
+    promo = db.query(PromotionCode).filter(PromotionCode.id == promo_id).first()
+    if not promo:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Promotion code not found"
+        )
+
+    # Soft delete by deactivating
+    setattr(promo, 'is_active', False)
+
+    # Create audit log
+    admin_id = int(getattr(current_admin, 'id', 0))
+    audit = AuditLog(
+        user_id=admin_id,
+        action="delete_promotion_code",
+        entity_type="promotion_code",
+        entity_id=promo_id
+    )
+    db.add(audit)
+
+    db.commit()
+
+    return MessageResponse(message="Promotion code deactivated successfully", success=True)
+
+
+@router.get("/promotion-codes/{promo_id}/usage", response_model=List[dict])
+async def get_promotion_code_usage(
+    promo_id: int,
+    current_admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """Get promotion code usage statistics"""
+    from app.models.subscription import PromotionCodeUsage
+
+    usages = db.query(PromotionCodeUsage).filter(
+        PromotionCodeUsage.promo_code_id == promo_id
+    ).all()
+
+    return [
+        {
+            "id": int(getattr(u, 'id', 0)),
+            "user_id": int(getattr(u, 'user_id', 0)),
+            "subscription_id": int(getattr(u, 'subscription_id', 0)),
+            "discount_amount": float(getattr(u, 'discount_amount', 0)),
+            "used_at": getattr(u, 'used_at', None)
+        }
+        for u in usages
+    ]
+
+
+# ========================================
+# FRAUD DETECTION MANAGEMENT (NEW)
+# ========================================
+
+@router.post("/fraud-indicators", response_model=MessageResponse, status_code=status.HTTP_201_CREATED)
+async def create_fraud_indicator(
+    fraud_data: dict,
+    current_admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """Manually flag fraud indicator"""
+    fraud = FraudIndicator(
+        user_id=fraud_data.get('user_id'),
+        car_id=fraud_data.get('car_id'),
+        indicator_type=fraud_data.get('indicator_type'),
+        severity=fraud_data.get('severity', 'medium'),
+        description=fraud_data.get('description')
+    )
+
+    db.add(fraud)
+
+    # Create audit log
+    admin_id = int(getattr(current_admin, 'id', 0))
+    audit = AuditLog(
+        user_id=admin_id,
+        action="create_fraud_indicator",
+        entity_type="fraud_indicator",
+        new_values=fraud_data
+    )
+    db.add(audit)
+
+    # Notify user if specified
+    if fraud_data.get('notify_user') and fraud_data.get('user_id'):
+        try:
+            NotificationService.create_notification(
+                db,
+                user_id=fraud_data.get('user_id'),
+                title="Security Alert",
+                message=f"Unusual activity detected: {fraud_data.get('description', 'Please review your account.')}",
+                notification_type="security_alert"
+            )
+        except Exception as e:
+            logger.error(f"Failed to send fraud notification: {e}")
+
+    db.commit()
+
+    return MessageResponse(message="Fraud indicator created successfully", success=True)
+
+
+@router.put("/fraud-indicators/{fraud_id}/resolve", response_model=MessageResponse)
+async def resolve_fraud_indicator(
+    fraud_id: int,
+    resolution_data: dict,
+    current_admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """Mark fraud indicator as resolved"""
+    fraud = db.query(FraudIndicator).filter(FraudIndicator.id == fraud_id).first()
+    if not fraud:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Fraud indicator not found"
+        )
+
+    # Delete as resolved (could be soft delete if model is updated)
+    db.delete(fraud)
+
+    # Create audit log
+    admin_id = int(getattr(current_admin, 'id', 0))
+    audit = AuditLog(
+        user_id=admin_id,
+        action="resolve_fraud_indicator",
+        entity_type="fraud_indicator",
+        entity_id=fraud_id,
+        new_values=resolution_data
+    )
+    db.add(audit)
+
+    db.commit()
+
+    return MessageResponse(message="Fraud indicator resolved successfully", success=True)
+
+
+@router.get("/fraud-indicators/statistics")
+async def get_fraud_statistics(
+    current_admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """Get fraud detection statistics"""
+    total = db.query(FraudIndicator).count()
+
+    high_severity = db.query(FraudIndicator).filter(
+        FraudIndicator.severity == "high"
+    ).count()
+
+    medium_severity = db.query(FraudIndicator).filter(
+        FraudIndicator.severity == "medium"
+    ).count()
+
+    low_severity = db.query(FraudIndicator).filter(
+        FraudIndicator.severity == "low"
+    ).count()
+
+    # Recent fraud (last 7 days)
+    from datetime import timedelta
+    week_ago = datetime.utcnow() - timedelta(days=7)
+    recent = db.query(FraudIndicator).filter(
+        FraudIndicator.detected_at >= week_ago
+    ).count()
+
+    return {
+        "total_indicators": total,
+        "high_severity": high_severity,
+        "medium_severity": medium_severity,
+        "low_severity": low_severity,
+        "recent_7_days": recent
+    }
+
+
 # ===========================================
 # COMPLETE ADMIN ENDPOINTS SUMMARY:
 # ===========================================
@@ -1501,5 +1969,24 @@ async def update_payment_setting(
 #    - GET /settings/payment - Get payment settings
 #    - PUT /settings/payment/{setting_key} - Update payment setting
 #
-# TOTAL: 22 Admin Endpoints
+# ✅ CURRENCY MANAGEMENT (4 endpoints - NEW)
+#    - GET /currencies - List all currencies
+#    - POST /currencies - Create new currency
+#    - PUT /currencies/{id} - Update currency
+#    - DELETE /currencies/{id} - Deactivate currency
+#
+# ✅ PROMOTION CODES (5 endpoints - NEW)
+#    - GET /promotion-codes - List all promotion codes
+#    - POST /promotion-codes - Create promotion code
+#    - PUT /promotion-codes/{id} - Update promotion code
+#    - DELETE /promotion-codes/{id} - Deactivate promotion code
+#    - GET /promotion-codes/{id}/usage - Get usage statistics
+#
+# ✅ FRAUD DETECTION (4 endpoints - NEW)
+#    - GET /fraud-indicators - List fraud indicators
+#    - POST /fraud-indicators - Create fraud indicator
+#    - PUT /fraud-indicators/{id}/resolve - Resolve fraud
+#    - GET /fraud-indicators/statistics - Fraud statistics
+#
+# TOTAL: 35 Admin Endpoints (was 22, added 13 new)
 # ===========================================
