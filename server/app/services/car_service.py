@@ -181,8 +181,8 @@ class CarService:
                 joinedload(Car.images),
                 joinedload(Car.features),
                 joinedload(Car.seller),
-                joinedload(Car.brand),
-                joinedload(Car.model),
+                joinedload(Car.brand_rel),
+                joinedload(Car.model_rel),
                 joinedload(Car.city)
             ).filter(Car.id == car_id).first()
             
