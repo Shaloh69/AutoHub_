@@ -380,9 +380,8 @@ export default function SearchCarsPage() {
                   {cars.map((car) => (
                     <Card
                       key={car.id}
-                      isPressable
-                      onPress={() => router.push(`/cars/${car.id}`)}
-                      className="group hover:shadow-xl transition-all duration-300"
+                      className="group hover:shadow-xl transition-all duration-300 cursor-pointer"
+                      onClick={() => router.push(`/cars/${car.id}`)}
                     >
                       <CardBody className="p-0">
                         {/* Image */}
@@ -403,19 +402,16 @@ export default function SearchCarsPage() {
                             )}
                           </div>
 
-                          {/* Favorite Button */}
-                          <Button
-                            isIconOnly
-                            size="sm"
-                            variant="flat"
-                            className="absolute top-3 right-3 bg-white/90 backdrop-blur"
-                            onPress={(e) => {
+                          {/* Favorite Button - Fixed: Use div instead of Button to avoid nesting */}
+                          <div
+                            className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/90 backdrop-blur flex items-center justify-center hover:bg-white transition-colors cursor-pointer"
+                            onClick={(e) => {
                               e.stopPropagation();
                               handleAddToFavorites(car.id);
                             }}
                           >
-                            <Heart size={18} />
-                          </Button>
+                            <Heart size={18} className="text-gray-700 hover:text-red-500 transition-colors" />
+                          </div>
                         </div>
 
                         {/* Content */}

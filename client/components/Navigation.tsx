@@ -35,6 +35,56 @@ export default function Navigation() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
 
+  // Role-based theme configuration
+  const getRoleTheme = () => {
+    if (isAdmin) {
+      return {
+        navbar: 'bg-gradient-to-r from-purple-900 via-purple-800 to-indigo-900 border-b-2 border-purple-600',
+        navbarShadow: 'shadow-lg shadow-purple-500/20',
+        accent: 'text-purple-400',
+        accentHover: 'hover:text-purple-300',
+        badge: 'bg-purple-600',
+        buttonGradient: 'bg-gradient-to-r from-purple-600 to-indigo-600',
+        buttonHover: 'hover:from-purple-500 hover:to-indigo-500',
+        roleBadge: (
+          <div className="hidden sm:flex items-center gap-1 px-2 py-0.5 bg-purple-600/20 border border-purple-500/30 rounded-full">
+            <Shield size={12} className="text-purple-400" />
+            <span className="text-xs font-bold text-purple-300">ADMIN</span>
+          </div>
+        ),
+      };
+    } else if (isSeller) {
+      return {
+        navbar: 'bg-gradient-to-r from-orange-900 via-red-900 to-red-800 border-b-2 border-orange-600',
+        navbarShadow: 'shadow-lg shadow-orange-500/20',
+        accent: 'text-orange-400',
+        accentHover: 'hover:text-orange-300',
+        badge: 'bg-orange-600',
+        buttonGradient: 'bg-gradient-to-r from-orange-600 to-red-600',
+        buttonHover: 'hover:from-orange-500 hover:to-red-500',
+        roleBadge: (
+          <div className="hidden sm:flex items-center gap-1 px-2 py-0.5 bg-orange-600/20 border border-orange-500/30 rounded-full">
+            <Package size={12} className="text-orange-400" />
+            <span className="text-xs font-bold text-orange-300">SELLER</span>
+          </div>
+        ),
+      };
+    } else {
+      return {
+        navbar: 'bg-gradient-to-r from-gray-900 via-black to-gray-900 border-b-2 border-gray-800',
+        navbarShadow: 'shadow-lg shadow-red-500/10',
+        accent: 'text-red-500',
+        accentHover: 'hover:text-red-400',
+        badge: 'bg-red-600',
+        buttonGradient: 'bg-gradient-to-r from-red-600 to-red-700',
+        buttonHover: 'hover:from-red-500 hover:to-red-600',
+        roleBadge: null,
+      };
+    }
+  };
+
+  const theme = getRoleTheme();
+
   useEffect(() => {
     if (isAuthenticated) {
       loadNotifications();
@@ -78,8 +128,8 @@ export default function Navigation() {
       isMenuOpen={isMenuOpen}
       onMenuOpenChange={setIsMenuOpen}
       classNames={{
-        base: 'bg-black border-b border-dark-700',
-        wrapper: 'px-4',
+        base: `${theme.navbar} ${theme.navbarShadow}`,
+        wrapper: 'px-4 sm:px-6',
       }}
     >
       {/* Mobile Menu Toggle */}
@@ -94,31 +144,32 @@ export default function Navigation() {
       <NavbarContent className="sm:hidden pr-3" justify="center">
         <NavbarBrand>
           <Link href="/" className="font-bold text-xl flex items-center gap-2 group">
-            <Car className="text-primary-600 group-hover:text-primary-500 transition-colors" size={28} />
-            <span className="text-gradient-red font-black tracking-tight">
+            <Car className={`${theme.accent} ${theme.accentHover} transition-colors`} size={28} />
+            <span className="text-white font-black tracking-tight drop-shadow-lg">
               AutoHub
             </span>
           </Link>
         </NavbarBrand>
       </NavbarContent>
 
-      <NavbarContent className="hidden sm:flex gap-4" justify="start">
-        <NavbarBrand>
+      <NavbarContent className="hidden sm:flex gap-6" justify="start">
+        <NavbarBrand className="flex items-center gap-3">
           <Link href="/" className="font-bold text-xl flex items-center gap-2 group">
-            <Car className="text-primary-600 group-hover:text-primary-500 transition-colors" size={28} />
-            <span className="text-gradient-red font-black tracking-tight">
+            <Car className={`${theme.accent} ${theme.accentHover} transition-colors`} size={32} />
+            <span className="text-white font-black tracking-tight drop-shadow-lg text-2xl">
               AutoHub
             </span>
           </Link>
+          {theme.roleBadge}
         </NavbarBrand>
 
         <NavbarItem>
           <Link
             href="/cars"
-            className={`text-sm font-medium transition-colors ${
+            className={`text-sm font-semibold transition-all ${
               pathname === '/cars'
-                ? 'text-primary-500 font-bold'
-                : 'text-gray-300 hover:text-primary-500'
+                ? `${theme.accent} underline underline-offset-4`
+                : `text-gray-200 ${theme.accentHover}`
             }`}
           >
             Browse Cars
@@ -129,13 +180,14 @@ export default function Navigation() {
           <NavbarItem>
             <Link
               href="/seller/dashboard"
-              className={`text-sm font-medium transition-colors ${
+              className={`text-sm font-semibold transition-all flex items-center gap-1.5 ${
                 pathname.startsWith('/seller')
-                  ? 'text-primary-500 font-bold'
-                  : 'text-gray-300 hover:text-primary-500'
+                  ? `${theme.accent} underline underline-offset-4`
+                  : `text-gray-200 ${theme.accentHover}`
               }`}
             >
-              Seller Dashboard
+              <LayoutDashboard size={16} />
+              Dashboard
             </Link>
           </NavbarItem>
         )}
@@ -144,21 +196,21 @@ export default function Navigation() {
           <NavbarItem>
             <Link
               href="/admin"
-              className={`text-sm flex items-center gap-1 font-medium transition-colors ${
+              className={`text-sm font-semibold transition-all flex items-center gap-1.5 ${
                 pathname.startsWith('/admin')
-                  ? 'text-primary-500 font-bold'
-                  : 'text-gray-300 hover:text-primary-500'
+                  ? `${theme.accent} underline underline-offset-4`
+                  : `text-gray-200 ${theme.accentHover}`
               }`}
             >
               <Shield size={16} />
-              Admin
+              Admin Panel
             </Link>
           </NavbarItem>
         )}
       </NavbarContent>
 
       {/* Right Side Actions */}
-      <NavbarContent justify="end">
+      <NavbarContent justify="end" className="gap-2">
         {isAuthenticated ? (
           <>
             {/* Notifications */}
@@ -168,11 +220,11 @@ export default function Navigation() {
                 variant="light"
                 as={Link}
                 href="/notifications"
-                className="relative text-gray-300 hover:text-primary-500 transition-colors"
+                className={`relative text-gray-200 ${theme.accentHover} transition-colors`}
               >
                 <Badge
                   content={unreadCount}
-                  color="danger"
+                  className={theme.badge}
                   isInvisible={unreadCount === 0}
                   size="sm"
                 >
@@ -188,7 +240,7 @@ export default function Navigation() {
                 variant="light"
                 as={Link}
                 href="/favorites"
-                className="text-gray-300 hover:text-primary-500 transition-colors"
+                className={`text-gray-200 ${theme.accentHover} transition-colors`}
               >
                 <Heart size={20} />
               </Button>
@@ -200,9 +252,9 @@ export default function Navigation() {
                 <DropdownTrigger>
                   <Button
                     variant="flat"
-                    className="flex items-center gap-2 bg-dark-800 border border-dark-700 hover:border-primary-600 text-white transition-all"
+                    className={`flex items-center gap-2 ${theme.buttonGradient} ${theme.buttonHover} text-white font-semibold border-2 border-white/10 shadow-lg transition-all hover:scale-105`}
                   >
-                    <div className="w-8 h-8 rounded-full bg-gradient-red-dark flex items-center justify-center text-white text-sm font-bold overflow-hidden shadow-red-glow">
+                    <div className={`w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white text-sm font-bold overflow-hidden border-2 border-white/30`}>
                       {user?.profile_image ? (
                         <img
                           src={user.profile_image}
@@ -213,7 +265,7 @@ export default function Navigation() {
                         `${user?.first_name[0]}${user?.last_name[0]}`
                       )}
                     </div>
-                    <span className="hidden md:inline text-white font-medium">
+                    <span className="hidden md:inline text-white font-semibold drop-shadow">
                       {user?.first_name}
                     </span>
                   </Button>
@@ -286,7 +338,7 @@ export default function Navigation() {
                 as={Link}
                 href="/auth/login"
                 variant="flat"
-                className="bg-dark-800 border border-dark-700 hover:border-primary-600 text-white font-medium transition-all"
+                className="bg-white/10 backdrop-blur-sm border-2 border-white/20 hover:border-white/40 text-white font-semibold transition-all hover:bg-white/20"
               >
                 Login
               </Button>
@@ -295,7 +347,7 @@ export default function Navigation() {
               <Button
                 as={Link}
                 href="/auth/register"
-                className="bg-gradient-red-dark text-white font-bold shadow-red-glow hover:shadow-red-glow-lg transition-all hover:scale-105"
+                className={`${theme.buttonGradient} ${theme.buttonHover} text-white font-bold shadow-lg transition-all hover:scale-105 border-2 border-white/10`}
               >
                 Sign Up
               </Button>
