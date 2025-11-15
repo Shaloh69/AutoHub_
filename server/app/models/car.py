@@ -85,8 +85,9 @@ class EngineType(str, enum.Enum):
 
 
 class MileageUnit(str, enum.Enum):
-    KM = "km"
-    MILES = "miles"
+    """Mileage unit enum - lowercase to match SQL schema exactly"""
+    km = "km"
+    miles = "miles"
 
 
 class Visibility(str, enum.Enum):
@@ -212,7 +213,7 @@ class Car(Base):
     
     # Technical Specifications
     mileage = Column(Integer, nullable=False, index=True)
-    mileage_unit = Column(Enum(MileageUnit), default=MileageUnit.KM)
+    mileage_unit = Column(Enum(MileageUnit), default=MileageUnit.km)  # FIXED: Use lowercase to match SQL
     fuel_type = Column(Enum(FuelType), nullable=False, index=True)
     engine_type = Column(Enum(EngineType))  # Separate from fuel_type
     transmission = Column(Enum(TransmissionType), nullable=False, index=True)
