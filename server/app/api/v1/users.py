@@ -424,14 +424,15 @@ async def get_user_statistics(
     user_id = int(getattr(current_user, 'id', 0))
 
     # Count listings
+    # Fixed: Use UPPERCASE for Car.status to match SQL schema
     total_listings = db.query(Car).filter(Car.seller_id == user_id).count()
     active_listings = db.query(Car).filter(
         Car.seller_id == user_id,
-        Car.status == "active"
+        Car.status == "ACTIVE"
     ).count()
     sold_listings = db.query(Car).filter(
         Car.seller_id == user_id,
-        Car.status == "sold"
+        Car.status == "SOLD"
     ).count()
 
     # Count favorites
@@ -449,8 +450,8 @@ async def get_user_statistics(
             "total": total_listings,
             "active": active_listings,
             "sold": sold_listings,
-            "pending": db.query(Car).filter(Car.seller_id == user_id, Car.status == "pending").count(),
-            "draft": db.query(Car).filter(Car.seller_id == user_id, Car.status == "draft").count()
+            "pending": db.query(Car).filter(Car.seller_id == user_id, Car.status == "PENDING").count(),
+            "draft": db.query(Car).filter(Car.seller_id == user_id, Car.status == "DRAFT").count()
         },
         "favorites": favorite_count,
         "notifications": {
@@ -481,9 +482,10 @@ async def get_public_profile(
         )
 
     # Count active listings
+    # Fixed: Use UPPERCASE for Car.status to match SQL schema
     active_listings = db.query(Car).filter(
         Car.seller_id == user_id,
-        Car.status == "active"
+        Car.status == "ACTIVE"
     ).count()
 
     # Return public information only

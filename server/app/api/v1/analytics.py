@@ -23,10 +23,11 @@ async def get_dashboard(
     user_id = int(getattr(current_user, 'id', 0))
     
     # Get user's cars
+    # Fixed: Use UPPERCASE for Car.status to match SQL schema
     total_listings = db.query(Car).filter(Car.seller_id == user_id).count()
     active_listings = db.query(Car).filter(
         Car.seller_id == user_id,
-        Car.status == "active"
+        Car.status == "ACTIVE"
     ).count()
     
     # Get total views
@@ -90,12 +91,13 @@ async def get_market_insights(
     db: Session = Depends(get_db)
 ):
     """Get market insights"""
+    # Fixed: Use UPPERCASE for Car.status to match SQL schema
     query = db.query(
         func.avg(Car.price).label("avg_price"),
         func.min(Car.price).label("min_price"),
         func.max(Car.price).label("max_price"),
         func.count(Car.id).label("listing_count")
-    ).filter(Car.status == "active")
+    ).filter(Car.status == "ACTIVE")
     
     if brand_id:
         query = query.filter(Car.brand_id == brand_id)

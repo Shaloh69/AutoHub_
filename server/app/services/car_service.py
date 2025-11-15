@@ -48,10 +48,10 @@ class CarService:
         
         # Generate SEO slug
         car_data["seo_slug"] = generate_slug(car_data["title"])
-        
-        # Set status
-        car_data["status"] = "pending"
-        car_data["approval_status"] = "pending"
+
+        # Set status - Fixed: Use UPPERCASE to match SQL schema
+        car_data["status"] = "PENDING"
+        car_data["approval_status"] = "PENDING"
         
         # Create car
         car = Car(
@@ -210,8 +210,8 @@ class CarService:
         """Search cars with filters"""
         query = db.query(Car).filter(
             Car.is_active == True,  # noqa: E712
-            Car.approval_status == "approved",
-            Car.status == "active",
+            Car.approval_status == "APPROVED",  # Fixed: Use UPPERCASE to match SQL schema
+            Car.status == "ACTIVE",  # Fixed: Use UPPERCASE to match SQL schema
             Car.deleted_at.is_(None)
         )
         
@@ -343,7 +343,7 @@ class CarService:
         # Get user's subscription
         subscription = db.query(UserSubscription).filter(
             UserSubscription.user_id == user_id,
-            UserSubscription.status == "active"
+            UserSubscription.status == "ACTIVE"  # Fixed: Use UPPERCASE to match SQL schema
         ).first()
         
         # FIX: Use getattr for active_listings

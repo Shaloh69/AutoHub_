@@ -85,9 +85,10 @@ async def get_admin_dashboard(
         dealers = db.query(User).filter(User.role == "dealer").count()
         
         # Car Statistics
+        # Fixed: Use UPPERCASE for Car.status to match SQL schema
         total_cars = db.query(Car).count()
-        active_cars = db.query(Car).filter(Car.status == "active").count()
-        pending_approval = db.query(Car).filter(Car.status == "pending").count()
+        active_cars = db.query(Car).filter(Car.status == "ACTIVE").count()
+        pending_approval = db.query(Car).filter(Car.status == "PENDING").count()
         
         # Reports Statistics
         from app.models.inquiry import Report
@@ -252,17 +253,18 @@ async def get_user_details(
         )
     
     # Get user statistics
+    # Fixed: Use UPPERCASE for Car.status and UserSubscription.status to match SQL schema
     cars_count = db.query(Car).filter(Car.seller_id == user_id).count()
     active_cars = db.query(Car).filter(
         Car.seller_id == user_id,
-        Car.status == "active"
+        Car.status == "ACTIVE"
     ).count()
-    
+
     # Get subscription info
     from app.models.subscription import UserSubscription
     subscription = db.query(UserSubscription).filter(
         UserSubscription.user_id == user_id,
-        UserSubscription.status == "active"
+        UserSubscription.status == "ACTIVE"
     ).first()
     
     return UserDetailResponse(
@@ -790,7 +792,8 @@ async def list_pending_cars(
 ):
     """List all cars pending approval"""
     try:
-        query = db.query(Car).filter(Car.status == "pending")
+        # Fixed: Use UPPERCASE for Car.status to match SQL schema
+        query = db.query(Car).filter(Car.status == "PENDING")
         
         # Get total count
         total = query.count()
