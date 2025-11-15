@@ -217,30 +217,84 @@ async def get_car(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Car not found")
 
     try:
-        # Normalize enum values from database before validation
+        # ============================================
+        # DEBUG: Comprehensive logging for debugging
+        # ============================================
         import logging
         logger = logging.getLogger(__name__)
 
+        logger.info(f"\n{'='*60}")
+        logger.info(f"🔍 DEBUG: GET /api/v1/cars/{car_id}")
+        logger.info(f"{'='*60}")
+        logger.info(f"  Car title: {car.title}")
+        logger.info(f"  Car IDs: brand_id={car.brand_id}, model_id={car.model_id}, seller_id={car.seller_id}")
+
+        # Log raw enum values from database
+        logger.info(f"\n  📊 RAW DATABASE VALUES:")
+        logger.info(f"    status: {repr(car.status)} (type: {type(car.status).__name__})")
+        logger.info(f"    approval_status: {repr(car.approval_status)} (type: {type(car.approval_status).__name__})")
+        logger.info(f"    fuel_type: {repr(car.fuel_type)} (type: {type(car.fuel_type).__name__})")
+        logger.info(f"    transmission: {repr(car.transmission)} (type: {type(car.transmission).__name__})")
+        logger.info(f"    condition_rating: {repr(getattr(car, 'condition_rating', 'MISSING'))}")
+        logger.info(f"    body_type: {repr(getattr(car, 'body_type', 'MISSING'))}")
+        logger.info(f"    engine_type: {repr(getattr(car, 'engine_type', 'MISSING'))}")
+        logger.info(f"    visibility: {repr(getattr(car, 'visibility', 'MISSING'))}")
+        logger.info(f"    mileage_unit: {repr(getattr(car, 'mileage_unit', 'MISSING'))}")
+
+        # Log relationships
+        logger.info(f"\n  🔗 RELATIONSHIPS:")
+        logger.info(f"    brand_rel: {car.brand_rel}")
+        logger.info(f"    model_rel: {car.model_rel}")
+        logger.info(f"    city: {car.city}")
+        logger.info(f"    seller: {car.seller}")
+        logger.info(f"    images: {len(car.images) if car.images else 0} items")
+        logger.info(f"    features: {len(car.features) if car.features else 0} items")
+
         # Normalize all enum fields directly on the car object attributes
-        # The normalizer handles both Python enum objects and string values
+        logger.info(f"\n  🔄 NORMALIZING ENUMS:")
         if hasattr(car, 'status') and car.status:
+            old = repr(car.status)
             car.status = normalize_enum_value('status', car.status)
+            logger.info(f"    status: {old} → {repr(car.status)}")
+
         if hasattr(car, 'approval_status') and car.approval_status:
+            old = repr(car.approval_status)
             car.approval_status = normalize_enum_value('approval_status', car.approval_status)
+            logger.info(f"    approval_status: {old} → {repr(car.approval_status)}")
+
         if hasattr(car, 'fuel_type') and car.fuel_type:
+            old = repr(car.fuel_type)
             car.fuel_type = normalize_enum_value('fuel_type', car.fuel_type)
+            logger.info(f"    fuel_type: {old} → {repr(car.fuel_type)}")
+
         if hasattr(car, 'transmission') and car.transmission:
+            old = repr(car.transmission)
             car.transmission = normalize_enum_value('transmission', car.transmission)
+            logger.info(f"    transmission: {old} → {repr(car.transmission)}")
+
         if hasattr(car, 'drivetrain') and car.drivetrain:
+            old = repr(car.drivetrain)
             car.drivetrain = normalize_enum_value('drivetrain', car.drivetrain)
+            logger.info(f"    drivetrain: {old} → {repr(car.drivetrain)}")
+
         if hasattr(car, 'condition_rating') and car.condition_rating:
+            old = repr(car.condition_rating)
             car.condition_rating = normalize_enum_value('condition_rating', car.condition_rating)
+            logger.info(f"    condition_rating: {old} → {repr(car.condition_rating)}")
+
         if hasattr(car, 'body_type') and car.body_type:
+            old = repr(car.body_type)
             car.body_type = normalize_enum_value('body_type', car.body_type)
+            logger.info(f"    body_type: {old} → {repr(car.body_type)}")
+
         if hasattr(car, 'visibility') and car.visibility:
+            old = repr(car.visibility)
             car.visibility = normalize_enum_value('visibility', car.visibility)
+            logger.info(f"    visibility: {old} → {repr(car.visibility)}")
 
         # Build response dict with proper relationship mappings
+        logger.info(f"\n  🔨 Building response dictionary...")
+
         # CarDetailResponse expects 'brand', 'model', 'city' as objects
         # But Car model has 'brand_rel', 'model_rel' relationships
         car_dict = {
@@ -255,15 +309,42 @@ async def get_car(
             'features': car.features,
         }
 
-        return CarDetailResponse.model_validate(car_dict)
+        logger.info(f"  📦 Response dict has {len(car_dict)} keys")
+        logger.info(f"  ✅ Attempting Pydantic validation...")
+
+        result = CarDetailResponse.model_validate(car_dict)
+        logger.info(f"  ✅ SUCCESS! Returning 200 OK")
+        logger.info(f"{'='*60}\n")
+        return result
+
     except Exception as e:
         # Log validation error details for debugging
         import logging
+        import traceback
         logger = logging.getLogger(__name__)
-        logger.error(f"Failed to validate car {car_id}: {str(e)}")
-        logger.error(f"Car status: {getattr(car, 'status', 'N/A')}, approval: {getattr(car, 'approval_status', 'N/A')}")
-        logger.error(f"Car fuel_type: {getattr(car, 'fuel_type', 'N/A')}, transmission: {getattr(car, 'transmission', 'N/A')}")
-        logger.error(f"Full error: {repr(e)}")
+
+        logger.error(f"\n{'='*60}")
+        logger.error(f"❌ VALIDATION ERROR for car {car_id}")
+        logger.error(f"{'='*60}")
+        logger.error(f"Error: {str(e)}")
+        logger.error(f"Error type: {type(e).__name__}")
+
+        # Log current state of car object
+        logger.error(f"\n  Current car state:")
+        logger.error(f"    status: {getattr(car, 'status', 'N/A')}")
+        logger.error(f"    approval_status: {getattr(car, 'approval_status', 'N/A')}")
+        logger.error(f"    fuel_type: {getattr(car, 'fuel_type', 'N/A')}")
+        logger.error(f"    transmission: {getattr(car, 'transmission', 'N/A')}")
+        logger.error(f"    condition_rating: {getattr(car, 'condition_rating', 'N/A')}")
+        logger.error(f"    body_type: {getattr(car, 'body_type', 'N/A')}")
+        logger.error(f"    engine_type: {getattr(car, 'engine_type', 'N/A')}")
+        logger.error(f"    visibility: {getattr(car, 'visibility', 'N/A')}")
+
+        # Full traceback
+        logger.error(f"\n  Full traceback:")
+        logger.error(traceback.format_exc())
+        logger.error(f"{'='*60}\n")
+
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Car data validation failed: {str(e)}"
