@@ -351,16 +351,9 @@ class Car(Base):
     def __repr__(self):
         return f"<Car {self.id}: {self.title}>"
 
-    # Property aliases for Pydantic serialization compatibility
-    @property
-    def brand(self):
-        """Alias for brand_rel to match schema expectations"""
-        return self.brand_rel
-
-    @property
-    def model(self):
-        """Alias for model_rel to match schema expectations"""
-        return self.model_rel
+    # Note: The 'make' and 'model' Columns (String fields) are used for storing brand/model names
+    # The 'brand_rel' and 'model_rel' relationships are used for foreign key relationships
+    # No property aliases needed - columns are accessed directly
 
 
 class CarImage(Base):
