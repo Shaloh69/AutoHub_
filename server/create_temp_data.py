@@ -281,7 +281,7 @@ def get_location(db):
     """Get a default location (Metro Manila)"""
     city = db.query(PhCity).filter(PhCity.name.like("%Manila%")).first()
     if city:
-        return city.id, city.province_id, city.region_id
+        return city.id, city.province_id, city.province.region_id
     # Fallback to IDs if name search fails
     return 1, 1, 1
 
