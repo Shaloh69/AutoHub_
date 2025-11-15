@@ -294,11 +294,17 @@ class BrandResponse(BaseModel):
     """Brand response"""
     id: int
     name: str
+    slug: str
     logo_url: Optional[str] = None
-    country_origin: Optional[str] = None
-    brand_type: str
-    is_popular_in_ph: bool
-    
+    country_of_origin: Optional[str] = None
+    website: Optional[str] = None
+    description: Optional[str] = None
+    is_popular: bool
+    display_order: int = 0
+    total_models: int = 0
+    total_listings: int = 0
+    is_active: bool = True
+
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -307,12 +313,13 @@ class ModelResponse(BaseModel):
     id: int
     brand_id: int
     name: str
-    body_type: str
-    generation: Optional[str] = None
-    year_start: Optional[int] = None
-    year_end: Optional[int] = None
-    is_popular_in_ph: bool
-    
+    slug: str
+    model_type: str
+    description: Optional[str] = None
+    year_introduced: Optional[int] = None
+    is_active: bool = True
+    total_listings: int = 0
+
     model_config = ConfigDict(
         from_attributes=True,
         protected_namespaces=()  # Allow model_id in parent models
@@ -322,12 +329,14 @@ class ModelResponse(BaseModel):
 class CategoryResponse(BaseModel):
     """Category response"""
     id: int
+    parent_id: Optional[int] = None
     name: str
     slug: str
     description: Optional[str] = None
     icon: Optional[str] = None
     display_order: int
     is_active: bool
+    total_listings: int = 0
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -336,10 +345,12 @@ class FeatureResponse(BaseModel):
     """Feature response"""
     id: int
     name: str
+    slug: str
     category: str
     description: Optional[str] = None
+    icon: Optional[str] = None
     is_premium: bool
-    is_popular: bool
+    display_order: int = 0
 
     model_config = ConfigDict(from_attributes=True)
 

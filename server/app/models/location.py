@@ -21,7 +21,7 @@ class Currency(Base):
     symbol = Column(String(10), nullable=False)
     exchange_rate_to_php = Column(DECIMAL(10, 4), default=1.0000)
     is_active = Column(Boolean, default=True, index=True)
-    updated_at = Column(TIMESTAMP, default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_at = Column(TIMESTAMP, default=datetime.now, onupdate=datetime.now)
     
     def __repr__(self):
         return f"<Currency {self.code}: {self.name}>"

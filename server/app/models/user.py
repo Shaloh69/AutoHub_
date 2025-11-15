@@ -149,8 +149,8 @@ class User(Base):
     # REMOVED: marketing_emails - NOT in database
     
     # Timestamps
-    created_at = Column(TIMESTAMP, default=datetime.utcnow, nullable=False, index=True)
-    updated_at = Column(TIMESTAMP, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(TIMESTAMP, default=datetime.now, nullable=False, index=True)
+    updated_at = Column(TIMESTAMP, default=datetime.now, onupdate=datetime.now)
     deleted_at = Column(TIMESTAMP)
     
     # Relationships
@@ -262,7 +262,7 @@ class User(Base):
         locked_until = cast(Optional[datetime], self.locked_until)
         if locked_until is None:
             return False
-        return datetime.utcnow() < locked_until
+        return datetime.now() < locked_until
     
     @property
     def is_currently_banned(self) -> bool:
@@ -279,7 +279,7 @@ class User(Base):
             return False
         if banned_until is None:
             return True  # Permanent ban
-        return datetime.utcnow() < banned_until
+        return datetime.now() < banned_until
 
 
 # ===========================================

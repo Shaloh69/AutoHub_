@@ -474,7 +474,7 @@ class CarService:
         """Get all brands"""
         query = db.query(Brand)
         if popular_only:
-            query = query.filter(Brand.is_popular_in_ph == True)  # noqa: E712
+            query = query.filter(Brand.is_popular == True)  # noqa: E712
         return query.order_by(Brand.display_order, Brand.name).all()
     
     @staticmethod

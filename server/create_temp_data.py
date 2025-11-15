@@ -60,7 +60,7 @@ def create_users(db):
         email_verified=True,
         phone_verified=True,
         identity_verified=True,
-        created_at=datetime.utcnow()
+        created_at=datetime.now()
     )
     db.add(admin)
 
@@ -78,7 +78,7 @@ def create_users(db):
         email_verified=True,
         phone_verified=True,
         identity_verified=True,
-        created_at=datetime.utcnow()
+        created_at=datetime.now()
     )
     db.add(seller)
 
@@ -94,7 +94,7 @@ def create_users(db):
         is_banned=False,
         email_verified=True,
         phone_verified=True,
-        created_at=datetime.utcnow()
+        created_at=datetime.now()
     )
     db.add(buyer)
 
@@ -118,74 +118,74 @@ def create_brands_and_models(db):
     brands_data = [
         {
             "name": "Toyota",
-            "country_origin": "Japan",
-            "brand_type": "mainstream",
-            "is_popular_in_ph": True,
+            "slug": "toyota",
+            "country_of_origin": "Japan",
+            "is_popular": True,
             "models": [
-                {"name": "Vios", "body_type": "sedan"},
-                {"name": "Corolla", "body_type": "sedan"},
-                {"name": "Fortuner", "body_type": "suv"},
-                {"name": "Innova", "body_type": "mpv"},
-                {"name": "Wigo", "body_type": "hatchback"},
-                {"name": "Rush", "body_type": "suv"},
+                {"name": "Vios", "slug": "vios", "model_type": "sedan"},
+                {"name": "Corolla", "slug": "corolla", "model_type": "sedan"},
+                {"name": "Fortuner", "slug": "fortuner", "model_type": "suv"},
+                {"name": "Innova", "slug": "innova", "model_type": "mpv"},
+                {"name": "Wigo", "slug": "wigo", "model_type": "hatchback"},
+                {"name": "Rush", "slug": "rush", "model_type": "suv"},
             ]
         },
         {
             "name": "Honda",
-            "country_origin": "Japan",
-            "brand_type": "mainstream",
-            "is_popular_in_ph": True,
+            "slug": "honda",
+            "country_of_origin": "Japan",
+            "is_popular": True,
             "models": [
-                {"name": "Civic", "body_type": "sedan"},
-                {"name": "City", "body_type": "sedan"},
-                {"name": "CR-V", "body_type": "suv"},
-                {"name": "HR-V", "body_type": "suv"},
-                {"name": "Brio", "body_type": "hatchback"},
+                {"name": "Civic", "slug": "civic", "model_type": "sedan"},
+                {"name": "City", "slug": "city", "model_type": "sedan"},
+                {"name": "CR-V", "slug": "cr-v", "model_type": "suv"},
+                {"name": "HR-V", "slug": "hr-v", "model_type": "suv"},
+                {"name": "Brio", "slug": "brio", "model_type": "hatchback"},
             ]
         },
         {
             "name": "Mitsubishi",
-            "country_origin": "Japan",
-            "brand_type": "mainstream",
-            "is_popular_in_ph": True,
+            "slug": "mitsubishi",
+            "country_of_origin": "Japan",
+            "is_popular": True,
             "models": [
-                {"name": "Montero Sport", "body_type": "suv"},
-                {"name": "Mirage", "body_type": "hatchback"},
-                {"name": "Xpander", "body_type": "mpv"},
-                {"name": "Strada", "body_type": "pickup"},
+                {"name": "Montero Sport", "slug": "montero-sport", "model_type": "suv"},
+                {"name": "Mirage", "slug": "mirage", "model_type": "hatchback"},
+                {"name": "Xpander", "slug": "xpander", "model_type": "mpv"},
+                {"name": "Strada", "slug": "strada", "model_type": "pickup"},
             ]
         },
         {
             "name": "Nissan",
-            "country_origin": "Japan",
-            "brand_type": "mainstream",
-            "is_popular_in_ph": True,
+            "slug": "nissan",
+            "country_of_origin": "Japan",
+            "is_popular": True,
             "models": [
-                {"name": "Navara", "body_type": "pickup"},
-                {"name": "Terra", "body_type": "suv"},
-                {"name": "Almera", "body_type": "sedan"},
+                {"name": "Navara", "slug": "navara", "model_type": "pickup"},
+                {"name": "Terra", "slug": "terra", "model_type": "suv"},
+                {"name": "Almera", "slug": "almera", "model_type": "sedan"},
             ]
         },
         {
             "name": "Hyundai",
-            "country_origin": "South Korea",
-            "brand_type": "mainstream",
-            "is_popular_in_ph": True,
+            "slug": "hyundai",
+            "country_of_origin": "South Korea",
+            "is_popular": True,
             "models": [
-                {"name": "Accent", "body_type": "sedan"},
-                {"name": "Tucson", "body_type": "suv"},
-                {"name": "Stargazer", "body_type": "mpv"},
+                {"name": "Accent", "slug": "accent", "model_type": "sedan"},
+                {"name": "Tucson", "slug": "tucson", "model_type": "suv"},
+                {"name": "Stargazer", "slug": "stargazer", "model_type": "mpv"},
             ]
         },
         {
             "name": "Ford",
-            "country_origin": "USA",
-            "brand_type": "mainstream",
-            "is_popular_in_ph": True,
+            "slug": "ford",
+            "country_of_origin": "USA",
+            "is_popular": True,
             "models": [
-                {"name": "Ranger", "body_type": "pickup"},
-                {"name": "Everest", "body_type": "suv"},
-                {"name": "Territory", "body_type": "suv"},
+                {"name": "Ranger", "slug": "ranger", "model_type": "pickup"},
+                {"name": "Everest", "slug": "everest", "model_type": "suv"},
+                {"name": "Territory", "slug": "territory", "model_type": "suv"},
             ]
         },
     ]
@@ -200,8 +200,8 @@ def create_brands_and_models(db):
             model = Model(
                 brand_id=brand.id,
                 name=model_data["name"],
-                body_type=model_data["body_type"],
-                is_popular_in_ph=True
+                slug=model_data["slug"],
+                model_type=model_data["model_type"]
             )
             db.add(model)
 
@@ -245,30 +245,28 @@ def create_features(db):
 
     features = [
         # Safety
-        {"name": "ABS", "category": "safety", "is_popular": True},
-        {"name": "Airbags", "category": "safety", "is_popular": True},
-        {"name": "Stability Control", "category": "safety"},
-        {"name": "Parking Sensors", "category": "safety", "is_popular": True},
-        {"name": "Reverse Camera", "category": "safety", "is_popular": True},
-        {"name": "Blind Spot Monitor", "category": "safety"},
+        {"name": "ABS", "slug": "abs", "category": "safety"},
+        {"name": "Airbags", "slug": "airbags", "category": "safety"},
+        {"name": "Stability Control", "slug": "stability-control", "category": "safety"},
+        {"name": "Parking Sensors", "slug": "parking-sensors", "category": "safety"},
+        {"name": "Reverse Camera", "slug": "reverse-camera", "category": "safety"},
+        {"name": "Blind Spot Monitor", "slug": "blind-spot-monitor", "category": "safety"},
 
         # Comfort
-        {"name": "Air Conditioning", "category": "comfort", "is_popular": True},
-        {"name": "Cruise Control", "category": "comfort"},
-        {"name": "Power Windows", "category": "comfort", "is_popular": True},
-        {"name": "Power Steering", "category": "comfort", "is_popular": True},
-        {"name": "Leather Seats", "category": "comfort"},
-
-        # Entertainment
-        {"name": "Bluetooth", "category": "entertainment", "is_popular": True},
-        {"name": "USB Port", "category": "entertainment", "is_popular": True},
-        {"name": "Touch Screen", "category": "entertainment"},
-        {"name": "Navigation System", "category": "entertainment"},
+        {"name": "Air Conditioning", "slug": "air-conditioning", "category": "comfort"},
+        {"name": "Cruise Control", "slug": "cruise-control", "category": "comfort"},
+        {"name": "Power Windows", "slug": "power-windows", "category": "comfort"},
+        {"name": "Power Steering", "slug": "power-steering", "category": "comfort"},
+        {"name": "Leather Seats", "slug": "leather-seats", "category": "comfort"},
 
         # Technology
-        {"name": "Keyless Entry", "category": "technology", "is_popular": True},
-        {"name": "Push Start", "category": "technology"},
-        {"name": "LED Headlights", "category": "technology"},
+        {"name": "Bluetooth", "slug": "bluetooth", "category": "technology"},
+        {"name": "USB Port", "slug": "usb-port", "category": "technology"},
+        {"name": "Touch Screen", "slug": "touch-screen", "category": "technology"},
+        {"name": "Navigation System", "slug": "navigation-system", "category": "technology"},
+        {"name": "Keyless Entry", "slug": "keyless-entry", "category": "technology"},
+        {"name": "Push Start", "slug": "push-start", "category": "technology"},
+        {"name": "LED Headlights", "slug": "led-headlights", "category": "technology"},
     ]
 
     for feat_data in features:
@@ -317,8 +315,8 @@ def create_sample_cars(db):
     # Get location
     city_id, province_id, region_id = get_location(db)
 
-    # Get popular features
-    features = db.query(Feature).filter(Feature.is_popular == True).limit(5).all()
+    # Get some features
+    features = db.query(Feature).limit(5).all()
 
     sample_cars = [
         {
@@ -465,9 +463,9 @@ def create_sample_cars(db):
             lto_registered=True,
             casa_maintained=True,
             is_active=True,
-            created_at=datetime.utcnow(),
-            published_at=datetime.utcnow(),
-            expires_at=datetime.utcnow() + timedelta(days=30),
+            created_at=datetime.now(),
+            published_at=datetime.now(),
+            expires_at=datetime.now() + timedelta(days=30),
             # Add required string fields from the new schema
             make=brand.name,
             model=model.name,
@@ -485,7 +483,7 @@ def create_sample_cars(db):
             image_type="exterior",
             is_primary=True,
             display_order=0,
-            uploaded_at=datetime.utcnow()
+            uploaded_at=datetime.now()
         )
         db.add(image)
 
