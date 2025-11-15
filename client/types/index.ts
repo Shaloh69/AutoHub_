@@ -229,8 +229,8 @@ export interface Inquiry {
   buyer_name?: string;
   buyer_email?: string;
   buyer_phone?: string;
-  status: 'open' | 'replied' | 'closed';
-  priority: 'low' | 'normal' | 'high';
+  status: 'new' | 'read' | 'replied' | 'in_negotiation' | 'test_drive_scheduled' | 'closed' | 'converted' | 'spam';
+  priority: 'low' | 'medium' | 'high' | 'urgent';
   created_at: string;
   updated_at: string;
   car?: Car;

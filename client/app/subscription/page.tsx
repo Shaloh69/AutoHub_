@@ -11,6 +11,7 @@ import { CheckIcon } from "@/components/icons";
 import { apiService, SubscriptionPlan, Subscription } from '@/services/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
+import PaymentQRModal from '@/components/PaymentQRModal';
 
 export default function SubscriptionPage() {
   const { user, isAuthenticated } = useAuth();
@@ -21,6 +22,8 @@ export default function SubscriptionPage() {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [pendingSubscription, setPendingSubscription] = useState<{ id: number; planName: string; amount: number } | null>(null);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -57,13 +60,25 @@ export default function SubscriptionPage() {
     }
   };
 
-  const handleSubscribe = async (planId: string) => {
+  const handleSubscribe = async (planId: number) => {
     try {
-      setActionLoading(planId);
-      const response = await apiService.subscribe(planId);
-      
-      if (response.success) {
-        await fetchSubscriptionData();
+      setActionLoading(planId.toString());
+      const response = await apiService.subscribe({
+        plan_id: planId,
+        billing_cycle: 'monthly',
+        payment_method: 'qr_code'
+      });
+
+      if (response.success && response.data) {
+        const plan = plans.find(p => p.id === planId);
+        if (plan) {
+          setPendingSubscription({
+            id: response.data.id,
+            planName: plan.name,
+            amount: plan.price
+          });
+          setShowPaymentModal(true);
+        }
       } else {
         throw new Error(response.error || 'Subscription failed');
       }
@@ -74,13 +89,21 @@ export default function SubscriptionPage() {
     }
   };
 
-  const handleUpgrade = async (planId: string) => {
+  const handleUpgrade = async (planId: number) => {
     try {
-      setActionLoading(planId);
+      setActionLoading(planId.toString());
       const response = await apiService.upgradeSubscription(planId);
-      
-      if (response.success) {
-        await fetchSubscriptionData();
+
+      if (response.success && response.data) {
+        const plan = plans.find(p => p.id === planId);
+        if (plan) {
+          setPendingSubscription({
+            id: response.data.id,
+            planName: plan.name,
+            amount: plan.price
+          });
+          setShowPaymentModal(true);
+        }
       } else {
         throw new Error(response.error || 'Upgrade failed');
       }
@@ -89,6 +112,11 @@ export default function SubscriptionPage() {
     } finally {
       setActionLoading(null);
     }
+  };
+
+  const handlePaymentSubmitted = () => {
+    fetchSubscriptionData();
+    setPendingSubscription(null);
   };
 
   const handleCancelSubscription = async () => {
@@ -420,6 +448,18 @@ export default function SubscriptionPage() {
           </div>
         </CardBody>
       </Card>
+
+      {/* Payment QR Modal */}
+      {pendingSubscription && (
+        <PaymentQRModal
+          isOpen={showPaymentModal}
+          onClose={() => setShowPaymentModal(false)}
+          subscriptionId={pendingSubscription.id}
+          planName={pendingSubscription.planName}
+          amount={pendingSubscription.amount}
+          onPaymentSubmitted={handlePaymentSubmitted}
+        />
+      )}
     </div>
   );
 }
