@@ -540,6 +540,41 @@ class ApiService {
     return this.request<any[]>(`/admin/payments/${paymentId}/logs`);
   }
 
+  // ==================== FRAUD DETECTION ====================
+
+  async getFraudIndicators(limit: number = 50, severity?: string): Promise<ApiResponse<any[]>> {
+    const params = new URLSearchParams({ limit: String(limit) });
+    if (severity) params.append('severity', severity);
+    return this.request<any[]>(`/admin/fraud-indicators?${params.toString()}`);
+  }
+
+  async createFraudIndicator(data: {
+    user_id?: number;
+    car_id?: number;
+    indicator_type: string;
+    severity: 'low' | 'medium' | 'high';
+    description: string;
+  }): Promise<ApiResponse<any>> {
+    return this.request('/admin/fraud-indicators', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async resolveFraudIndicator(fraudId: number, data: {
+    resolution_notes: string;
+    action_taken?: string;
+  }): Promise<ApiResponse<any>> {
+    return this.request(`/admin/fraud-indicators/${fraudId}/resolve`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async getFraudStatistics(): Promise<ApiResponse<any>> {
+    return this.request('/admin/fraud-indicators/statistics');
+  }
+
   // ==================== LOCATIONS ====================
   
   async getRegions(): Promise<ApiResponse<any[]>> {
