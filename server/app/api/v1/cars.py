@@ -204,14 +204,37 @@ async def get_car(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Car not found")
 
     try:
+        # Normalize enum values from database before validation
+        import logging
+        logger = logging.getLogger(__name__)
+
+        # Normalize all enum fields directly on the car object attributes
+        if hasattr(car, 'status') and car.status:
+            car.status = normalize_enum_value('status', str(car.status))
+        if hasattr(car, 'approval_status') and car.approval_status:
+            car.approval_status = normalize_enum_value('approval_status', str(car.approval_status))
+        if hasattr(car, 'fuel_type') and car.fuel_type:
+            car.fuel_type = normalize_enum_value('fuel_type', str(car.fuel_type))
+        if hasattr(car, 'transmission') and car.transmission:
+            car.transmission = normalize_enum_value('transmission', str(car.transmission))
+        if hasattr(car, 'drivetrain') and car.drivetrain:
+            car.drivetrain = normalize_enum_value('drivetrain', str(car.drivetrain))
+        if hasattr(car, 'condition_rating') and car.condition_rating:
+            car.condition_rating = normalize_enum_value('condition_rating', str(car.condition_rating))
+        if hasattr(car, 'body_type') and car.body_type:
+            car.body_type = normalize_enum_value('body_type', str(car.body_type))
+        if hasattr(car, 'visibility') and car.visibility:
+            car.visibility = normalize_enum_value('visibility', str(car.visibility))
+
         return CarDetailResponse.model_validate(car)
     except Exception as e:
         # Log validation error details for debugging
         import logging
         logger = logging.getLogger(__name__)
         logger.error(f"Failed to validate car {car_id}: {str(e)}")
-        logger.error(f"Car status: {car.status}, approval: {car.approval_status}")
-        logger.error(f"Car fuel_type: {car.fuel_type}, transmission: {car.transmission}")
+        logger.error(f"Car status: {getattr(car, 'status', 'N/A')}, approval: {getattr(car, 'approval_status', 'N/A')}")
+        logger.error(f"Car fuel_type: {getattr(car, 'fuel_type', 'N/A')}, transmission: {getattr(car, 'transmission', 'N/A')}")
+        logger.error(f"Full error: {repr(e)}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Car data validation failed: {str(e)}"
