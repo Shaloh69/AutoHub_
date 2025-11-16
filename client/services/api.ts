@@ -506,6 +506,28 @@ class ApiService {
     return this.request<Analytics>('/users/statistics');
   }
 
+  async upgradeRole(data: {
+    new_role: 'SELLER' | 'DEALER';
+    reason?: string;
+    business_name?: string;
+    business_permit_number?: string;
+    tin_number?: string;
+    dti_registration?: string;
+  }): Promise<ApiResponse<{
+    success: boolean;
+    message: string;
+    old_role: string;
+    new_role: string;
+    upgraded_at: string;
+    requires_verification: boolean;
+    verification_message?: string;
+  }>> {
+    return this.request('/users/upgrade-role', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
   async getPublicProfile(userId: number): Promise<ApiResponse<User>> {
     return this.request<User>(`/users/${userId}/public-profile`, {
       headers: { 'Authorization': 'skip' },

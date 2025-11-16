@@ -274,6 +274,29 @@ export default function ProfilePage() {
                 )}
               </div>
 
+              {/* Become a Seller CTA - Only show for buyers */}
+              {user.role?.toUpperCase() === 'BUYER' && (
+                <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+                  <div className="p-4 bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                    <h3 className="font-semibold text-gray-900 dark:text-white mb-2 text-sm">
+                      Want to sell cars?
+                    </h3>
+                    <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">
+                      Upgrade to a seller account and start listing your vehicles today!
+                    </p>
+                    <Button
+                      as="a"
+                      href="/become-seller"
+                      color="primary"
+                      size="sm"
+                      className="w-full"
+                    >
+                      Become a Seller
+                    </Button>
+                  </div>
+                </div>
+              )}
+
               {/* Stats */}
               {(user.role?.toUpperCase() === 'SELLER' || user.role?.toUpperCase() === 'DEALER') && (
                 <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
