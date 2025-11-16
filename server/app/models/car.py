@@ -345,10 +345,10 @@ class Car(Base):
     def __repr__(self):
         return f"<Car {self.id}: {self.title}>"
 
-    # Note: No property aliases for 'brand' and 'model'
-    # - Columns 'make' and 'model' store string names
-    # - Relationships 'brand_rel' and 'model_rel' provide FK access
-    # - API layer manually maps these for responses
+    # Note: Brand and Model are stored as FKs, not string names
+    # - Use brand_id and model_id columns (FKs to brands/models tables)
+    # - Use brand_rel and model_rel relationships for accessing brand/model objects
+    # - API layer converts these to response format via CarResponse schema
 
 
 class CarImage(Base):

@@ -46,16 +46,9 @@ class CarService:
         car_data["province_id"] = int(getattr(city, 'province_id', 0))
         car_data["region_id"] = int(getattr(getattr(city, 'province', None), 'region_id', 0))
 
-        # Auto-populate make and model strings from brand/model relationships
-        if "brand_id" in car_data:
-            brand = db.query(Brand).filter(Brand.id == car_data["brand_id"]).first()
-            if brand:
-                car_data["make"] = brand.name
-
-        if "model_id" in car_data:
-            model = db.query(Model).filter(Model.id == car_data["model_id"]).first()
-            if model:
-                car_data["model"] = model.name
+        # NOTE: Removed auto-populate of 'make' and 'model' fields
+        # The Car model uses brand_id/model_id FKs and brand_rel/model_rel relationships
+        # There are no 'make' or 'model' columns in the cars table
 
         # Generate SEO slug
         car_data["seo_slug"] = generate_slug(car_data["title"])
