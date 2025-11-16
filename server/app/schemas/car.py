@@ -220,19 +220,32 @@ class CarResponse(BaseModel):
 
     # Related data - ADDED for browse page
     images: List[Any] = []  # Will be converted to CarImageResponse
-    brand: Optional[Any] = None  # Brand object with name
-    model: Optional[Any] = None  # Model object with name
+    brand_rel: Optional[Any] = None  # Brand ORM object
+    model_rel: Optional[Any] = None  # Model ORM object
     city: Optional[Any] = None  # City object with name
-    location: Optional[Any] = None  # Computed from city for frontend compatibility
+
+    # Computed fields for frontend compatibility
+    brand: Optional[Any] = None  # Populated from brand_rel
+    model: Optional[Any] = None  # Populated from model_rel
+    location: Optional[Any] = None  # Computed from city
 
     @model_validator(mode='after')
-    def populate_location(self):
-        """Populate location from city for frontend compatibility"""
+    def populate_computed_fields(self):
+        """Populate computed fields for frontend compatibility"""
+        # Copy brand_rel to brand
+        if self.brand_rel and not self.brand:
+            self.brand = self.brand_rel
+
+        # Copy model_rel to model
+        if self.model_rel and not self.model:
+            self.model = self.model_rel
+
+        # Create location from city
         if self.city and not self.location:
-            # Create location dict with city_name from city.name
             city_name = getattr(self.city, 'name', None)
             if city_name:
                 self.location = {'city_name': city_name}
+
         return self
 
     model_config = ConfigDict(
