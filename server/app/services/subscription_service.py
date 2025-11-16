@@ -496,19 +496,24 @@ class SubscriptionService:
             SubscriptionPayment.paid_at >= month_start
         ).scalar() or Decimal('0')
         
-        # Average verification time
-        avg_time = db.query(
-            func.avg(
-                func.timestampdiff(
-                    'hour',
-                    SubscriptionPayment.submitted_at,
-                    SubscriptionPayment.admin_verified_at
+        # Average verification time (hours)
+        # Using TIMESTAMPDIFF for MySQL compatibility
+        try:
+            avg_time = db.query(
+                func.avg(
+                    func.timestampdiff(
+                        'hour',
+                        SubscriptionPayment.submitted_at,
+                        SubscriptionPayment.admin_verified_at
+                    )
                 )
-            )
-        ).filter(
-            SubscriptionPayment.admin_verified_at.isnot(None),
-            SubscriptionPayment.submitted_at.isnot(None)
-        ).scalar() or 0.0
+            ).filter(
+                SubscriptionPayment.admin_verified_at.isnot(None),
+                SubscriptionPayment.submitted_at.isnot(None)
+            ).scalar() or 0.0
+        except Exception:
+            # Fallback if timestampdiff is not supported
+            avg_time = 0.0
         
         return {
             "total_pending": total_pending,

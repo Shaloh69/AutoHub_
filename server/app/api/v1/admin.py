@@ -79,10 +79,10 @@ async def get_admin_dashboard(
         verified_users = db.query(User).filter(User.email_verified == True).count()
         banned_users = db.query(User).filter(User.is_banned == True).count()
         
-        # Role Distribution (use UPPERCASE to match UserRole enum)
-        buyers = db.query(User).filter(User.role == UserRole.BUYER).count()
-        sellers = db.query(User).filter(User.role == UserRole.SELLER).count()
-        dealers = db.query(User).filter(User.role == UserRole.DEALER).count()
+        # Role Distribution (use UPPERCASE string values to match database)
+        buyers = db.query(User).filter(User.role == UserRole.BUYER.value).count()
+        sellers = db.query(User).filter(User.role == UserRole.SELLER.value).count()
+        dealers = db.query(User).filter(User.role == UserRole.DEALER.value).count()
         
         # Car Statistics
         # Fixed: Use UPPERCASE for Car.status to match SQL schema
@@ -136,8 +136,8 @@ async def get_admin_dashboard(
             resolved_reports=resolved_reports,
             
             # Payments
-            pending_payments=payment_stats.get("pending_count", 0),
-            verified_payments_today=payment_stats.get("verified_today", 0),
+            pending_payments=payment_stats.get("total_pending", 0),
+            verified_payments_today=payment_stats.get("total_completed_today", 0),
             
             # Security
             fraud_indicators=fraud_count,
