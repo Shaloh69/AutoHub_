@@ -699,7 +699,7 @@ async def get_price_history(
 
 @router.get("/brands/all", response_model=List[BrandResponse])
 @router.get("/brands", response_model=List[BrandResponse])  # Alias for frontend compatibility
-async def get_brands(
+def get_brands(
     is_popular: Optional[bool] = None,
     db: Session = Depends(get_db)
 ):
@@ -719,7 +719,7 @@ async def get_brands(
 
 
 @router.get("/models", response_model=List[ModelResponse])
-async def get_models(
+def get_models(
     brand_id: Optional[int] = None,
     is_popular: Optional[bool] = None,
     db: Session = Depends(get_db)
@@ -744,7 +744,7 @@ async def get_models(
 
 
 @router.get("/brands/{brand_id}/models", response_model=List[ModelResponse])
-async def get_models_by_brand(
+def get_models_by_brand(
     brand_id: int,
     is_popular: Optional[bool] = None,
     db: Session = Depends(get_db)
@@ -766,7 +766,7 @@ async def get_models_by_brand(
 
 
 @router.get("/categories", response_model=List[CategoryResponse])
-async def get_categories(
+def get_categories(
     is_active: Optional[bool] = True,
     db: Session = Depends(get_db)
 ):
@@ -787,7 +787,7 @@ async def get_categories(
 
 @router.get("/features/all", response_model=List[FeatureResponse])
 @router.get("/features", response_model=List[FeatureResponse])  # Alias for frontend compatibility
-async def get_features(
+def get_features(
     category: Optional[str] = None,
     is_popular: Optional[bool] = None,
     db: Session = Depends(get_db)
