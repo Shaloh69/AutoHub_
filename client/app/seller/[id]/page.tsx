@@ -51,7 +51,7 @@ export default function SellerProfilePage() {
     try {
       setLoading(true);
       const [sellerResponse, listingsResponse, reviewsResponse] = await Promise.all([
-        apiService.getUserPublicProfile(sellerId),
+        apiService.getPublicProfile(sellerId),
         apiService.searchCars({ seller_id: sellerId, page: 1, page_size: 50 }),
         apiService.getReviews({ seller_id: sellerId, limit: 50 }),
       ]);
