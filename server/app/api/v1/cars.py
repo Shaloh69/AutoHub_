@@ -199,7 +199,46 @@ async def search_cars(
     # Convert to response models - WORKING: This function works correctly
     try:
         logger.info(f"  🔄 Converting {len(cars)} cars to CarResponse models...")
-        items = [CarResponse.model_validate(car) for car in cars]
+        items = []
+        for car in cars:
+            # Convert to dict to avoid SQLAlchemy ORM serialization issues
+            car_dict = {
+                "id": car.id,
+                "seller_id": car.seller_id,
+                "brand_id": car.brand_id,
+                "model_id": car.model_id,
+                "category_id": car.category_id,
+                "title": car.title,
+                "description": car.description,
+                "year": car.year,
+                "price": car.price,
+                "currency": car.currency,
+                "mileage": car.mileage,
+                "fuel_type": car.fuel_type if isinstance(car.fuel_type, str) else car.fuel_type.value,
+                "transmission": car.transmission if isinstance(car.transmission, str) else car.transmission.value,
+                "condition_rating": car.condition_rating if isinstance(car.condition_rating, str) else car.condition_rating.value,
+                "city_id": car.city_id,
+                "province_id": car.province_id,
+                "region_id": car.region_id,
+                "status": car.status if isinstance(car.status, str) else car.status.value,
+                "approval_status": car.approval_status if isinstance(car.approval_status, str) else car.approval_status.value,
+                "is_featured": car.is_featured,
+                "is_premium": car.is_premium,
+                "is_active": car.is_active,
+                "views_count": car.views_count,
+                "contact_count": car.contact_count,
+                "favorite_count": car.favorite_count,
+                "average_rating": car.average_rating,
+                "created_at": car.created_at,
+                "updated_at": car.updated_at,
+                # Convert related objects to simple dicts/lists to avoid ORM serialization issues
+                "images": [],  # Empty for list view to improve performance
+                "brand_rel": None,
+                "model_rel": None,
+                "city": None,
+            }
+            items.append(CarResponse.model_validate(car_dict))
+
         logger.info(f"  ✅ Successfully validated {len(items)} cars")
         logger.info("=" * 80)
     except Exception as e:
@@ -217,15 +256,25 @@ async def search_cars(
     # Calculate pagination
     total_pages = (total + page_size - 1) // page_size
 
-    return PaginatedResponse(
-        items=items,
-        total=total,
-        page=page,
-        page_size=page_size,
-        total_pages=total_pages,
-        has_next=page < total_pages,
-        has_prev=page > 1
-    )
+    logger.info(f"  📦 Creating PaginatedResponse with {len(items)} items, total={total}, page={page}")
+
+    try:
+        response = PaginatedResponse(
+            items=items,
+            total=total,
+            page=page,
+            page_size=page_size,
+            total_pages=total_pages,
+            has_next=page < total_pages,
+            has_prev=page > 1
+        )
+        logger.info(f"  ✅ PaginatedResponse created successfully")
+        return response
+    except Exception as e:
+        logger.error(f"  ❌ Error creating PaginatedResponse: {type(e).__name__}: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+        raise
 
 
 @router.get("/brands", response_model=List[BrandResponse])
