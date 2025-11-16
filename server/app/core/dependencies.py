@@ -121,9 +121,24 @@ async def get_current_verified_user(
 
 
 async def get_current_seller(
-    current_user: User = Depends(get_current_verified_user)
+    current_user: User = Depends(get_current_user)
 ) -> User:
-    """Get current user with seller/dealer role"""
+    """
+    Get current user with seller/dealer role
+
+    Requirements:
+    - Email must be verified
+    - Role must be SELLER, DEALER, or ADMIN
+    - Phone verification is OPTIONAL (not required)
+    """
+    # Check email verification
+    email_verified = getattr(current_user, 'email_verified', False)
+    if not email_verified:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Email verification required to create listings"
+        )
+
     # CRITICAL FIX: Use getattr to safely access Column role value and compare with UPPERCASE enum values
     # Issue: UserRole enum defines UPPERCASE values (SELLER, DEALER), but code was trying to access
     # lowercase attributes (UserRole.seller, UserRole.dealer) which don't exist
@@ -147,9 +162,24 @@ async def get_current_seller(
 
 
 async def get_current_dealer(
-    current_user: User = Depends(get_current_verified_user)
+    current_user: User = Depends(get_current_user)
 ) -> User:
-    """Get current user with dealer role"""
+    """
+    Get current user with dealer role
+
+    Requirements:
+    - Email must be verified
+    - Role must be DEALER or ADMIN
+    - Phone verification is OPTIONAL (not required)
+    """
+    # Check email verification
+    email_verified = getattr(current_user, 'email_verified', False)
+    if not email_verified:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Email verification required"
+        )
+
     # FIX: Use getattr to safely access Column role value and compare with UPPERCASE enum values
     user_role = getattr(current_user, 'role', None)
 

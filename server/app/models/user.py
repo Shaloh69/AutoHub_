@@ -270,14 +270,32 @@ class User(Base):
     @property
     def can_list_cars(self) -> bool:
         """Check if user can create car listings
-        
+
+        Requirements:
+        - Account must be active
+        - Account must not be banned
+        - Email must be verified
+        - Role must be seller, dealer, or admin
+
         Note: At runtime (on instances), these Column attributes resolve to actual bool values.
         We use cast() to tell Pylance the runtime type.
         """
         # Cast to tell Pylance that at runtime these are bool, not Column[bool]
         is_active = cast(bool, self.is_active)
         is_banned = cast(bool, self.is_banned)
-        return is_active and not is_banned
+        email_verified = cast(bool, self.email_verified)
+
+        # Get role and convert to uppercase for comparison
+        user_role = cast(Optional[str], self.role)
+        if user_role:
+            user_role_upper = user_role.upper()
+        else:
+            return False
+
+        # Check all requirements
+        has_seller_role = user_role_upper in ['SELLER', 'DEALER', 'ADMIN']
+
+        return is_active and not is_banned and email_verified and has_seller_role
     
     @property
     def is_account_locked(self) -> bool:
