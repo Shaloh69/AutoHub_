@@ -405,7 +405,7 @@ export default function HomePage() {
             size="lg"
             variant="solid"
             className="bg-white text-blue-600 font-semibold"
-            onPress={() => router.push(user ? '/seller/cars/new' : '/auth/register')}
+            onPress={() => router.push(user ? '/seller/new' : '/auth/register')}
           >
             Start Selling Now
           </Button>

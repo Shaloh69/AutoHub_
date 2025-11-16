@@ -130,7 +130,7 @@ export default function SellerDashboardPage() {
             color="primary"
             size="lg"
             startContent={<Plus size={20} />}
-            onPress={() => router.push('/seller/cars/new')}
+            onPress={() => router.push('/seller/new')}
             isDisabled={!canListCars}
           >
             Create Listing
@@ -281,7 +281,7 @@ export default function SellerDashboardPage() {
                 {canListCars && (
                   <Button
                     color="primary"
-                    onPress={() => router.push('/seller/cars/new')}
+                    onPress={() => router.push('/seller/new')}
                   >
                     Create Listing
                   </Button>
