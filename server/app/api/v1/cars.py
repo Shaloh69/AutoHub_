@@ -547,47 +547,20 @@ async def get_car(
         logger.info(f"    images: {len(car.images) if car.images else 0} items")
         logger.info(f"    features: {len(car.features) if car.features else 0} items")
 
-        # Normalize all enum fields directly on the car object attributes
-        logger.info(f"\n  🔄 NORMALIZING ENUMS:")
-        if hasattr(car, 'status') and car.status:
-            old = repr(car.status)
-            car.status = normalize_enum_value('status', car.status)
-            logger.info(f"    status: {old} → {repr(car.status)}")
+        # NOTE: We do NOT modify the car object in place to avoid ORM serialization issues
+        # Enum conversion is handled when building car_dict below
 
-        if hasattr(car, 'approval_status') and car.approval_status:
-            old = repr(car.approval_status)
-            car.approval_status = normalize_enum_value('approval_status', car.approval_status)
-            logger.info(f"    approval_status: {old} → {repr(car.approval_status)}")
-
-        if hasattr(car, 'fuel_type') and car.fuel_type:
-            old = repr(car.fuel_type)
-            car.fuel_type = normalize_enum_value('fuel_type', car.fuel_type)
-            logger.info(f"    fuel_type: {old} → {repr(car.fuel_type)}")
-
-        if hasattr(car, 'transmission') and car.transmission:
-            old = repr(car.transmission)
-            car.transmission = normalize_enum_value('transmission', car.transmission)
-            logger.info(f"    transmission: {old} → {repr(car.transmission)}")
-
-        if hasattr(car, 'drivetrain') and car.drivetrain:
-            old = repr(car.drivetrain)
-            car.drivetrain = normalize_enum_value('drivetrain', car.drivetrain)
-            logger.info(f"    drivetrain: {old} → {repr(car.drivetrain)}")
-
-        if hasattr(car, 'condition_rating') and car.condition_rating:
-            old = repr(car.condition_rating)
-            car.condition_rating = normalize_enum_value('condition_rating', car.condition_rating)
-            logger.info(f"    condition_rating: {old} → {repr(car.condition_rating)}")
-
-        if hasattr(car, 'body_type') and car.body_type:
-            old = repr(car.body_type)
-            car.body_type = normalize_enum_value('body_type', car.body_type)
-            logger.info(f"    body_type: {old} → {repr(car.body_type)}")
-
-        if hasattr(car, 'visibility') and car.visibility:
-            old = repr(car.visibility)
-            car.visibility = normalize_enum_value('visibility', car.visibility)
-            logger.info(f"    visibility: {old} → {repr(car.visibility)}")
+        # Helper function to safely extract enum values
+        def get_enum_value(enum_val):
+            """Safely extract string value from enum or return as-is if already string/None"""
+            if enum_val is None:
+                return None
+            if isinstance(enum_val, str):
+                return enum_val
+            # Handle SQLAlchemy enum or Python enum
+            if hasattr(enum_val, 'value'):
+                return enum_val.value
+            return str(enum_val)
 
         # Build response dict with proper relationship mappings
         logger.info(f"\n  🔨 Building response dictionary...")
@@ -611,7 +584,7 @@ async def get_car(
                 'id': car.model_rel.id,
                 'name': car.model_rel.name,
                 'slug': car.model_rel.slug,
-                'model_type': car.model_rel.model_type,
+                'model_type': get_enum_value(car.model_rel.model_type),
             }
             logger.info(f"    Converted model_rel: {model_dict['name']}")
 
@@ -644,7 +617,7 @@ async def get_car(
                     'id': img.id,
                     'car_id': img.car_id,
                     'image_url': img.image_url,
-                    'image_type': img.image_type,
+                    'image_type': get_enum_value(img.image_type),
                     'is_main': img.is_main,
                     'display_order': img.display_order,
                 })
@@ -659,7 +632,7 @@ async def get_car(
                         'id': cf.feature.id,
                         'name': cf.feature.name,
                         'slug': cf.feature.slug,
-                        'category': cf.feature.category,
+                        'category': get_enum_value(cf.feature.category),
                     })
             logger.info(f"    Converted {len(features_list)} features")
 
@@ -678,14 +651,14 @@ async def get_car(
             'price': car.price,
             'currency': car.currency,
             'mileage': car.mileage,
-            'fuel_type': car.fuel_type if isinstance(car.fuel_type, str) else car.fuel_type.value,
-            'transmission': car.transmission if isinstance(car.transmission, str) else car.transmission.value,
-            'condition_rating': car.condition_rating if isinstance(car.condition_rating, str) else car.condition_rating.value,
+            'fuel_type': get_enum_value(car.fuel_type),
+            'transmission': get_enum_value(car.transmission),
+            'condition_rating': get_enum_value(car.condition_rating),
             'city_id': car.city_id,
             'province_id': car.province_id,
             'region_id': car.region_id,
-            'status': car.status if isinstance(car.status, str) else car.status.value,
-            'approval_status': car.approval_status if isinstance(car.approval_status, str) else car.approval_status.value,
+            'status': get_enum_value(car.status),
+            'approval_status': get_enum_value(car.approval_status),
             'is_featured': car.is_featured,
             'is_premium': car.is_premium,
             'is_active': car.is_active,
@@ -701,7 +674,7 @@ async def get_car(
             'plate_number': car.plate_number,
             'engine_size': car.engine_size,
             'horsepower': car.horsepower,
-            'drivetrain': car.drivetrain.value if car.drivetrain and not isinstance(car.drivetrain, str) else car.drivetrain,
+            'drivetrain': get_enum_value(car.drivetrain),
             'seats': car.seats,
             'doors': car.doors,
             'exterior_color': car.exterior_color,
@@ -709,8 +682,8 @@ async def get_car(
             'flood_history': car.flood_history,
             'number_of_owners': car.number_of_owners,
             'service_history_available': car.service_history_available,
-            'registration_status': car.registration_status,
-            'or_cr_status': car.or_cr_status,
+            'registration_status': get_enum_value(car.registration_status),
+            'or_cr_status': get_enum_value(car.or_cr_status),
             'lto_registered': car.lto_registered,
             'warranty_remaining': car.warranty_remaining,
             'negotiable': car.negotiable,
@@ -721,7 +694,7 @@ async def get_car(
             'latitude': car.latitude,
             'longitude': car.longitude,
 
-            # Serialized relationship objects
+            # Serialized relationship objects (already converted to dicts above)
             'brand_rel': brand_dict,
             'model_rel': model_dict,
             'city': city_dict,
