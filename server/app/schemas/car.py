@@ -233,6 +233,18 @@ class CityResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class CarImageResponse(BaseModel):
+    """Car image in responses"""
+    id: int
+    image_url: str
+    is_main: bool
+    image_type: str
+    display_order: int
+    caption: Optional[str] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class CarDetailResponse(CarResponse):
     """Detailed car response with all fields"""
     # Vehicle Details
@@ -271,8 +283,8 @@ class CarDetailResponse(CarResponse):
     latitude: Optional[Decimal] = None
     longitude: Optional[Decimal] = None
 
-    # Related data (populated by service) - Fixed: Use proper types instead of dict
-    images: List[Any] = []  # Will be CarImage ORM objects or dicts
+    # Related data (populated by service)
+    images: List[CarImageResponse] = []  # FIXED: Use proper type
     features: List[Any] = []  # Will be CarFeature ORM objects or dicts
     seller: Optional[Any] = None  # Will be User ORM object or dict
     brand: Optional[Any] = None  # Will be Brand ORM object or dict
