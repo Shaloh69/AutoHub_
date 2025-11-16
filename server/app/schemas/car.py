@@ -4,7 +4,7 @@ FILE: app/schemas/car.py (NORMALIZED & UPDATED)
 Path: car_marketplace_ph/app/schemas/car.py
 ===========================================
 """
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, field_validator
 from typing import Optional, List, Any
 from datetime import datetime, date
 from decimal import Decimal
@@ -93,6 +93,19 @@ class CarCreate(BaseModel):
     seo_slug: Optional[str] = Field(None, max_length=255)
     meta_title: Optional[str] = Field(None, max_length=255)
     meta_description: Optional[str] = Field(None, max_length=500)
+
+    # Validators to convert enum fields to UPPERCASE before pattern validation
+    @field_validator(
+        'body_type', 'mileage_unit', 'fuel_type', 'transmission', 'drivetrain',
+        'car_condition', 'registration_status', 'or_cr_status', 'insurance_status',
+        mode='before'
+    )
+    @classmethod
+    def uppercase_enums(cls, v):
+        """Convert enum string values to uppercase to match database schema"""
+        if v is not None and isinstance(v, str):
+            return v.upper()
+        return v
 
     model_config = ConfigDict(
         protected_namespaces=()
@@ -183,6 +196,19 @@ class CarUpdate(BaseModel):
     seo_slug: Optional[str] = Field(None, max_length=255)
     meta_title: Optional[str] = Field(None, max_length=255)
     meta_description: Optional[str] = Field(None, max_length=500)
+
+    # Validators to convert enum fields to UPPERCASE before pattern validation
+    @field_validator(
+        'body_type', 'mileage_unit', 'fuel_type', 'transmission', 'drivetrain',
+        'car_condition', 'registration_status', 'or_cr_status', 'insurance_status', 'status',
+        mode='before'
+    )
+    @classmethod
+    def uppercase_enums(cls, v):
+        """Convert enum string values to uppercase to match database schema"""
+        if v is not None and isinstance(v, str):
+            return v.upper()
+        return v
 
     model_config = ConfigDict(
         protected_namespaces=()
