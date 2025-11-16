@@ -819,19 +819,45 @@ async def update_car(
 
         car = CarService.update_car(db, car_id, user_id, normalized_update)
 
-        # Normalize enum values in response
-        if hasattr(car, 'status') and car.status:
-            car.status = normalize_enum_value('status', car.status)
-        if hasattr(car, 'approval_status') and car.approval_status:
-            car.approval_status = normalize_enum_value('approval_status', car.approval_status)
-        if hasattr(car, 'fuel_type') and car.fuel_type:
-            car.fuel_type = normalize_enum_value('fuel_type', car.fuel_type)
-        if hasattr(car, 'transmission') and car.transmission:
-            car.transmission = normalize_enum_value('transmission', car.transmission)
-        if hasattr(car, 'car_condition') and car.car_condition:
-            car.car_condition = normalize_enum_value('car_condition', car.car_condition)
+        # Convert to dict to avoid ORM serialization issues
+        car_dict = {
+            "id": car.id,
+            "seller_id": car.seller_id,
+            "brand_id": car.brand_id,
+            "model_id": car.model_id,
+            "category_id": car.category_id,
+            "color_id": car.color_id,
+            "interior_color_id": car.interior_color_id,
+            "title": car.title,
+            "description": car.description,
+            "year": car.year,
+            "price": car.price,
+            "currency_id": car.currency_id,
+            "mileage": car.mileage,
+            "fuel_type": car.fuel_type if isinstance(car.fuel_type, str) else car.fuel_type.value,
+            "transmission": car.transmission if isinstance(car.transmission, str) else car.transmission.value,
+            "car_condition": car.car_condition if isinstance(car.car_condition, str) else car.car_condition.value,
+            "city_id": car.city_id,
+            "province_id": car.province_id,
+            "region_id": car.region_id,
+            "status": car.status if isinstance(car.status, str) else car.status.value,
+            "approval_status": car.approval_status if isinstance(car.approval_status, str) else car.approval_status.value,
+            "is_featured": car.is_featured,
+            "is_premium": car.is_premium,
+            "is_active": car.is_active,
+            "views_count": car.views_count,
+            "contact_count": car.contact_count,
+            "favorite_count": car.favorite_count,
+            "average_rating": car.average_rating,
+            "created_at": car.created_at,
+            "updated_at": car.updated_at,
+            "images": [],
+            "brand_rel": None,
+            "model_rel": None,
+            "city": None,
+        }
 
-        return CarResponse.model_validate(car)
+        return CarResponse.model_validate(car_dict)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
@@ -979,19 +1005,45 @@ async def boost_car(
         user_id = int(getattr(current_user, 'id', 0))
         car = CarService.boost_car(db, car_id, user_id, boost_data.duration_hours)
 
-        # Normalize enum values in response
-        if hasattr(car, 'status') and car.status:
-            car.status = normalize_enum_value('status', car.status)
-        if hasattr(car, 'approval_status') and car.approval_status:
-            car.approval_status = normalize_enum_value('approval_status', car.approval_status)
-        if hasattr(car, 'fuel_type') and car.fuel_type:
-            car.fuel_type = normalize_enum_value('fuel_type', car.fuel_type)
-        if hasattr(car, 'transmission') and car.transmission:
-            car.transmission = normalize_enum_value('transmission', car.transmission)
-        if hasattr(car, 'car_condition') and car.car_condition:
-            car.car_condition = normalize_enum_value('car_condition', car.car_condition)
+        # Convert to dict to avoid ORM serialization issues
+        car_dict = {
+            "id": car.id,
+            "seller_id": car.seller_id,
+            "brand_id": car.brand_id,
+            "model_id": car.model_id,
+            "category_id": car.category_id,
+            "color_id": car.color_id,
+            "interior_color_id": car.interior_color_id,
+            "title": car.title,
+            "description": car.description,
+            "year": car.year,
+            "price": car.price,
+            "currency_id": car.currency_id,
+            "mileage": car.mileage,
+            "fuel_type": car.fuel_type if isinstance(car.fuel_type, str) else car.fuel_type.value,
+            "transmission": car.transmission if isinstance(car.transmission, str) else car.transmission.value,
+            "car_condition": car.car_condition if isinstance(car.car_condition, str) else car.car_condition.value,
+            "city_id": car.city_id,
+            "province_id": car.province_id,
+            "region_id": car.region_id,
+            "status": car.status if isinstance(car.status, str) else car.status.value,
+            "approval_status": car.approval_status if isinstance(car.approval_status, str) else car.approval_status.value,
+            "is_featured": car.is_featured,
+            "is_premium": car.is_premium,
+            "is_active": car.is_active,
+            "views_count": car.views_count,
+            "contact_count": car.contact_count,
+            "favorite_count": car.favorite_count,
+            "average_rating": car.average_rating,
+            "created_at": car.created_at,
+            "updated_at": car.updated_at,
+            "images": [],
+            "brand_rel": None,
+            "model_rel": None,
+            "city": None,
+        }
 
-        return CarResponse.model_validate(car)
+        return CarResponse.model_validate(car_dict)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
@@ -1034,19 +1086,45 @@ async def feature_car(
     db.commit()
     db.refresh(car)
 
-    # Normalize enum values in response
-    if hasattr(car, 'status') and car.status:
-        car.status = normalize_enum_value('status', car.status)
-    if hasattr(car, 'approval_status') and car.approval_status:
-        car.approval_status = normalize_enum_value('approval_status', car.approval_status)
-    if hasattr(car, 'fuel_type') and car.fuel_type:
-        car.fuel_type = normalize_enum_value('fuel_type', car.fuel_type)
-    if hasattr(car, 'transmission') and car.transmission:
-        car.transmission = normalize_enum_value('transmission', car.transmission)
-    if hasattr(car, 'car_condition') and car.car_condition:
-        car.car_condition = normalize_enum_value('car_condition', car.car_condition)
+    # Convert to dict to avoid ORM serialization issues
+    car_dict = {
+        "id": car.id,
+        "seller_id": car.seller_id,
+        "brand_id": car.brand_id,
+        "model_id": car.model_id,
+        "category_id": car.category_id,
+        "color_id": car.color_id,
+        "interior_color_id": car.interior_color_id,
+        "title": car.title,
+        "description": car.description,
+        "year": car.year,
+        "price": car.price,
+        "currency_id": car.currency_id,
+        "mileage": car.mileage,
+        "fuel_type": car.fuel_type if isinstance(car.fuel_type, str) else car.fuel_type.value,
+        "transmission": car.transmission if isinstance(car.transmission, str) else car.transmission.value,
+        "car_condition": car.car_condition if isinstance(car.car_condition, str) else car.car_condition.value,
+        "city_id": car.city_id,
+        "province_id": car.province_id,
+        "region_id": car.region_id,
+        "status": car.status if isinstance(car.status, str) else car.status.value,
+        "approval_status": car.approval_status if isinstance(car.approval_status, str) else car.approval_status.value,
+        "is_featured": car.is_featured,
+        "is_premium": car.is_premium,
+        "is_active": car.is_active,
+        "views_count": car.views_count,
+        "contact_count": car.contact_count,
+        "favorite_count": car.favorite_count,
+        "average_rating": car.average_rating,
+        "created_at": car.created_at,
+        "updated_at": car.updated_at,
+        "images": [],
+        "brand_rel": None,
+        "model_rel": None,
+        "city": None,
+    }
 
-    return CarResponse.model_validate(car)
+    return CarResponse.model_validate(car_dict)
 
 
 @router.get("/{car_id}/price-history", response_model=List[PriceHistoryResponse])
