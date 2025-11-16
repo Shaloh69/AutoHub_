@@ -15,7 +15,7 @@ import { Tabs, Tab } from '@heroui/tabs';
 import { Divider } from '@heroui/divider';
 import {
   Heart, Share2, MapPin, Calendar, Gauge, Fuel, Settings,
-  Users, DoorOpen, Palette, Shield, FileText, Star,
+  Users, DoorOpen, Palette, Shield, Star,
   Phone, Mail, MessageCircle, Eye, TrendingUp,
   ChevronLeft, ChevronRight, Play, Pause
 } from 'lucide-react';
@@ -646,16 +646,6 @@ export default function CarDetailPage() {
                   Call Seller
                 </Button>
               )}
-
-              <Button
-                variant="flat"
-                size="lg"
-                className="w-full"
-                onPress={() => router.push(`/transactions/new?car=${car.id}`)}
-                startContent={<FileText size={20} />}
-              >
-                Make an Offer
-              </Button>
             </div>
 
             {/* Financing Options */}

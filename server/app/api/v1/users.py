@@ -144,7 +144,10 @@ async def upgrade_user_role(
     audit_log = AuditLog(
         user_id=user_id,
         action="role_upgrade",
-        details=f"Role upgraded from {old_role} to {new_role}",
+        entity_type="user",
+        entity_id=user_id,
+        old_values={"role": old_role},
+        new_values={"role": new_role},
         ip_address=None,  # Can be enhanced to capture IP
         created_at=datetime.utcnow()
     )
