@@ -287,12 +287,11 @@ class CarImageUpload(BaseModel):
     id: int
     car_id: int
     image_url: str
-    thumbnail_url: Optional[str] = None
-    medium_url: Optional[str] = None
-    is_primary: bool
+    is_main: bool  # FIXED: is_main not is_primary (matches database)
     display_order: int
     image_type: str
-    
+    caption: Optional[str] = None
+
     model_config = ConfigDict(from_attributes=True)
 
 

@@ -700,8 +700,8 @@ async def delete_car(
 async def upload_car_image(
     car_id: int,
     file: UploadFile = File(...),
-    image_type: str = Query("exterior", pattern="^(exterior|interior|engine|dashboard|wheels|damage|documents|other)$"),
-    is_primary: bool = False,
+    image_type: str = Query("exterior", pattern="^(exterior|interior|engine|damage|document|other)$"),
+    is_main: bool = Query(False, description="Set as main/primary image"),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -737,24 +737,18 @@ async def upload_car_image(
     try:
         # Upload image
         result = await FileService.upload_image(file, folder=f"cars/{car_id}")
-        
-        # If this is set as primary, unset other primary images
-        if is_primary:
-            db.query(CarImage).filter(CarImage.car_id == car_id).update({"is_primary": False})
-        
-        # Create image record
+
+        # If this is set as main, unset other main images
+        if is_main:
+            db.query(CarImage).filter(CarImage.car_id == car_id).update({"is_main": False})
+
+        # Create image record - Only use fields that exist in database
         car_image = CarImage(
             car_id=car_id,
             image_url=result["file_url"],
-            thumbnail_url=result.get("thumbnail_url"),
-            medium_url=result.get("medium_url"),
-            file_name=result["file_name"],
-            file_size=int(result["file_size"]),
             image_type=image_type,
-            is_primary=is_primary or image_count == 0,
-            display_order=image_count,
-            width=int(result.get("width", 0)) if result.get("width") else None,
-            height=int(result.get("height", 0)) if result.get("height") else None
+            is_main=is_main or image_count == 0,  # First image is always main
+            display_order=image_count
         )
         
         db.add(car_image)
