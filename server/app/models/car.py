@@ -64,39 +64,53 @@ class ApprovalStatus(str, enum.Enum):
 
 
 class BodyType(str, enum.Enum):
-    """Body type enum - lowercase to match SQL schema exactly"""
-    sedan = "sedan"
-    suv = "suv"
-    pickup = "pickup"
-    van = "van"
-    hatchback = "hatchback"
-    coupe = "coupe"
-    mpv = "mpv"
-    crossover = "crossover"
-    wagon = "wagon"
-    convertible = "convertible"
-
-
-class EngineType(str, enum.Enum):
-    """Engine type enum - lowercase to match SQL schema exactly"""
-    gasoline = "gasoline"
-    diesel = "diesel"
-    electric = "electric"
-    hybrid = "hybrid"
-    plugin_hybrid = "plug-in-hybrid"
+    """Body type enum - UPPERCASE to match normalized SQL schema"""
+    SEDAN = "SEDAN"
+    SUV = "SUV"
+    PICKUP = "PICKUP"
+    VAN = "VAN"
+    HATCHBACK = "HATCHBACK"
+    COUPE = "COUPE"
+    MPV = "MPV"
+    CROSSOVER = "CROSSOVER"
+    WAGON = "WAGON"
+    CONVERTIBLE = "CONVERTIBLE"
 
 
 class MileageUnit(str, enum.Enum):
-    """Mileage unit enum - lowercase to match SQL schema exactly"""
-    km = "km"
-    miles = "miles"
+    """Mileage unit enum - UPPERCASE to match normalized SQL schema"""
+    KM = "KM"
+    MILES = "MILES"
 
 
 class Visibility(str, enum.Enum):
-    """Visibility enum - lowercase to match SQL schema exactly"""
-    public = "public"
-    private = "private"
-    unlisted = "unlisted"
+    """Visibility enum - UPPERCASE to match normalized SQL schema"""
+    PUBLIC = "PUBLIC"
+    PRIVATE = "PRIVATE"
+    UNLISTED = "UNLISTED"
+
+
+class RegistrationStatus(str, enum.Enum):
+    """Registration status enum - UPPERCASE to match normalized SQL schema"""
+    REGISTERED = "REGISTERED"
+    UNREGISTERED = "UNREGISTERED"
+    EXPIRED = "EXPIRED"
+    FOR_RENEWAL = "FOR_RENEWAL"
+
+
+class ORCRStatus(str, enum.Enum):
+    """OR/CR status enum - UPPERCASE to match normalized SQL schema"""
+    COMPLETE = "COMPLETE"
+    INCOMPLETE = "INCOMPLETE"
+    PROCESSING = "PROCESSING"
+    LOST = "LOST"
+
+
+class InsuranceStatus(str, enum.Enum):
+    """Insurance status enum - UPPERCASE to match normalized SQL schema"""
+    ACTIVE = "ACTIVE"
+    EXPIRED = "EXPIRED"
+    NONE = "NONE"
 
 
 class Brand(Base):
@@ -130,7 +144,7 @@ class Model(Base):
     brand_id = Column(Integer, ForeignKey("brands.id", ondelete="CASCADE"), nullable=False, index=True)
     name = Column(String(100), nullable=False, index=True)
     slug = Column(String(100), nullable=False)
-    model_type = Column(Enum("sedan", "suv", "pickup", "van", "hatchback", "coupe", "mpv", "crossover"), default="sedan")
+    model_type = Column(Enum("SEDAN", "SUV", "PICKUP", "VAN", "HATCHBACK", "COUPE", "MPV", "CROSSOVER"), default="SEDAN")
     description = Column(Text)
     year_introduced = Column(Integer)
     is_active = Column(Boolean, default=True)
@@ -168,7 +182,7 @@ class Feature(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(100), unique=True, nullable=False)
     slug = Column(String(100), unique=True, nullable=False, index=True)
-    category = Column(Enum("safety", "comfort", "technology", "performance", "exterior", "interior"), default="comfort", index=True)
+    category = Column(Enum("SAFETY", "COMFORT", "TECHNOLOGY", "PERFORMANCE", "EXTERIOR", "INTERIOR"), default="COMFORT", index=True)
     description = Column(Text)
     icon = Column(String(100))
     is_premium = Column(Boolean, default=False)
@@ -180,46 +194,41 @@ class Feature(Base):
 
 class Car(Base):
     __tablename__ = "cars"
-    
+
     id = Column(Integer, primary_key=True, autoincrement=True)
     seller_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     brand_id = Column(Integer, ForeignKey("brands.id"), nullable=False, index=True)
     model_id = Column(Integer, ForeignKey("models.id"), nullable=False, index=True)
     category_id = Column(Integer, ForeignKey("categories.id"), index=True)
     color_id = Column(Integer, ForeignKey("standard_colors.id", ondelete="SET NULL"), index=True)
-    
+    interior_color_id = Column(Integer, ForeignKey("standard_colors.id", ondelete="SET NULL"))
+
     # Basic Information
     title = Column(String(255), nullable=False, index=True)
     description = Column(Text)
     year = Column(Integer, nullable=False, index=True)
-    make = Column(String(100), nullable=False)  # Brand name as string (separate from brand_id)
-    model = Column(String(100), nullable=False)  # Model name as string (separate from model_id)
     trim = Column(String(100))  # Trim level/variant
-    
-    # Pricing
+
+    # Pricing (NORMALIZED - using FK only)
     price = Column(DECIMAL(12, 2), nullable=False, index=True)
-    currency = Column(String(3), default="PHP")
     currency_id = Column(Integer, ForeignKey("currencies.id"), default=1)
     original_price = Column(DECIMAL(12, 2))
     discount_amount = Column(DECIMAL(12, 2))
     discount_percentage = Column(DECIMAL(5, 2))
-    negotiable = Column(Boolean, default=True)
-    price_negotiable = Column(Boolean, default=True)  # Duplicate for SQL compatibility
-    
-    # Vehicle Details
-    vin = Column(String(17), unique=True, index=True)  # Primary VIN field
-    vin_number = Column(String(17), unique=True, index=True)  # Duplicate for compatibility
+    price_negotiable = Column(Boolean, default=True)
+
+    # Vehicle Details (NORMALIZED - removed VIN duplicate)
+    vin_number = Column(String(17), unique=True, index=True)
     plate_number = Column(String(20), index=True)
     engine_number = Column(String(50))
     chassis_number = Column(String(50))
     body_type = Column(Enum(BodyType))
-    
-    # Technical Specifications
-    mileage = Column(Integer, nullable=False, index=True)
-    mileage_unit = Column(Enum(MileageUnit), default=MileageUnit.km)  # FIXED: Use lowercase to match SQL
-    fuel_type = Column(Enum(FuelType), nullable=False, index=True)
-    engine_type = Column(Enum(EngineType))  # Separate from fuel_type
-    transmission = Column(Enum(TransmissionType), nullable=False, index=True)
+
+    # Technical Specifications (NORMALIZED - removed engine_type, using fuel_type)
+    mileage = Column(Integer, nullable=False, default=0, index=True)
+    mileage_unit = Column(Enum(MileageUnit), default=MileageUnit.KM)
+    fuel_type = Column(Enum(FuelType), default=FuelType.GASOLINE, index=True)
+    transmission = Column(Enum(TransmissionType), default=TransmissionType.AUTOMATIC, index=True)
     engine_size = Column(String(20))  # e.g., "1.5L", "2000cc"
     cylinders = Column(Integer)
     horsepower = Column(Integer)
@@ -229,55 +238,41 @@ class Car(Base):
     drivetrain = Column(Enum(DrivetrainType))
     seats = Column(Integer)
     doors = Column(Integer)
-    
-    # Exterior & Interior
-    exterior_color = Column(String(50), index=True)
-    interior_color = Column(String(50))
-    # NOTE: color_type removed - not in SQL schema
-    
-    # Condition
-    condition_rating = Column(Enum(ConditionRating), nullable=False, index=True)
-    car_condition = Column(Enum(ConditionRating), nullable=False, index=True)  # SQL uses this name
+
+    # Condition (NORMALIZED - removed duplicate condition fields)
+    car_condition = Column(Enum(ConditionRating), default=ConditionRating.GOOD, index=True)
     accident_history = Column(Boolean, default=False)
     accident_details = Column(Text)
     flood_history = Column(Boolean, default=False)
     number_of_owners = Column(Integer, default=1)
-    previous_owners = Column(Integer, default=1)  # Separate field for SQL compatibility
-    service_history = Column(Boolean, default=False)
     service_history_available = Column(Boolean, default=False)
-    
-    # Ownership & Documentation
-    registration_status = Column(Enum("registered", "unregistered", "for_transfer", "expired"), default="registered")
-    registration_valid = Column(Boolean, default=True)
-    # FIXED: Changed from TIMESTAMP to Date to match SQL schema
+
+    # Ownership & Documentation (NORMALIZED - using proper ENUMs)
+    registration_status = Column(Enum(RegistrationStatus), default=RegistrationStatus.REGISTERED)
     registration_expiry = Column(Date)
-    or_cr_status = Column(Enum("complete", "incomplete", "missing"), default="complete")
-    lto_registered = Column(Boolean, default=True)
-    deed_of_sale_available = Column(Boolean, default=True)
+    or_cr_status = Column(Enum(ORCRStatus), default=ORCRStatus.COMPLETE)
+    lto_registered = Column(Boolean, default=False)
+    deed_of_sale_available = Column(Boolean, default=False)
     has_emission_test = Column(Boolean, default=False)
     casa_maintained = Column(Boolean, default=False)
 
-    # Insurance & Warranty
-    has_insurance = Column(Boolean, default=False)
-    insurance_status = Column(Enum("active", "expired", "none"), default="none")
-    # FIXED: Changed from TIMESTAMP to Date to match SQL schema
+    # Insurance & Warranty (NORMALIZED - using proper ENUMs)
+    insurance_status = Column(Enum(InsuranceStatus), default=InsuranceStatus.NONE)
     insurance_expiry = Column(Date)
     warranty_remaining = Column(Boolean, default=False)
     warranty_details = Column(Text)
-    # FIXED: Changed from TIMESTAMP to Date to match SQL schema
     warranty_expiry = Column(Date)
-    
+
     # Trade & Finance Options
     financing_available = Column(Boolean, default=False)
     trade_in_accepted = Column(Boolean, default=False)
     installment_available = Column(Boolean, default=False)
-    
-    # Location
+
+    # Location (NORMALIZED - removed exact_location duplicate)
     city_id = Column(Integer, ForeignKey("ph_cities.id"), nullable=False, index=True)
     province_id = Column(Integer, ForeignKey("ph_provinces.id"), nullable=False, index=True)
     region_id = Column(Integer, ForeignKey("ph_regions.id"), nullable=False, index=True)
     detailed_address = Column(Text)
-    exact_location = Column(Text)  # Exact location details
     barangay = Column(String(100))
     latitude = Column(DECIMAL(10, 8), index=True)
     longitude = Column(DECIMAL(11, 8), index=True)
@@ -287,15 +282,13 @@ class Car(Base):
     total_images = Column(Integer, default=0)
     video_url = Column(String(500))
     virtual_tour_url = Column(String(500))
-    
-    # Status & Visibility
-    status = Column(Enum(CarStatus), default=CarStatus.PENDING, nullable=False, index=True)
+
+    # Status & Visibility (NORMALIZED - removed duplicates)
+    status = Column(Enum(CarStatus), default=CarStatus.DRAFT, nullable=False, index=True)
     approval_status = Column(Enum(ApprovalStatus), default=ApprovalStatus.PENDING, nullable=False, index=True)
-    visibility = Column(Enum(Visibility), default=Visibility.public)
+    visibility = Column(Enum(Visibility), default=Visibility.PUBLIC)
     rejection_reason = Column(Text)
-    rejected_reason = Column(Text)  # SQL uses this name
     admin_notes = Column(Text)
-    featured = Column(Boolean, default=False, index=True)  # SQL uses this name
     is_featured = Column(Boolean, default=False, index=True)
     is_premium = Column(Boolean, default=False, index=True)
     verified = Column(Boolean, default=False)
@@ -303,16 +296,14 @@ class Car(Base):
     featured_until = Column(TIMESTAMP)
     premium_until = Column(TIMESTAMP)
     boosted_until = Column(TIMESTAMP)
-    
-    # SEO & Search
+
+    # SEO & Search (NORMALIZED - removed keywords duplicate)
     seo_slug = Column(String(255), unique=True, index=True)
     meta_title = Column(String(255))
     meta_description = Column(Text)
-    keywords = Column(Text)
-    search_keywords = Column(Text)  # ← VERIFY THIS EXISTS
-    
-    # Metrics & Analytics
-    view_count = Column(Integer, default=0)  # SQL uses this name
+    search_keywords = Column(Text)
+
+    # Metrics & Analytics (NORMALIZED - removed view_count duplicate)
     views_count = Column(Integer, default=0)
     unique_views_count = Column(Integer, default=0)
     inquiry_count = Column(Integer, default=0)
@@ -323,7 +314,7 @@ class Car(Base):
     quality_score = Column(Integer, default=0)
     completeness_score = Column(Integer, default=0)
     ranking_score = Column(Integer, default=0)
-    
+
     # Timestamps
     created_at = Column(TIMESTAMP, default=datetime.now, index=True)
     updated_at = Column(TIMESTAMP, default=datetime.now, onupdate=datetime.now)
@@ -363,14 +354,14 @@ class CarImage(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     car_id = Column(Integer, ForeignKey("cars.id", ondelete="CASCADE"), nullable=False, index=True)
 
-    # Image URL - FIXED: Only image_url exists in SQL schema
+    # Image URL
     image_url = Column(String(500), nullable=False)
 
-    # Image Type - SQL enum: 'exterior', 'interior', 'engine', 'damage', 'document', 'other'
-    image_type = Column(Enum("exterior", "interior", "engine", "damage", "document", "other"), default="exterior")
+    # Image Type - UPPERCASE to match normalized SQL schema
+    image_type = Column(Enum("EXTERIOR", "INTERIOR", "ENGINE", "DAMAGE", "DOCUMENT", "OTHER"), default="EXTERIOR")
 
     # Display Options
-    is_main = Column(Boolean, default=False, index=True)  # SQL uses 'is_main' not 'is_primary'
+    is_main = Column(Boolean, default=False, index=True)
     display_order = Column(Integer, default=0)
     caption = Column(String(255))
 

@@ -6,26 +6,26 @@ import enum
 
 
 class InquiryType(str, enum.Enum):
-    """Inquiry type enum - lowercase to match SQL schema exactly"""
-    general = "general"
-    test_drive = "test_drive"
-    price_negotiation = "price_negotiation"
-    inspection = "inspection"
-    purchase_intent = "purchase_intent"
-    financing = "financing"
-    trade_in = "trade_in"
+    """Inquiry type enum - UPPERCASE to match normalized SQL schema"""
+    GENERAL = "GENERAL"
+    TEST_DRIVE = "TEST_DRIVE"
+    PRICE_NEGOTIATION = "PRICE_NEGOTIATION"
+    INSPECTION = "INSPECTION"
+    PURCHASE_INTENT = "PURCHASE_INTENT"
+    FINANCING = "FINANCING"
+    TRADE_IN = "TRADE_IN"
 
 
 class InquiryStatus(str, enum.Enum):
-    """Inquiry status enum - lowercase to match SQL schema exactly"""
-    new = "new"
-    read = "read"
-    replied = "replied"
-    in_negotiation = "in_negotiation"
-    test_drive_scheduled = "test_drive_scheduled"
-    closed = "closed"
-    converted = "converted"
-    spam = "spam"
+    """Inquiry status enum - UPPERCASE to match normalized SQL schema"""
+    NEW = "NEW"
+    READ = "READ"
+    REPLIED = "REPLIED"
+    IN_NEGOTIATION = "IN_NEGOTIATION"
+    TEST_DRIVE_SCHEDULED = "TEST_DRIVE_SCHEDULED"
+    CLOSED = "CLOSED"
+    CONVERTED = "CONVERTED"
+    SPAM = "SPAM"
 
 
 class ResponseType(str, enum.Enum):
@@ -53,17 +53,17 @@ class Inquiry(Base):
     buyer_phone = Column(String(20))
     
     # Inquiry Details
-    inquiry_type = Column(Enum(InquiryType), default=InquiryType.general, index=True)
+    inquiry_type = Column(Enum(InquiryType), default=InquiryType.GENERAL, index=True)
     offered_price = Column(DECIMAL(12, 2))
     test_drive_requested = Column(Boolean, default=False)
     inspection_requested = Column(Boolean, default=False)
     financing_needed = Column(Boolean, default=False)
     trade_in_vehicle = Column(Boolean, default=False)
-    
+
     # Status
-    status = Column(Enum(InquiryStatus), default=InquiryStatus.new, index=True)
+    status = Column(Enum(InquiryStatus), default=InquiryStatus.NEW, index=True)
     is_read = Column(Boolean, default=False)
-    priority = Column(Enum("low", "medium", "high", "urgent"), default="medium")
+    priority = Column(Enum("LOW", "MEDIUM", "HIGH", "URGENT"), default="MEDIUM")
     
     # Response tracking
     response_count = Column(Integer, default=0)
@@ -146,15 +146,15 @@ class Report(Base):
     
     # Report Details
     report_type = Column(
-        Enum("spam", "fraud", "inappropriate", "scam", "fake_listing", "other", name="report_type"),
+        Enum("SPAM", "FRAUD", "INAPPROPRIATE", "SCAM", "FAKE_LISTING", "OTHER", name="report_type"),
         nullable=False
     )
     description = Column(Text, nullable=False)
     
     # Status
     status = Column(
-        Enum("pending", "investigating", "resolved", "dismissed", name="report_status"),
-        default="pending",
+        Enum("PENDING", "INVESTIGATING", "RESOLVED", "DISMISSED", name="report_status"),
+        default="PENDING",
         nullable=False,
         index=True
     )

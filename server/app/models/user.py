@@ -14,21 +14,46 @@ import enum
 
 
 class UserRole(str, enum.Enum):
-    """User role enum - lowercase to match SQL schema exactly"""
-    buyer = "buyer"
-    seller = "seller"
-    dealer = "dealer"
-    admin = "admin"
-    moderator = "moderator"
+    """User role enum - UPPERCASE to match normalized SQL schema"""
+    BUYER = "BUYER"
+    SELLER = "SELLER"
+    DEALER = "DEALER"
+    ADMIN = "ADMIN"
+    MODERATOR = "MODERATOR"
+
+
+class Gender(str, enum.Enum):
+    """Gender enum - UPPERCASE to match normalized SQL schema"""
+    MALE = "MALE"
+    FEMALE = "FEMALE"
+    OTHER = "OTHER"
+    PREFER_NOT_TO_SAY = "PREFER_NOT_TO_SAY"
 
 
 class VerificationLevel(str, enum.Enum):
-    """Verification level enum - lowercase to match SQL schema exactly"""
-    none = "none"
-    email = "email"
-    phone = "phone"
-    identity = "identity"
-    business = "business"
+    """Verification level enum - UPPERCASE to match normalized SQL schema"""
+    NONE = "NONE"
+    EMAIL = "EMAIL"
+    PHONE = "PHONE"
+    IDENTITY = "IDENTITY"
+    BUSINESS = "BUSINESS"
+
+
+class IDType(str, enum.Enum):
+    """ID type enum - UPPERCASE to match normalized SQL schema"""
+    DRIVERS_LICENSE = "DRIVERS_LICENSE"
+    PASSPORT = "PASSPORT"
+    NATIONAL_ID = "NATIONAL_ID"
+    VOTERS_ID = "VOTERS_ID"
+
+
+class SubscriptionStatus(str, enum.Enum):
+    """Subscription status enum - UPPERCASE to match normalized SQL schema"""
+    FREE = "FREE"
+    TRIAL = "TRIAL"
+    ACTIVE = "ACTIVE"
+    CANCELLED = "CANCELLED"
+    EXPIRED = "EXPIRED"
 
 
 class User(Base):
@@ -40,18 +65,18 @@ class User(Base):
     email = Column(String(255), unique=True, nullable=False, index=True)
     password_hash = Column(String(255), nullable=False)
     role = Column(
-        SQLEnum("buyer", "seller", "dealer", "admin", "moderator", name="role", native_enum=False),
-        default="buyer",
+        SQLEnum("BUYER", "SELLER", "DEALER", "ADMIN", "MODERATOR", name="role", native_enum=False),
+        default="BUYER",
         nullable=False,
         index=True
     )
-    
+
     # Personal Information
     first_name = Column(String(100), nullable=False)
     last_name = Column(String(100), nullable=False)
     phone = Column(String(20), index=True)
     date_of_birth = Column(Date)
-    gender = Column(SQLEnum("male", "female", "other", "prefer_not_to_say", native_enum=False, length=20))
+    gender = Column(SQLEnum("MALE", "FEMALE", "OTHER", "PREFER_NOT_TO_SAY", native_enum=False, length=20))
     
     # Profile
     profile_image = Column(String(500))
@@ -83,13 +108,13 @@ class User(Base):
     identity_verified = Column(Boolean, default=False)
     business_verified = Column(Boolean, default=False)
     verification_level = Column(
-        SQLEnum("none", "email", "phone", "identity", "business", name="verification_level", native_enum=False),
-        default="none"
+        SQLEnum("NONE", "EMAIL", "PHONE", "IDENTITY", "BUSINESS", name="verification_level", native_enum=False),
+        default="NONE"
     )
     verified_at = Column(TIMESTAMP)
-    
+
     # Identity Documents
-    id_type = Column(SQLEnum("drivers_license", "passport", "national_id", "voters_id", native_enum=False, length=20))
+    id_type = Column(SQLEnum("DRIVERS_LICENSE", "PASSPORT", "NATIONAL_ID", "VOTERS_ID", native_enum=False, length=20))
     id_number = Column(String(50))
     id_expiry_date = Column(Date)
     id_front_image = Column(String(500))
@@ -126,10 +151,9 @@ class User(Base):
     
     # Subscription
     current_subscription_id = Column(Integer, ForeignKey("user_subscriptions.id"))
-    # FIXED: Changed from String(50) to ENUM to match SQL schema
     subscription_status = Column(
-        SQLEnum("free", "trial", "active", "cancelled", "expired", name="user_subscription_status", native_enum=False),
-        default="free"
+        SQLEnum("FREE", "TRIAL", "ACTIVE", "CANCELLED", "EXPIRED", name="user_subscription_status", native_enum=False),
+        default="FREE"
     )
     subscription_expires_at = Column(TIMESTAMP)
     
