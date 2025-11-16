@@ -663,12 +663,67 @@ async def get_car(
                     })
             logger.info(f"    Converted {len(features_list)} features")
 
+        # Manually build dict with only scalar fields (no ORM objects)
+        # This prevents "Unable to serialize unknown type" errors
         car_dict = {
-            # Copy all attributes from car
-            **{k: v for k, v in car.__dict__.items() if not k.startswith('_')},
-            # Override with serializable relationship dicts
-            'brand': brand_dict,
-            'model': model_dict,
+            # Base fields from CarResponse
+            'id': car.id,
+            'seller_id': car.seller_id,
+            'brand_id': car.brand_id,
+            'model_id': car.model_id,
+            'category_id': car.category_id,
+            'title': car.title,
+            'description': car.description,
+            'year': car.year,
+            'price': car.price,
+            'currency': car.currency,
+            'mileage': car.mileage,
+            'fuel_type': car.fuel_type if isinstance(car.fuel_type, str) else car.fuel_type.value,
+            'transmission': car.transmission if isinstance(car.transmission, str) else car.transmission.value,
+            'condition_rating': car.condition_rating if isinstance(car.condition_rating, str) else car.condition_rating.value,
+            'city_id': car.city_id,
+            'province_id': car.province_id,
+            'region_id': car.region_id,
+            'status': car.status if isinstance(car.status, str) else car.status.value,
+            'approval_status': car.approval_status if isinstance(car.approval_status, str) else car.approval_status.value,
+            'is_featured': car.is_featured,
+            'is_premium': car.is_premium,
+            'is_active': car.is_active,
+            'views_count': car.views_count,
+            'contact_count': car.contact_count,
+            'favorite_count': car.favorite_count,
+            'average_rating': car.average_rating,
+            'created_at': car.created_at,
+            'updated_at': car.updated_at,
+
+            # Additional fields for CarDetailResponse
+            'vin_number': car.vin_number,
+            'plate_number': car.plate_number,
+            'engine_size': car.engine_size,
+            'horsepower': car.horsepower,
+            'drivetrain': car.drivetrain.value if car.drivetrain and not isinstance(car.drivetrain, str) else car.drivetrain,
+            'seats': car.seats,
+            'doors': car.doors,
+            'exterior_color': car.exterior_color,
+            'accident_history': car.accident_history,
+            'flood_history': car.flood_history,
+            'number_of_owners': car.number_of_owners,
+            'service_history_available': car.service_history_available,
+            'registration_status': car.registration_status,
+            'or_cr_status': car.or_cr_status,
+            'lto_registered': car.lto_registered,
+            'warranty_remaining': car.warranty_remaining,
+            'negotiable': car.negotiable,
+            'financing_available': car.financing_available,
+            'trade_in_accepted': car.trade_in_accepted,
+            'detailed_address': car.detailed_address,
+            'barangay': car.barangay,
+            'latitude': car.latitude,
+            'longitude': car.longitude,
+
+            # Serialized relationship objects
+            'brand_rel': brand_dict,
+            'model_rel': model_dict,
             'city': city_dict,
             'seller': seller_dict,
             'images': images_list,
