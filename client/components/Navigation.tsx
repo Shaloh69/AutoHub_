@@ -116,7 +116,7 @@ export default function Navigation() {
 
   const sellerMenuItems = [
     { label: 'Dashboard', href: '/seller/dashboard', icon: <LayoutDashboard size={18} /> },
-    { label: 'Create Listing', href: '/seller/cars/new', icon: <Plus size={18} /> },
+    { label: 'Create Listing', href: '/seller/new', icon: <Plus size={18} /> },
     { label: 'Inquiries', href: '/seller/inquiries', icon: <MessageCircle size={18} /> },
     { label: 'Transactions', href: '/seller/transactions', icon: <Package size={18} /> },
   ];
@@ -294,7 +294,7 @@ export default function Navigation() {
                         key="create"
                         startContent={<Plus size={18} />}
                         as={Link}
-                        href="/seller/cars/new"
+                        href="/seller/new"
                       >
                         Create Listing
                       </DropdownItem>

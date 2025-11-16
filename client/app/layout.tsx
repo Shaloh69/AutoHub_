@@ -197,7 +197,7 @@ export default function RootLayout({
                         </li>
                         <li>
                           <Link
-                            href="/seller/cars/new"
+                            href="/seller/new"
                             className="text-gray-400 hover:text-primary-500 transition-colors duration-300 font-medium text-lg group flex items-center gap-2"
                           >
                             <span className="group-hover:translate-x-1 transition-transform duration-300">Sell Your Vehicle</span>
