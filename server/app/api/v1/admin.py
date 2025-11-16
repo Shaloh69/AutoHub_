@@ -326,7 +326,15 @@ async def ban_user(
     
     # Prevent banning other admins
     user_role = getattr(user, 'role', None)
-    if user_role in [UserRole.admin, UserRole.moderator]:
+
+    # Convert to uppercase string for comparison (database stores UPPERCASE)
+    if isinstance(user_role, str):
+        user_role_str = user_role.upper()
+    else:
+        user_role_str = str(user_role).upper() if user_role else None
+
+    # Compare with UPPERCASE enum values
+    if user_role_str in [UserRole.ADMIN.value, UserRole.MODERATOR.value]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Cannot ban admin or moderator accounts"

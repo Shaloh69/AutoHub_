@@ -124,15 +124,22 @@ async def get_current_seller(
     current_user: User = Depends(get_current_verified_user)
 ) -> User:
     """Get current user with seller/dealer role"""
-    # FIX: Use getattr to safely access Column role value
+    # FIX: Use getattr to safely access Column role value and compare with UPPERCASE enum values
     user_role = getattr(current_user, 'role', None)
-    
-    if user_role not in [UserRole.seller, UserRole.dealer, UserRole.admin]:
+
+    # Convert to uppercase string for comparison (database stores UPPERCASE)
+    if isinstance(user_role, str):
+        user_role_str = user_role.upper()
+    else:
+        user_role_str = str(user_role).upper() if user_role else None
+
+    # Compare with UPPERCASE enum values
+    if user_role_str not in [UserRole.SELLER.value, UserRole.DEALER.value, UserRole.ADMIN.value]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Seller or dealer role required"
         )
-    
+
     return current_user
 
 
@@ -140,15 +147,22 @@ async def get_current_dealer(
     current_user: User = Depends(get_current_verified_user)
 ) -> User:
     """Get current user with dealer role"""
-    # FIX: Use getattr to safely access Column role value
+    # FIX: Use getattr to safely access Column role value and compare with UPPERCASE enum values
     user_role = getattr(current_user, 'role', None)
-    
-    if user_role not in [UserRole.dealer, UserRole.admin]:
+
+    # Convert to uppercase string for comparison (database stores UPPERCASE)
+    if isinstance(user_role, str):
+        user_role_str = user_role.upper()
+    else:
+        user_role_str = str(user_role).upper() if user_role else None
+
+    # Compare with UPPERCASE enum values
+    if user_role_str not in [UserRole.DEALER.value, UserRole.ADMIN.value]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Dealer role required"
         )
-    
+
     return current_user
 
 
@@ -156,15 +170,22 @@ async def get_current_admin(
     current_user: User = Depends(get_current_user)
 ) -> User:
     """Get current user with admin role"""
-    # FIX: Use getattr to safely access Column role value
+    # FIX: Use getattr to safely access Column role value and compare with UPPERCASE enum values
     user_role = getattr(current_user, 'role', None)
-    
-    if user_role != UserRole.admin:
+
+    # Convert to uppercase string for comparison (database stores UPPERCASE)
+    if isinstance(user_role, str):
+        user_role_str = user_role.upper()
+    else:
+        user_role_str = str(user_role).upper() if user_role else None
+
+    # Compare with UPPERCASE enum value
+    if user_role_str != UserRole.ADMIN.value:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin role required"
         )
-    
+
     return current_user
 
 
@@ -172,15 +193,22 @@ async def get_current_moderator(
     current_user: User = Depends(get_current_user)
 ) -> User:
     """Get current user with moderator or admin role"""
-    # FIX: Use getattr to safely access Column role value
+    # FIX: Use getattr to safely access Column role value and compare with UPPERCASE enum values
     user_role = getattr(current_user, 'role', None)
-    
-    if user_role not in [UserRole.moderator, UserRole.admin]:
+
+    # Convert to uppercase string for comparison (database stores UPPERCASE)
+    if isinstance(user_role, str):
+        user_role_str = user_role.upper()
+    else:
+        user_role_str = str(user_role).upper() if user_role else None
+
+    # Compare with UPPERCASE enum values
+    if user_role_str not in [UserRole.MODERATOR.value, UserRole.ADMIN.value]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Moderator or admin role required"
         )
-    
+
     return current_user
 
 
