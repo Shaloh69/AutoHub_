@@ -82,8 +82,8 @@ class EmailService:
             bool: True if email sent successfully
         """
         # Build verification URL
-        verification_url = f"{settings.FRONTEND_URL}/verify-email?token={token}"
-        
+        verification_url = f"{settings.FRONTEND_URL}/auth/verify-email?token={token}"
+
         # Email subject
         subject = "Verify your email - Car Marketplace Philippines"
         
