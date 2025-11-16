@@ -21,9 +21,9 @@ class CarCreate(BaseModel):
     year: int = Field(..., ge=1900, le=2026)
     
     # Pricing
-    price: Decimal = Field(..., gt=0)
+    price: Decimal = Field(..., gt=0, le=9999999999.99)  # Max: DECIMAL(12,2) = 9,999,999,999.99
     currency: str = Field("PHP", max_length=3)
-    original_price: Optional[Decimal] = None
+    original_price: Optional[Decimal] = Field(None, le=9999999999.99)
     negotiable: bool = True
     financing_available: bool = False
     trade_in_accepted: bool = False
@@ -104,9 +104,9 @@ class CarUpdate(BaseModel):
     year: Optional[int] = Field(None, ge=1900, le=2026)
     
     # Pricing
-    price: Optional[Decimal] = Field(None, gt=0)
+    price: Optional[Decimal] = Field(None, gt=0, le=9999999999.99)  # Max: DECIMAL(12,2)
     currency: Optional[str] = Field(None, max_length=3)
-    original_price: Optional[Decimal] = None
+    original_price: Optional[Decimal] = Field(None, le=9999999999.99)
     negotiable: Optional[bool] = None
     financing_available: Optional[bool] = None
     trade_in_accepted: Optional[bool] = None
