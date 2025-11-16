@@ -380,8 +380,9 @@ export default function SearchCarsPage() {
                   {cars.map((car) => (
                     <Card
                       key={car.id}
-                      className="group hover:shadow-xl transition-all duration-300 cursor-pointer"
-                      onClick={() => router.push(`/cars/${car.id}`)}
+                      isPressable
+                      onPress={() => router.push(`/cars/${car.id}`)}
+                      className="group hover:shadow-xl transition-all duration-300"
                     >
                       <CardBody className="p-0">
                         {/* Image */}

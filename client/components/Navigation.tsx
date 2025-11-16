@@ -85,6 +85,11 @@ export default function Navigation() {
 
   const theme = getRoleTheme();
 
+  // Close mobile menu on route change
+  useEffect(() => {
+    setIsMenuOpen(false);
+  }, [pathname]);
+
   useEffect(() => {
     if (isAuthenticated) {
       loadNotifications();
