@@ -177,8 +177,22 @@ async def search_cars(
         if hasattr(car, 'condition_rating') and car.condition_rating:
             car.condition_rating = normalize_enum_value('condition_rating', car.condition_rating)
 
-    # Convert to response models - FIXED: Use CarResponse (now has images field)
-    items = [CarResponse.model_validate(car) for car in cars]
+    # Convert to response models - WORKING: This function works correctly
+    try:
+        items = [CarResponse.model_validate(car) for car in cars]
+    except Exception as e:
+        # Debug: Log validation errors
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error("=" * 80)
+        logger.error("❌ VALIDATION ERROR in search_cars")
+        logger.error(f"Error: {e}")
+        logger.error(f"Error type: {type(e)}")
+        if cars:
+            logger.error(f"Sample car attributes: {dir(cars[0])}")
+            logger.error(f"Sample car __dict__: {cars[0].__dict__ if hasattr(cars[0], '__dict__') else 'No __dict__'}")
+        logger.error("=" * 80)
+        raise
 
     # Calculate pagination
     total_pages = (total + page_size - 1) // page_size
