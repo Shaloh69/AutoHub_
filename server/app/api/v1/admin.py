@@ -79,10 +79,10 @@ async def get_admin_dashboard(
         verified_users = db.query(User).filter(User.email_verified == True).count()
         banned_users = db.query(User).filter(User.is_banned == True).count()
         
-        # Role Distribution
-        buyers = db.query(User).filter(User.role == "buyer").count()
-        sellers = db.query(User).filter(User.role == "seller").count()
-        dealers = db.query(User).filter(User.role == "dealer").count()
+        # Role Distribution (use UPPERCASE to match UserRole enum)
+        buyers = db.query(User).filter(User.role == UserRole.BUYER).count()
+        sellers = db.query(User).filter(User.role == UserRole.SELLER).count()
+        dealers = db.query(User).filter(User.role == UserRole.DEALER).count()
         
         # Car Statistics
         # Fixed: Use UPPERCASE for Car.status to match SQL schema
@@ -180,7 +180,7 @@ async def list_users(
         
         # Apply filters
         if role:
-            query = query.filter(User.role == role.lower())
+            query = query.filter(User.role == role.upper())
         
         if user_status == "active":
             query = query.filter(User.is_active == True, User.is_banned == False)
