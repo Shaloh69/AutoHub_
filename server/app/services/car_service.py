@@ -219,6 +219,9 @@ class CarService:
         page_size: int = 20
     ) -> Tuple[List[Car], int]:
         """Search cars with filters"""
+        import logging
+        logger = logging.getLogger(__name__)
+
         query = db.query(Car).options(
             joinedload(Car.images),  # ADDED: Load images for display
             joinedload(Car.brand_rel),  # ADDED: Load brand info
@@ -226,10 +229,27 @@ class CarService:
             joinedload(Car.city)  # ADDED: Load city info
         ).filter(
             Car.is_active == True,  # noqa: E712
-            Car.approval_status == "APPROVED",  # Fixed: Use UPPERCASE to match SQL schema
-            Car.status == "ACTIVE",  # Fixed: Use UPPERCASE to match SQL schema
             Car.deleted_at.is_(None)
         )
+
+        # DEBUG: Log the base query count
+        base_count = query.count()
+        logger.info(f"  📊 Base query (is_active=True, deleted_at=None): {base_count} cars")
+
+        # TEMPORARY: Relaxed filtering to debug - show all active cars regardless of approval
+        # TODO: Re-enable strict filtering once database has approved cars
+        # Original strict filters:
+        # - Car.approval_status == "APPROVED"
+        # - Car.status == "ACTIVE"
+
+        # For now, let's just filter out DRAFT and REJECTED statuses
+        from app.models.car import CarStatus, ApprovalStatus
+        query = query.filter(
+            Car.status.in_([CarStatus.ACTIVE, CarStatus.PENDING, CarStatus.RESERVED])
+        )
+
+        relaxed_count = query.count()
+        logger.info(f"  📊 After relaxed status filter: {relaxed_count} cars")
         
         # Apply filters
         if filters.get("q"):

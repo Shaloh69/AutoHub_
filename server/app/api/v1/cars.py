@@ -161,8 +161,27 @@ async def search_cars(
         "sort_order": sort_order
     }
 
-    # Search cars
-    cars, total = CarService.search_cars(db, filters, page, page_size)
+    # Search cars with detailed logging
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info("=" * 80)
+    logger.info("🔍 SEARCH_CARS DEBUG")
+    logger.info(f"  Filters: {filters}")
+    logger.info(f"  Page: {page}, Page Size: {page_size}")
+
+    try:
+        cars, total = CarService.search_cars(db, filters, page, page_size)
+        logger.info(f"  ✅ Found {total} total cars, {len(cars)} on this page")
+
+        if cars:
+            sample = cars[0]
+            logger.info(f"  📊 Sample car: ID={sample.id}, Status={sample.status}, Approval={sample.approval_status}")
+    except Exception as e:
+        logger.error(f"  ❌ Error in CarService.search_cars: {type(e).__name__}: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+        logger.error("=" * 80)
+        raise
 
     # Normalize enum values for each car before validation
     for car in cars:
@@ -179,11 +198,12 @@ async def search_cars(
 
     # Convert to response models - WORKING: This function works correctly
     try:
+        logger.info(f"  🔄 Converting {len(cars)} cars to CarResponse models...")
         items = [CarResponse.model_validate(car) for car in cars]
+        logger.info(f"  ✅ Successfully validated {len(items)} cars")
+        logger.info("=" * 80)
     except Exception as e:
         # Debug: Log validation errors
-        import logging
-        logger = logging.getLogger(__name__)
         logger.error("=" * 80)
         logger.error("❌ VALIDATION ERROR in search_cars")
         logger.error(f"Error: {e}")
