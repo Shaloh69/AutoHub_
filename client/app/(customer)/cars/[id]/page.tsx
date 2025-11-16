@@ -610,7 +610,7 @@ export default function CarDetailPage() {
                     </div>
                   </div>
 
-                  {car.seller.email_verified && car.seller.phone_verified && (
+                  {car.seller.email_verified && (
                     <div className="flex items-center gap-2 p-2 bg-green-50 dark:bg-green-900/20 rounded-lg">
                       <Shield size={16} className="text-green-600 dark:text-green-400" />
                       <span className="text-sm text-green-700 dark:text-green-300">
