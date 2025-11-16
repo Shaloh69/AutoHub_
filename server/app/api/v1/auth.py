@@ -216,7 +216,7 @@ async def resend_verification_email(
 ):
     """
     Resend email verification
-    
+
     - Generates new verification token
     - Sends verification email
     - Only for unverified users
@@ -226,8 +226,9 @@ async def resend_verification_email(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email is already verified"
         )
-    
-    AuthService.send_verification_email(current_user)
+
+    # Use the async version to avoid event loop conflicts
+    await AuthService.send_verification_email_async(current_user)
     return MessageResponse(
         message="Verification email sent successfully",
         success=True
