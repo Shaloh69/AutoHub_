@@ -20,28 +20,28 @@ class UserRegister(BaseModel):
     city_id: int
     province_id: Optional[int] = None
     region_id: Optional[int] = None
-    role: Optional[str] = "buyer"
-    
+    role: Optional[str] = "BUYER"
+
     # Business info (for dealers)
     business_name: Optional[str] = Field(None, max_length=200)
     business_permit_number: Optional[str] = Field(None, max_length=100)
     tin_number: Optional[str] = Field(None, max_length=20)
     dti_registration: Optional[str] = Field(None, max_length=100)
-    
+
     @field_validator('role')
     @classmethod
     def validate_and_normalize_role(cls, v):
-        """Validate and normalize role to lowercase"""
+        """Validate and normalize role to UPPERCASE"""
         if v is None:
-            return "buyer"
-        
-        v_lower = v.lower()
-        allowed_roles = ['buyer', 'seller', 'dealer']
-        
-        if v_lower not in allowed_roles:
-            raise ValueError(f'Role must be one of: {", ".join(allowed_roles)}. Admin and moderator roles cannot be registered directly.')
-        
-        return v_lower
+            return "BUYER"
+
+        v_upper = v.upper()
+        allowed_roles = ['BUYER', 'SELLER', 'DEALER']
+
+        if v_upper not in allowed_roles:
+            raise ValueError(f'Role must be one of: {", ".join(allowed_roles)}. ADMIN and MODERATOR roles cannot be registered directly.')
+
+        return v_upper
 
 
 class UserLogin(BaseModel):
@@ -209,32 +209,32 @@ class RoleUpgradeRequest(BaseModel):
     NEW: Role upgrade request schema
     Allows buyers to upgrade to seller or dealer
     """
-    new_role: str = Field(..., pattern="^(seller|dealer)$")
+    new_role: str = Field(..., pattern="^(SELLER|DEALER)$")
     reason: Optional[str] = Field(None, max_length=500, description="Optional reason for role upgrade")
-    
+
     # Required for dealer role
     business_name: Optional[str] = Field(None, max_length=200)
     business_permit_number: Optional[str] = Field(None, max_length=100)
     tin_number: Optional[str] = Field(None, max_length=20)
     dti_registration: Optional[str] = Field(None, max_length=100)
-    
+
     @field_validator('new_role')
     @classmethod
     def validate_role(cls, v):
-        """Validate that role is either seller or dealer"""
-        v_lower = v.lower()
-        if v_lower not in ['seller', 'dealer']:
-            raise ValueError('Can only upgrade to seller or dealer role')
-        return v_lower
-    
+        """Validate that role is either SELLER or DEALER"""
+        v_upper = v.upper()
+        if v_upper not in ['SELLER', 'DEALER']:
+            raise ValueError('Can only upgrade to SELLER or DEALER role')
+        return v_upper
+
     @field_validator('business_name')
     @classmethod
     def validate_business_info(cls, v, info):
         """Validate business info is provided for dealer role"""
         # Get the new_role from values if it exists
         values_data = info.data
-        if values_data.get('new_role') == 'dealer' and not v:
-            raise ValueError('Business name is required for dealer role')
+        if values_data.get('new_role') == 'DEALER' and not v:
+            raise ValueError('Business name is required for DEALER role')
         return v
 
 
@@ -251,7 +251,7 @@ class RoleUpgradeResponse(BaseModel):
 
 class IdentityVerificationRequest(BaseModel):
     """Identity verification request"""
-    id_type: str = Field(..., pattern="^(passport|drivers_license|national_id|voters_id)$")
+    id_type: str = Field(..., pattern="^(PASSPORT|DRIVERS_LICENSE|NATIONAL_ID|VOTERS_ID)$")
     id_number: str = Field(..., min_length=5, max_length=50)
     id_front_image: Optional[str] = None  # Base64 or URL
     id_back_image: Optional[str] = None  # Base64 or URL

@@ -113,13 +113,13 @@ class UserBanRequest(BaseModel):
 
 class UserVerifyRequest(BaseModel):
     """Request to verify a user"""
-    verification_type: str = Field(..., pattern="^(identity|business)$")
+    verification_type: str = Field(..., pattern="^(IDENTITY|BUSINESS)$")
     notes: Optional[str] = Field(None, max_length=500)
 
 
 class UserRoleChangeRequest(BaseModel):
     """Request to change user role"""
-    new_role: str = Field(..., pattern="^(buyer|seller|dealer|moderator)$")
+    new_role: str = Field(..., pattern="^(BUYER|SELLER|DEALER|MODERATOR)$")
     reason: str = Field(..., min_length=10, max_length=500)
 
 
@@ -171,9 +171,9 @@ class ReportDetailResponse(BaseModel):
 
 class ReportResolveRequest(BaseModel):
     """Request to resolve a report"""
-    status: str = Field(..., pattern="^(resolved|dismissed)$")
+    status: str = Field(..., pattern="^(RESOLVED|DISMISSED)$")
     resolution: str = Field(..., min_length=10, max_length=1000)
-    action_taken: Optional[str] = Field(None, pattern="^(none|ban_user|remove_car|warning)$")
+    action_taken: Optional[str] = Field(None, pattern="^(NONE|BAN_USER|REMOVE_CAR|WARNING)$")
 
 
 # ========================================
@@ -247,7 +247,7 @@ class SystemConfigResponse(BaseModel):
 class SystemConfigUpdate(BaseModel):
     """Update system configuration"""
     config_value: str = Field(..., max_length=5000)
-    data_type: Optional[str] = Field(None, pattern="^(string|text|image|number|boolean)$")
+    data_type: Optional[str] = Field(None, pattern="^(STRING|TEXT|IMAGE|NUMBER|BOOLEAN)$")
     description: Optional[str] = Field(None, max_length=500)
     is_public: Optional[bool] = None
 

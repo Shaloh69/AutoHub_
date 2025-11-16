@@ -12,7 +12,7 @@ class InquiryCreate(BaseModel):
     buyer_name: Optional[str] = Field(None, max_length=200)
     buyer_email: Optional[EmailStr] = None
     buyer_phone: Optional[str] = Field(None, max_length=20)
-    inquiry_type: Optional[str] = Field("general", pattern="^(general|test_drive|price_negotiation|inspection|purchase_intent|financing|trade_in)$")
+    inquiry_type: Optional[str] = Field("GENERAL", pattern="^(GENERAL|TEST_DRIVE|PRICE_NEGOTIATION|INSPECTION|PURCHASE_INTENT|FINANCING|TRADE_IN)$")
     offered_price: Optional[Decimal] = None
     test_drive_requested: bool = False
     inspection_requested: bool = False
@@ -22,8 +22,8 @@ class InquiryCreate(BaseModel):
 
 class InquiryUpdate(BaseModel):
     """Update inquiry schema"""
-    status: Optional[str] = Field(None, pattern="^(new|read|replied|in_negotiation|test_drive_scheduled|closed|converted|spam)$")
-    priority: Optional[str] = Field(None, pattern="^(low|medium|high|urgent)$")
+    status: Optional[str] = Field(None, pattern="^(NEW|READ|REPLIED|IN_NEGOTIATION|TEST_DRIVE_SCHEDULED|CLOSED|CONVERTED|SPAM)$")
+    priority: Optional[str] = Field(None, pattern="^(LOW|MEDIUM|HIGH|URGENT)$")
 
 
 class InquiryRating(BaseModel):
@@ -35,7 +35,7 @@ class InquiryRating(BaseModel):
 class InquiryResponseCreate(BaseModel):
     """Create inquiry response - Complete"""
     message: str = Field(..., min_length=1, max_length=2000)
-    response_type: Optional[str] = Field("message", pattern="^(message|price_counter|schedule_test_drive|send_documents|final_offer)$")
+    response_type: Optional[str] = Field("MESSAGE", pattern="^(MESSAGE|PRICE_COUNTER|SCHEDULE_TEST_DRIVE|SEND_DOCUMENTS|FINAL_OFFER)$")
     counter_offer_price: Optional[Decimal] = None
 
 
