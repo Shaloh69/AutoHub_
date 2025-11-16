@@ -24,7 +24,7 @@ class SubscriptionPlan(Base):
     # Pricing - FIXED: Match SQL schema exactly
     price = Column(DECIMAL(10, 2), nullable=False)  # Not monthly_price/yearly_price
     currency_id = Column(Integer, ForeignKey("currencies.id"), default=1)
-    billing_cycle = Column(Enum("monthly", "quarterly", "yearly", "lifetime"), default="monthly")
+    billing_cycle = Column(Enum("MONTHLY", "QUARTERLY", "YEARLY", "LIFETIME"), default="MONTHLY")
 
     # Limits - FIXED: Match SQL column names exactly
     max_listings = Column(Integer, default=5)  # Not max_active_listings
@@ -113,7 +113,7 @@ class SubscriptionPayment(Base):
     currency_id = Column(Integer, ForeignKey("currencies.id"), default=1)  # FIXED: Use FK not string
     payment_method = Column(String(50))
     transaction_id = Column(String(255))
-    status = Column(Enum("pending", "completed", "failed", "refunded"), default="pending", index=True)
+    status = Column(Enum("PENDING", "COMPLETED", "FAILED", "REFUNDED"), default="PENDING", index=True)
 
     # QR Code Payment Fields (from SQL migration)
     reference_number = Column(String(100), index=True)
@@ -182,7 +182,7 @@ class PromotionCode(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     code = Column(String(50), nullable=False, unique=True, index=True)
     description = Column(Text)
-    discount_type = Column(Enum("percentage", "fixed_amount", "free_feature"), default="percentage")
+    discount_type = Column(Enum("PERCENTAGE", "FIXED_AMOUNT", "FREE_FEATURE"), default="PERCENTAGE")
     discount_value = Column(DECIMAL(10, 2), nullable=False)
     max_uses = Column(Integer)
     current_uses = Column(Integer, default=0)
@@ -218,8 +218,8 @@ class PaymentSetting(Base):
     setting_key = Column(String(100), nullable=False, unique=True, index=True)
     setting_value = Column(Text, nullable=False)
     setting_type = Column(
-        Enum("string", "text", "image", "number", "boolean"),
-        default="string"
+        Enum("STRING", "TEXT", "IMAGE", "NUMBER", "BOOLEAN"),
+        default="STRING"
     )
     description = Column(Text)
     is_active = Column(Boolean, default=True)
@@ -241,11 +241,11 @@ class PaymentVerificationLog(Base):
     
     # Action Details
     action = Column(
-        Enum("verified", "rejected", "requested_info"),
+        Enum("VERIFIED", "REJECTED", "REQUESTED_INFO"),
         nullable=False
     )
-    previous_status = Column(Enum("pending", "completed", "failed", "refunded"))
-    new_status = Column(Enum("pending", "completed", "failed", "refunded"))
+    previous_status = Column(Enum("PENDING", "COMPLETED", "FAILED", "REFUNDED"))
+    new_status = Column(Enum("PENDING", "COMPLETED", "FAILED", "REFUNDED"))
     notes = Column(Text)
     
     # Audit

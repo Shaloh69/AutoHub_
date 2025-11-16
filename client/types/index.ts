@@ -1,28 +1,51 @@
 // ==========================================
-// types/index.ts - Complete Type Definitions
+// types/index.ts - Complete Type Definitions (NORMALIZED & UPPERCASE)
+// Updated to match normalized database schema v4.0
 // ==========================================
 
-// User enums - lowercase to match SQL schema
-export type UserRole = 'buyer' | 'seller' | 'dealer' | 'admin' | 'moderator';
+// User enums - UPPERCASE to match normalized SQL schema
+export type UserRole = 'BUYER' | 'SELLER' | 'DEALER' | 'ADMIN' | 'MODERATOR';
+export type Gender = 'MALE' | 'FEMALE' | 'OTHER' | 'PREFER_NOT_TO_SAY';
+export type VerificationLevel = 'NONE' | 'EMAIL' | 'PHONE' | 'IDENTITY' | 'BUSINESS';
+export type IDType = 'DRIVERS_LICENSE' | 'PASSPORT' | 'NATIONAL_ID' | 'VOTERS_ID';
 
-// Car enums - match SQL schema casing exactly
+// Car enums - UPPERCASE to match normalized SQL schema
 export type CarStatus = 'DRAFT' | 'PENDING' | 'ACTIVE' | 'SOLD' | 'RESERVED' | 'INACTIVE' | 'REJECTED' | 'EXPIRED';
 export type ApprovalStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
-export type FuelType = 'GASOLINE' | 'DIESEL' | 'ELECTRIC' | 'HYBRID';
+export type FuelType = 'GASOLINE' | 'DIESEL' | 'ELECTRIC' | 'HYBRID' | 'PLUG_IN_HYBRID';
 export type TransmissionType = 'MANUAL' | 'AUTOMATIC' | 'CVT' | 'DCT';
 export type DrivetrainType = 'FWD' | 'RWD' | 'AWD' | '4WD';
 export type ConditionRating = 'BRAND_NEW' | 'LIKE_NEW' | 'EXCELLENT' | 'GOOD' | 'FAIR' | 'POOR';
-export type BodyType = 'sedan' | 'suv' | 'pickup' | 'van' | 'hatchback' | 'coupe' | 'mpv' | 'crossover' | 'wagon' | 'convertible';
-export type EngineType = 'gasoline' | 'diesel' | 'electric' | 'hybrid' | 'plug-in-hybrid';
-export type Visibility = 'public' | 'private' | 'unlisted';
+export type BodyType = 'SEDAN' | 'SUV' | 'PICKUP' | 'VAN' | 'HATCHBACK' | 'COUPE' | 'MPV' | 'CROSSOVER' | 'WAGON' | 'CONVERTIBLE';
+export type MileageUnit = 'KM' | 'MILES';
+export type Visibility = 'PUBLIC' | 'PRIVATE' | 'UNLISTED';
+export type RegistrationStatus = 'REGISTERED' | 'UNREGISTERED' | 'EXPIRED' | 'FOR_RENEWAL';
+export type ORCRStatus = 'COMPLETE' | 'INCOMPLETE' | 'PROCESSING' | 'LOST';
+export type InsuranceStatus = 'ACTIVE' | 'EXPIRED' | 'NONE';
+
+// Inquiry enums - UPPERCASE to match normalized SQL schema
+export type InquiryType = 'GENERAL' | 'TEST_DRIVE' | 'PRICE_NEGOTIATION' | 'INSPECTION' | 'PURCHASE_INTENT' | 'FINANCING' | 'TRADE_IN';
+export type InquiryStatus = 'NEW' | 'READ' | 'REPLIED' | 'IN_NEGOTIATION' | 'TEST_DRIVE_SCHEDULED' | 'CLOSED' | 'CONVERTED' | 'SPAM';
+export type InquiryPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
+
+// Subscription enums - UPPERCASE to match normalized SQL schema
+export type SubscriptionStatus = 'FREE' | 'TRIAL' | 'ACTIVE' | 'CANCELLED' | 'EXPIRED';
+export type BillingCycle = 'MONTHLY' | 'QUARTERLY' | 'YEARLY' | 'ONE_TIME';
+
+// Other enums - UPPERCASE to match normalized SQL schema
+export type CityType = 'CITY' | 'MUNICIPALITY' | 'DISTRICT';
+export type ColorCategory = 'PRIMARY' | 'NEUTRAL' | 'METALLIC' | 'SPECIAL';
+export type FeatureCategory = 'SAFETY' | 'COMFORT' | 'TECHNOLOGY' | 'PERFORMANCE' | 'EXTERIOR' | 'INTERIOR';
+export type ImageType = 'EXTERIOR' | 'INTERIOR' | 'ENGINE' | 'DAMAGE' | 'DOCUMENT' | 'OTHER';
 
 export interface User {
   id: number;
   email: string;
   first_name: string;
   last_name: string;
-  phone_number?: string;
+  phone?: string;
   role: UserRole;
+  gender?: Gender;
   profile_image?: string;
   bio?: string;
   city_id?: number;
@@ -33,10 +56,10 @@ export interface User {
   phone_verified: boolean;
   identity_verified: boolean;
   business_verified: boolean;
+  verification_level: VerificationLevel;
   is_banned: boolean;
   business_name?: string;
   business_address?: string;
-  business_registration?: string;
   total_listings: number;
   active_listings: number;
   sold_listings: number;
@@ -46,45 +69,61 @@ export interface User {
   positive_feedback: number;
   negative_feedback: number;
   response_rate: number;
+  subscription_status: SubscriptionStatus;
   created_at: string;
 }
 
 export interface Brand {
   id: number;
   name: string;
+  slug: string;
   logo_url?: string;
   country_of_origin?: string;
-  is_popular_in_ph: boolean;
-  model_count: number;
+  is_popular: boolean;
+  total_models: number;
+  total_listings: number;
 }
 
 export interface Model {
   id: number;
   brand_id: number;
   name: string;
-  body_type?: string;
-  generation?: string;
-  year_start?: number;
-  year_end?: number;
-  is_popular_in_ph: boolean;
+  slug: string;
+  model_type: BodyType;
+  description?: string;
+  year_introduced?: number;
+  is_active: boolean;
+  total_listings: number;
 }
 
 export interface Category {
   id: number;
+  parent_id?: number;
   name: string;
   slug: string;
   description?: string;
   icon?: string;
+  display_order: number;
   is_active: boolean;
+  total_listings: number;
 }
 
 export interface Feature {
   id: number;
   name: string;
-  category: 'safety' | 'comfort' | 'entertainment' | 'technology' | 'performance' | 'exterior' | 'interior';
+  slug: string;
+  category: FeatureCategory;
   description?: string;
   icon?: string;
   is_premium: boolean;
+  display_order: number;
+}
+
+export interface Color {
+  id: number;
+  name: string;
+  hex_code?: string;
+  category: ColorCategory;
   is_popular: boolean;
 }
 
@@ -99,67 +138,81 @@ export interface Location {
   longitude?: number;
 }
 
+// NORMALIZED Car Interface - Using FKs only, no duplicate string fields
 export interface Car {
   id: number;
   seller_id: number;
   brand_id: number;
   model_id: number;
   category_id?: number;
-  
+  color_id?: number;
+  interior_color_id?: number;
+
   // Basic Info
   title: string;
   description?: string;
   year: number;
-  
-  // Pricing
+  trim?: string;
+
+  // Pricing (NORMALIZED - using currency_id FK only)
   price: number;
-  currency: string;
+  currency_id: number;
   original_price?: number;
+  discount_amount?: number;
   discount_percentage?: number;
-  negotiable: boolean;
-  
-  // Technical
+  price_negotiable: boolean;
+
+  // Vehicle Details
+  vin_number?: string;
+  plate_number?: string;
+  engine_number?: string;
+  chassis_number?: string;
+  body_type?: BodyType;
+
+  // Technical (NORMALIZED - no engine_type, only fuel_type)
   mileage: number;
+  mileage_unit: MileageUnit;
   fuel_type: FuelType;
   transmission: TransmissionType;
   engine_size?: string;
+  cylinders?: number;
   horsepower?: number;
   torque?: number;
+  fuel_economy_city?: number;
+  fuel_economy_highway?: number;
   drivetrain?: DrivetrainType;
   seats?: number;
   doors?: number;
-  
-  // Exterior
-  exterior_color: string;
-  color_type?: string;
-  
-  // Condition
-  condition_rating: ConditionRating;
+
+  // Condition (NORMALIZED - using car_condition only)
+  car_condition: ConditionRating;
   accident_history: boolean;
   accident_details?: string;
   flood_history: boolean;
   number_of_owners: number;
   service_history_available: boolean;
-  
-  // Documentation
-  registration_status: string;
-  or_cr_status: string;
+
+  // Documentation (NORMALIZED ENUMs)
+  registration_status: RegistrationStatus;
+  registration_expiry?: string;
+  or_cr_status: ORCRStatus;
   lto_registered: boolean;
   deed_of_sale_available: boolean;
+  has_emission_test: boolean;
   casa_maintained: boolean;
-  
-  // Insurance & Warranty
-  insurance_status: string;
+
+  // Insurance & Warranty (NORMALIZED ENUMs)
+  insurance_status: InsuranceStatus;
   insurance_expiry?: string;
   warranty_remaining: boolean;
   warranty_details?: string;
   warranty_expiry?: string;
-  
+
   // Finance Options
   financing_available: boolean;
   trade_in_accepted: boolean;
   installment_available: boolean;
-  
+
   // Location
   city_id: number;
   province_id: number;
@@ -168,41 +221,57 @@ export interface Car {
   barangay?: string;
   latitude?: number;
   longitude?: number;
-  
+
+  // Media
+  main_image?: string;
+  total_images: number;
+  video_url?: string;
+  virtual_tour_url?: string;
+
   // Status
   status: CarStatus;
   approval_status: ApprovalStatus;
+  visibility: Visibility;
   rejection_reason?: string;
   is_featured: boolean;
   is_premium: boolean;
   is_active: boolean;
+  verified: boolean;
   featured_until?: string;
   premium_until?: string;
   boosted_until?: string;
-  
+
   // SEO
   seo_slug: string;
   meta_title?: string;
   meta_description?: string;
-  
-  // Metrics
+  search_keywords?: string;
+
+  // Metrics (NORMALIZED - using views_count only)
   views_count: number;
   unique_views_count: number;
+  inquiry_count: number;
   contact_count: number;
+  click_count: number;
   favorite_count: number;
   average_rating: number;
-  
+  quality_score: number;
+  completeness_score: number;
+  ranking_score: number;
+
   // Timestamps
   created_at: string;
   updated_at: string;
   published_at?: string;
   expires_at?: string;
   sold_at?: string;
-  
-  // Relations
+
+  // Relations (populated by joins)
   brand?: Brand;
   model?: Model;
   category?: Category;
+  color?: Color;
+  interior_color?: Color;
   seller?: User;
   images?: CarImage[];
   features?: Feature[];
@@ -213,15 +282,11 @@ export interface CarImage {
   id: number;
   car_id: number;
   image_url: string;
-  thumbnail_url?: string;
-  medium_url?: string;
-  file_name: string;
-  file_size: number;
-  image_type: string;
-  is_primary: boolean;
+  image_type: ImageType;
+  is_main: boolean;
   display_order: number;
-  width?: number;
-  height?: number;
+  caption?: string;
+  uploaded_at?: string;
 }
 
 export interface Inquiry {
@@ -229,15 +294,27 @@ export interface Inquiry {
   car_id: number;
   buyer_id?: number;
   seller_id: number;
-  subject: string;
+  subject?: string;
   message: string;
   buyer_name?: string;
   buyer_email?: string;
   buyer_phone?: string;
-  status: 'new' | 'read' | 'replied' | 'in_negotiation' | 'test_drive_scheduled' | 'closed' | 'converted' | 'spam';
-  priority: 'low' | 'medium' | 'high' | 'urgent';
+  inquiry_type: InquiryType;
+  offered_price?: number;
+  test_drive_requested: boolean;
+  inspection_requested: boolean;
+  financing_needed: boolean;
+  trade_in_vehicle: boolean;
+  status: InquiryStatus;
+  is_read: boolean;
+  priority: InquiryPriority;
+  response_count: number;
+  last_response_at?: string;
+  buyer_rating?: number;
+  seller_rating?: number;
   created_at: string;
   updated_at: string;
+  closed_at?: string;
   car?: Car;
   buyer?: User;
   seller?: User;
@@ -249,7 +326,7 @@ export interface InquiryResponse {
   inquiry_id: number;
   user_id: number;
   message: string;
-  is_seller_response: boolean;
+  is_from_seller: boolean;
   created_at: string;
   user?: User;
 }
@@ -260,27 +337,25 @@ export interface Transaction {
   seller_id: number;
   buyer_id: number;
   inquiry_id?: number;
+  transaction_type: 'SALE' | 'RESERVATION' | 'DEPOSIT';
   agreed_price: number;
-  original_price: number;
-  currency: string;
-  payment_method: 'cash' | 'bank_transfer' | 'financing' | 'installment';
-  status: 'pending' | 'deposit_paid' | 'financing_approved' | 'documents_ready' | 'completed' | 'cancelled' | 'disputed';
+  currency_id: number;
   deposit_amount?: number;
-  balance_amount?: number;
-  financing_provider?: string;
-  down_payment?: number;
-  monthly_installment?: number;
-  installment_months?: number;
-  trade_in_accepted: boolean;
+  final_amount?: number;
+  payment_method: 'CASH' | 'BANK_TRANSFER' | 'CHECK' | 'FINANCING' | 'TRADE_IN' | 'MIXED';
+  payment_status: 'PENDING' | 'PARTIAL' | 'COMPLETED' | 'REFUNDED';
+  status: 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED' | 'DISPUTED';
+  has_trade_in: boolean;
+  trade_in_car_id?: number;
   trade_in_value?: number;
-  trade_in_vehicle_details?: string;
-  documents_verified: boolean;
-  payment_verified: boolean;
-  transfer_completed: boolean;
-  initiated_at: string;
-  deposit_paid_at?: string;
+  seller_notes?: string;
+  buyer_notes?: string;
+  admin_notes?: string;
+  confirmed_at?: string;
   completed_at?: string;
   cancelled_at?: string;
+  created_at: string;
+  updated_at: string;
   car?: Car;
   seller?: User;
   buyer?: User;
@@ -289,46 +364,54 @@ export interface Transaction {
 export interface SubscriptionPlan {
   id: number;
   name: string;
+  slug: string;
   description?: string;
-  tier: 'free' | 'basic' | 'professional' | 'premium' | 'enterprise';
-  monthly_price: number;
-  annual_price: number;
-  currency: string;
-  max_active_listings: number;
+  price: number;
+  currency_id: number;
+  billing_cycle: BillingCycle;
+  max_listings: number;
+  max_photos_per_listing: number;
   max_featured_listings: number;
-  max_premium_listings: number;
-  max_images_per_listing: number;
-  max_storage_mb: number;
-  boost_credits_per_month: number;
-  analytics_access: boolean;
+  can_add_video: boolean;
+  can_add_virtual_tour: boolean;
   priority_support: boolean;
-  can_export_data: boolean;
-  api_access: boolean;
+  advanced_analytics: boolean;
+  featured_badge: boolean;
+  is_popular: boolean;
+  display_order: number;
   is_active: boolean;
-  features: string[];
+  created_at: string;
 }
 
 export interface Subscription {
   id: number;
   user_id: number;
   plan_id: number;
-  status: 'active' | 'cancelled' | 'expired' | 'suspended';
-  billing_cycle: 'monthly' | 'annual';
-  current_period_start: string;
-  current_period_end: string;
-  cancel_at_period_end: boolean;
+  status: 'ACTIVE' | 'CANCELLED' | 'EXPIRED' | 'SUSPENDED' | 'PENDING';
+  billing_cycle: BillingCycle;
+  auto_renew: boolean;
+  subscribed_at: string;
+  current_period_start?: string;
+  current_period_end?: string;
+  next_billing_date?: string;
+  started_at: string;
+  expires_at?: string;
   cancelled_at?: string;
+  created_at: string;
+  updated_at: string;
   plan?: SubscriptionPlan;
 }
 
 export interface Notification {
   id: number;
   user_id: number;
-  type: string;
   title: string;
   message: string;
-  link?: string;
+  notification_type: string;
+  related_id?: number;
+  related_type?: string;
   is_read: boolean;
+  read_at?: string;
   created_at: string;
 }
 
@@ -352,6 +435,7 @@ export interface SearchFilters {
   brand_id?: number;
   model_id?: number;
   category_id?: number;
+  color_id?: number;
   min_price?: number;
   max_price?: number;
   min_year?: number;
@@ -360,12 +444,12 @@ export interface SearchFilters {
   transmission?: TransmissionType;
   min_mileage?: number;
   max_mileage?: number;
-  condition_rating?: ConditionRating;
+  car_condition?: ConditionRating;
   city_id?: number;
   province_id?: number;
   region_id?: number;
   is_featured?: boolean;
-  negotiable?: boolean;
+  price_negotiable?: boolean;
   financing_available?: boolean;
   latitude?: number;
   longitude?: number;
@@ -375,40 +459,52 @@ export interface SearchFilters {
   page_size?: number;
 }
 
+// NORMALIZED CarFormData - Using FKs only
 export interface CarFormData {
   brand_id: number;
   model_id: number;
   category_id?: number;
+  color_id?: number;
+  interior_color_id?: number;
   title: string;
   description?: string;
   year: number;
+  trim?: string;
   price: number;
-  negotiable: boolean;
+  currency_id: number;
+  price_negotiable: boolean;
+  vin_number?: string;
+  plate_number?: string;
   mileage: number;
+  mileage_unit: MileageUnit;
   fuel_type: FuelType;
   transmission: TransmissionType;
   engine_size?: string;
+  cylinders?: number;
   horsepower?: number;
   torque?: number;
   drivetrain?: DrivetrainType;
   seats?: number;
   doors?: number;
-  exterior_color: string;
-  color_type?: string;
-  condition_rating: ConditionRating;
+  body_type?: BodyType;
+  car_condition: ConditionRating;
   accident_history: boolean;
   accident_details?: string;
   flood_history: boolean;
   number_of_owners: number;
   service_history_available: boolean;
-  registration_status: string;
-  or_cr_status: string;
+  registration_status: RegistrationStatus;
+  registration_expiry?: string;
+  or_cr_status: ORCRStatus;
   lto_registered: boolean;
   deed_of_sale_available: boolean;
+  has_emission_test: boolean;
   casa_maintained: boolean;
-  insurance_status: string;
+  insurance_status: InsuranceStatus;
+  insurance_expiry?: string;
   warranty_remaining: boolean;
   warranty_details?: string;
+  warranty_expiry?: string;
   financing_available: boolean;
   trade_in_accepted: boolean;
   installment_available: boolean;

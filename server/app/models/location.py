@@ -71,7 +71,7 @@ class PhCity(Base):
     province_id = Column(Integer, ForeignKey("ph_provinces.id"), nullable=False, index=True)
     city_code = Column(String(10), index=True)
     name = Column(String(100), nullable=False, index=True)
-    city_type = Column(SQLEnum('city', 'municipality', 'district', name='city_type_enum'), default='city')
+    city_type = Column(SQLEnum('CITY', 'MUNICIPALITY', 'DISTRICT', name='city_type_enum'), default='CITY')
     is_highly_urbanized = Column(Boolean, default=False)
     latitude = Column(DECIMAL(10, 8), nullable=False, default=14.5995)
     longitude = Column(DECIMAL(11, 8), nullable=False, default=120.9842)
@@ -115,8 +115,8 @@ class StandardColor(Base):
     name = Column(String(50), unique=True, nullable=False, index=True)
     hex_code = Column(String(7))
     category = Column(
-        SQLEnum('primary', 'neutral', 'metallic', 'special', name='color_category_enum'),
-        default='primary'
+        SQLEnum('PRIMARY', 'NEUTRAL', 'METALLIC', 'SPECIAL', name='color_category_enum'),
+        default='PRIMARY'
     )
     is_popular = Column(Boolean, default=True)
     display_order = Column(Integer, default=0)

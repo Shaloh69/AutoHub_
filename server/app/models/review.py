@@ -6,10 +6,11 @@ import enum
 
 
 class ReviewStatus(str, enum.Enum):
-    PENDING = "pending"
-    APPROVED = "approved"
-    REJECTED = "rejected"
-    HIDDEN = "hidden"
+    """Review status enum - UPPERCASE to match normalized SQL schema"""
+    PENDING = "PENDING"
+    APPROVED = "APPROVED"
+    REJECTED = "REJECTED"
+    HIDDEN = "HIDDEN"
 
 
 class Review(Base):

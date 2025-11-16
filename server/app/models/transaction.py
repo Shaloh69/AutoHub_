@@ -6,28 +6,37 @@ import enum
 
 
 class TransactionType(str, enum.Enum):
-    """Transaction type enum - lowercase to match SQL schema exactly"""
-    sale = "sale"
-    reservation = "reservation"
-    deposit = "deposit"
+    """Transaction type enum - UPPERCASE to match normalized SQL schema"""
+    SALE = "SALE"
+    RESERVATION = "RESERVATION"
+    DEPOSIT = "DEPOSIT"
 
 
 class TransactionStatus(str, enum.Enum):
-    """Transaction status enum - lowercase to match SQL schema exactly"""
-    pending = "pending"
-    confirmed = "confirmed"
-    completed = "completed"
-    cancelled = "cancelled"
-    disputed = "disputed"
-    # REMOVED: DEPOSIT_PAID, FINANCING_APPROVED, DOCUMENTS_READY (not in SQL)
+    """Transaction status enum - UPPERCASE to match normalized SQL schema"""
+    PENDING = "PENDING"
+    CONFIRMED = "CONFIRMED"
+    COMPLETED = "COMPLETED"
+    CANCELLED = "CANCELLED"
+    DISPUTED = "DISPUTED"
 
 
 class PaymentStatus(str, enum.Enum):
-    """Payment status enum - lowercase to match SQL schema exactly"""
-    pending = "pending"
-    partial = "partial"
-    completed = "completed"
-    refunded = "refunded"
+    """Payment status enum - UPPERCASE to match normalized SQL schema"""
+    PENDING = "PENDING"
+    PARTIAL = "PARTIAL"
+    COMPLETED = "COMPLETED"
+    REFUNDED = "REFUNDED"
+
+
+class PaymentMethod(str, enum.Enum):
+    """Payment method enum - UPPERCASE to match normalized SQL schema"""
+    CASH = "CASH"
+    BANK_TRANSFER = "BANK_TRANSFER"
+    CHECK = "CHECK"
+    FINANCING = "FINANCING"
+    TRADE_IN = "TRADE_IN"
+    MIXED = "MIXED"
 
 
 class Transaction(Base):
@@ -42,15 +51,15 @@ class Transaction(Base):
     inquiry_id = Column(Integer, ForeignKey("inquiries.id", ondelete="SET NULL"))
 
     # Transaction Details
-    transaction_type = Column(Enum(TransactionType), default=TransactionType.sale)
+    transaction_type = Column(Enum(TransactionType), default=TransactionType.SALE)
     agreed_price = Column(DECIMAL(12, 2), nullable=False)
     currency_id = Column(Integer, ForeignKey("currencies.id"), default=1)
     deposit_amount = Column(DECIMAL(12, 2))
     final_amount = Column(DECIMAL(12, 2))
 
     # Payment Details
-    payment_method = Column(Enum("cash", "bank_transfer", "check", "financing", "trade_in", "mixed"), default="cash")
-    payment_status = Column(Enum(PaymentStatus), default=PaymentStatus.pending)
+    payment_method = Column(Enum(PaymentMethod), default=PaymentMethod.CASH)
+    payment_status = Column(Enum(PaymentStatus), default=PaymentStatus.PENDING)
 
     # Trade-in
     has_trade_in = Column(Boolean, default=False)
@@ -63,7 +72,7 @@ class Transaction(Base):
     admin_notes = Column(Text)
 
     # Status
-    status = Column(Enum(TransactionStatus), default=TransactionStatus.pending, nullable=False, index=True)
+    status = Column(Enum(TransactionStatus), default=TransactionStatus.PENDING, nullable=False, index=True)
 
     # Timestamps
     confirmed_at = Column(TIMESTAMP)
