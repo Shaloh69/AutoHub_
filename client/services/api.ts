@@ -535,6 +535,7 @@ class ApiService {
   async approveCar(id: number): Promise<ApiResponse<any>> {
     return this.request(`/admin/cars/${id}/approve`, {
       method: 'POST',
+      body: JSON.stringify({ approved: true }),
     });
   }
 

@@ -867,15 +867,18 @@ async def approve_car(
             detail="Car not found"
         )
     
-    # Update car status
+    # Update car status (use UPPERCASE to match SQL schema)
     if approval_request.approved:
-        setattr(car, 'status', 'active')
+        setattr(car, 'status', 'ACTIVE')
+        setattr(car, 'approval_status', 'APPROVED')
         setattr(car, 'is_active', True)
         notification_title = "Car Listing Approved"
         notification_message = f"Your car listing '{getattr(car, 'title', '')}' has been approved and is now live!"
     else:
-        setattr(car, 'status', 'rejected')
+        setattr(car, 'status', 'REJECTED')
+        setattr(car, 'approval_status', 'REJECTED')
         setattr(car, 'is_active', False)
+        setattr(car, 'rejection_reason', approval_request.notes)
         notification_title = "Car Listing Rejected"
         notification_message = f"Your car listing '{getattr(car, 'title', '')}' was rejected. Reason: {approval_request.notes or 'No reason provided'}"
     
@@ -944,8 +947,9 @@ async def reject_car(
             detail="Car not found"
         )
 
-    # Update car status
-    setattr(car, 'status', 'rejected')
+    # Update car status (use UPPERCASE to match SQL schema)
+    setattr(car, 'status', 'REJECTED')
+    setattr(car, 'approval_status', 'REJECTED')
     setattr(car, 'is_active', False)
     setattr(car, 'rejection_reason', approval_request.notes)
 
@@ -958,7 +962,8 @@ async def reject_car(
         entity_id=car_id,
         new_values={
             "approved": False,
-            "status": "rejected",
+            "status": "REJECTED",
+            "approval_status": "REJECTED",
             "rejection_reason": approval_request.notes
         }
     )
