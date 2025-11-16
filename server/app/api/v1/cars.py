@@ -697,10 +697,9 @@ async def get_price_history(
     return [PriceHistoryResponse.model_validate(ph) for ph in price_history]
 
 
-@router.get("/brands/all", response_model=List[BrandResponse])
-@router.get("/brands", response_model=List[BrandResponse])  # Alias for frontend compatibility
+@router.get("/brands", response_model=List[BrandResponse])
 def get_brands(
-    is_popular: Optional[bool] = None,
+    is_popular: Optional[bool] = Query(None),
     db: Session = Depends(get_db)
 ):
     """
@@ -720,8 +719,8 @@ def get_brands(
 
 @router.get("/models", response_model=List[ModelResponse])
 def get_models(
-    brand_id: Optional[int] = None,
-    is_popular: Optional[bool] = None,
+    brand_id: Optional[int] = Query(None),
+    is_popular: Optional[bool] = Query(None),
     db: Session = Depends(get_db)
 ):
     """
@@ -746,7 +745,7 @@ def get_models(
 @router.get("/brands/{brand_id}/models", response_model=List[ModelResponse])
 def get_models_by_brand(
     brand_id: int,
-    is_popular: Optional[bool] = None,
+    is_popular: Optional[bool] = Query(None),
     db: Session = Depends(get_db)
 ):
     """
@@ -767,7 +766,7 @@ def get_models_by_brand(
 
 @router.get("/categories", response_model=List[CategoryResponse])
 def get_categories(
-    is_active: Optional[bool] = True,
+    is_active: bool = Query(True),
     db: Session = Depends(get_db)
 ):
     """
@@ -785,11 +784,10 @@ def get_categories(
     return [CategoryResponse.model_validate(category) for category in categories]
 
 
-@router.get("/features/all", response_model=List[FeatureResponse])
-@router.get("/features", response_model=List[FeatureResponse])  # Alias for frontend compatibility
+@router.get("/features", response_model=List[FeatureResponse])
 def get_features(
-    category: Optional[str] = None,
-    is_popular: Optional[bool] = None,
+    category: Optional[str] = Query(None),
+    is_popular: Optional[bool] = Query(None),
     db: Session = Depends(get_db)
 ):
     """
