@@ -203,22 +203,51 @@ class ApiService {
     });
   }
 
-  async uploadCarImages(carId: number, files: File[]): Promise<ApiResponse<any>> {
-    const formData = new FormData();
-    files.forEach(file => formData.append('file', file));
-
+  async uploadCarImages(
+    carId: number,
+    files: File[],
+    metadata?: { type: string; isMain: boolean }[]
+  ): Promise<ApiResponse<any>> {
     const token = localStorage.getItem('token');
-    const response = await fetch(`${API_BASE_URL}/cars/${carId}/images`, {
-      method: 'POST',
-      headers: token ? { 'Authorization': `Bearer ${token}` } : {},
-      body: formData,
-    });
+    const results = [];
 
-    const data = await response.json().catch(() => ({}));
+    // Upload images one by one with their metadata
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const meta = metadata?.[i] || { type: 'exterior', isMain: i === 0 };
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const url = `${API_BASE_URL}/cars/${carId}/images?image_type=${meta.type}&is_main=${meta.isMain}`;
+
+      try {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+          body: formData,
+        });
+
+        const data = await response.json().catch(() => ({}));
+        results.push({
+          success: response.ok,
+          data: response.ok ? data : undefined,
+          error: !response.ok ? (data.detail || 'Upload failed') : undefined,
+        });
+      } catch (error) {
+        results.push({
+          success: false,
+          error: 'Network error',
+        });
+      }
+    }
+
+    // Return success if all uploads succeeded
+    const allSuccess = results.every(r => r.success);
     return {
-      success: response.ok,
-      data: response.ok ? data : undefined,
-      error: !response.ok ? (data.detail || 'Upload failed') : undefined,
+      success: allSuccess,
+      data: allSuccess ? results.map(r => r.data) : undefined,
+      error: !allSuccess ? results.find(r => !r.success)?.error : undefined,
     };
   }
 

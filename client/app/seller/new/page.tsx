@@ -40,7 +40,17 @@ export default function CreateCarPage() {
   const [cities, setCities] = useState<any[]>([]);
   const [selectedFeatures, setSelectedFeatures] = useState<number[]>([]);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [imageMetadata, setImageMetadata] = useState<{ type: string; isMain: boolean }[]>([]);
   const [error, setError] = useState<string | null>(null);
+
+  const IMAGE_TYPES = [
+    { value: 'exterior', label: 'Exterior', icon: '🚗' },
+    { value: 'interior', label: 'Interior', icon: '🪑' },
+    { value: 'engine', label: 'Engine', icon: '⚙️' },
+    { value: 'damage', label: 'Damage', icon: '⚠️' },
+    { value: 'document', label: 'Documents', icon: '📄' },
+    { value: 'other', label: 'Other', icon: '📸' },
+  ];
 
   const [formData, setFormData] = useState<Partial<CarFormData>>({
     negotiable: true,
@@ -111,11 +121,43 @@ export default function CreateCarPage() {
       return;
     }
     setImageFiles(prev => [...prev, ...files]);
+
+    // Initialize metadata for new images
+    const newMetadata = files.map((_, index) => ({
+      type: 'exterior',
+      isMain: imageFiles.length === 0 && index === 0 // First image is main by default
+    }));
+    setImageMetadata(prev => [...prev, ...newMetadata]);
     setError(null);
   };
 
   const removeImage = (index: number) => {
     setImageFiles(prev => prev.filter((_, i) => i !== index));
+    setImageMetadata(prev => {
+      const updated = prev.filter((_, i) => i !== index);
+      // If we removed the main image, make the first image main
+      if (prev[index]?.isMain && updated.length > 0) {
+        updated[0].isMain = true;
+      }
+      return updated;
+    });
+  };
+
+  const setMainImage = (index: number) => {
+    setImageMetadata(prev =>
+      prev.map((meta, i) => ({
+        ...meta,
+        isMain: i === index
+      }))
+    );
+  };
+
+  const setImageType = (index: number, type: string) => {
+    setImageMetadata(prev =>
+      prev.map((meta, i) =>
+        i === index ? { ...meta, type } : meta
+      )
+    );
   };
 
   const toggleFeature = (featureId: number) => {
@@ -232,9 +274,9 @@ export default function CreateCarPage() {
       if (response.success && response.data) {
         const carId = response.data.id;
 
-        // Upload images
+        // Upload images with metadata (type and main image flag)
         if (imageFiles.length > 0) {
-          await apiService.uploadCarImages(carId, imageFiles);
+          await apiService.uploadCarImages(carId, imageFiles, imageMetadata);
         }
 
         router.push('/seller/dashboard');
@@ -665,32 +707,98 @@ export default function CreateCarPage() {
                 </div>
 
                 {imageFiles.length > 0 && (
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {imageFiles.map((file, index) => (
-                      <div key={index} className="relative group">
-                        <img
-                          src={URL.createObjectURL(file)}
-                          alt={`Preview ${index + 1}`}
-                          className="w-full h-32 object-cover rounded-lg"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => removeImage(index)}
-                          className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          <X size={16} />
-                        </button>
-                        {index === 0 && (
-                          <Chip
-                            size="sm"
-                            color="primary"
-                            className="absolute bottom-2 left-2"
+                  <div className="space-y-4">
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      {imageFiles.length} image{imageFiles.length !== 1 ? 's' : ''} uploaded. Click on an image to set it as main or change its category.
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {imageFiles.map((file, index) => {
+                        const metadata = imageMetadata[index] || { type: 'exterior', isMain: false };
+                        const imageType = IMAGE_TYPES.find(t => t.value === metadata.type) || IMAGE_TYPES[0];
+
+                        return (
+                          <div
+                            key={index}
+                            className={`relative border-2 rounded-lg p-3 transition-all ${
+                              metadata.isMain
+                                ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
+                                : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800'
+                            }`}
                           >
-                            Primary
-                          </Chip>
-                        )}
-                      </div>
-                    ))}
+                            <div className="flex gap-3">
+                              {/* Image Preview */}
+                              <div className="relative flex-shrink-0">
+                                <img
+                                  src={URL.createObjectURL(file)}
+                                  alt={`Preview ${index + 1}`}
+                                  className="w-32 h-32 object-cover rounded-lg"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => removeImage(index)}
+                                  className="absolute -top-2 -right-2 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors shadow-lg"
+                                >
+                                  <X size={14} />
+                                </button>
+                                {metadata.isMain && (
+                                  <Chip
+                                    size="sm"
+                                    color="primary"
+                                    className="absolute bottom-2 left-2"
+                                    startContent={<Check size={12} />}
+                                  >
+                                    Main Photo
+                                  </Chip>
+                                )}
+                              </div>
+
+                              {/* Controls */}
+                              <div className="flex-1 space-y-3">
+                                <div>
+                                  <label className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1 block">
+                                    Image Category
+                                  </label>
+                                  <Select
+                                    size="sm"
+                                    selectedKeys={[metadata.type]}
+                                    onChange={(e) => setImageType(index, e.target.value)}
+                                    className="max-w-full"
+                                    startContent={<span className="text-lg">{imageType.icon}</span>}
+                                  >
+                                    {IMAGE_TYPES.map(type => (
+                                      <SelectItem
+                                        key={type.value}
+                                        value={type.value}
+                                        startContent={<span className="text-lg">{type.icon}</span>}
+                                      >
+                                        {type.label}
+                                      </SelectItem>
+                                    ))}
+                                  </Select>
+                                </div>
+
+                                {!metadata.isMain && (
+                                  <Button
+                                    size="sm"
+                                    color="primary"
+                                    variant="flat"
+                                    onPress={() => setMainImage(index)}
+                                    fullWidth
+                                    startContent={<Check size={16} />}
+                                  >
+                                    Set as Main Photo
+                                  </Button>
+                                )}
+
+                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                  {file.name} • {(file.size / 1024 / 1024).toFixed(2)}MB
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 )}
               </div>
