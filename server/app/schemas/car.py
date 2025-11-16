@@ -77,8 +77,8 @@ class CarCreate(BaseModel):
     region_id: Optional[int] = None    # Auto-set from city
     detailed_address: Optional[str] = Field(None, max_length=500)
     barangay: Optional[str] = Field(None, max_length=100)
-    latitude: Decimal = Field(..., ge=4.5, le=21.5)  # Philippines bounds
-    longitude: Decimal = Field(..., ge=116.0, le=127.0)  # Philippines bounds
+    latitude: Optional[Decimal] = Field(None, ge=4.5, le=21.5)  # Philippines bounds (optional)
+    longitude: Optional[Decimal] = Field(None, ge=116.0, le=127.0)  # Philippines bounds (optional)
     
     # Features
     feature_ids: List[int] = []
