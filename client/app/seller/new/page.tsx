@@ -150,6 +150,15 @@ export default function CreateCarPage() {
           setError('Please enter a valid price');
           return false;
         }
+        // Maximum price validation - DECIMAL(12,2) limit
+        if (formData.price > 9999999999.99) {
+          setError('Price cannot exceed ₱9,999,999,999.99 (database limit). Please enter a reasonable price.');
+          return false;
+        }
+        if (formData.original_price && formData.original_price > 9999999999.99) {
+          setError('Original price cannot exceed ₱9,999,999,999.99 (database limit).');
+          return false;
+        }
         break;
 
       case 3: // Specifications
@@ -230,10 +239,43 @@ export default function CreateCarPage() {
 
         router.push('/seller/dashboard');
       } else {
-        setError(response.error || 'Failed to create listing');
+        // Parse backend validation errors to show helpful messages
+        let errorMessage = response.error || 'Failed to create listing';
+
+        // Check if it's a validation error with details
+        if (typeof response.error === 'string') {
+          if (response.error.includes('price') && response.error.includes('range')) {
+            errorMessage = 'Price exceeds the maximum allowed value of ₱9,999,999,999.99. Please enter a reasonable price.';
+          } else if (response.error.includes('latitude') || response.error.includes('longitude')) {
+            errorMessage = 'Invalid GPS coordinates. Please check your location data.';
+          } else if (response.error.includes('required')) {
+            errorMessage = 'Please fill in all required fields.';
+          }
+        }
+
+        setError(errorMessage);
       }
-    } catch (err) {
-      setError('An error occurred. Please try again.');
+    } catch (err: any) {
+      // Handle different types of errors
+      let errorMessage = 'An error occurred. Please try again.';
+
+      if (err?.response?.data?.detail) {
+        const detail = err.response.data.detail;
+
+        // If detail is an array of validation errors
+        if (Array.isArray(detail)) {
+          const validationErrors = detail.map((e: any) => {
+            const field = e.loc ? e.loc[e.loc.length - 1] : 'field';
+            return `${field}: ${e.msg}`;
+          }).join(', ');
+          errorMessage = `Validation error: ${validationErrors}`;
+        } else if (typeof detail === 'string') {
+          errorMessage = detail;
+        }
+      }
+
+      setError(errorMessage);
+      console.error('Error creating car listing:', err);
     } finally {
       setLoading(false);
     }
@@ -318,7 +360,10 @@ export default function CreateCarPage() {
                   placeholder="2024"
                   value={formData.year ? String(formData.year) : ''}
                   onChange={(e) => setFormData(prev => ({ ...prev, year: parseInt(e.target.value) }))}
+                  description={`Valid range: 1900 - ${new Date().getFullYear() + 1}`}
                   isRequired
+                  isInvalid={formData.year !== undefined && (formData.year < 1900 || formData.year > new Date().getFullYear() + 1)}
+                  errorMessage={formData.year !== undefined && (formData.year < 1900 || formData.year > new Date().getFullYear() + 1) ? "Year must be between 1900 and next year" : ""}
                 />
 
                 <Input
@@ -326,8 +371,10 @@ export default function CreateCarPage() {
                   placeholder="2024 Toyota Fortuner 2.8 V 4x4 AT"
                   value={formData.title || ''}
                   onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                  description="Be specific and descriptive"
+                  description="Be specific and descriptive (minimum 10 characters)"
                   isRequired
+                  isInvalid={formData.title !== undefined && formData.title.length > 0 && formData.title.length < 10}
+                  errorMessage={formData.title !== undefined && formData.title.length > 0 && formData.title.length < 10 ? "Title must be at least 10 characters" : ""}
                 />
 
                 <Textarea
@@ -352,7 +399,10 @@ export default function CreateCarPage() {
                   value={formData.price ? String(formData.price) : ''}
                   onChange={(e) => setFormData(prev => ({ ...prev, price: parseFloat(e.target.value) }))}
                   startContent={<span className="text-gray-500">₱</span>}
+                  description="Maximum allowed: ₱9,999,999,999.99"
                   isRequired
+                  isInvalid={formData.price !== undefined && formData.price > 9999999999.99}
+                  errorMessage={formData.price !== undefined && formData.price > 9999999999.99 ? "Price exceeds maximum limit" : ""}
                 />
 
                 <Checkbox
@@ -396,7 +446,10 @@ export default function CreateCarPage() {
                   placeholder="50000"
                   value={formData.mileage ? String(formData.mileage) : ''}
                   onChange={(e) => setFormData(prev => ({ ...prev, mileage: parseInt(e.target.value) }))}
+                  description="Current odometer reading in kilometers"
                   isRequired
+                  isInvalid={formData.mileage !== undefined && formData.mileage < 0}
+                  errorMessage={formData.mileage !== undefined && formData.mileage < 0 ? "Mileage cannot be negative" : ""}
                 />
 
                 <div className="grid grid-cols-2 gap-4">
