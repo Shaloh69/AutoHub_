@@ -584,8 +584,8 @@ class ApiService {
     });
   }
 
-  async getAllUsers(): Promise<ApiResponse<User[]>> {
-    return this.request<User[]>('/admin/users');
+  async getAllUsers(): Promise<ApiResponse<PaginatedResponse<User>>> {
+    return this.request<PaginatedResponse<User>>('/admin/users');
   }
 
   async banUser(id: number, reason: string): Promise<ApiResponse<any>> {

@@ -11,7 +11,11 @@ from app.models.analytics import CarView
 from app.models.subscription import UserSubscription, SubscriptionPlan
 from app.database import cache
 from app.utils.helpers import generate_slug, calculate_distance
+from app.services.fraud_detection_service import FraudDetectionService
 import json
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class CarService:
@@ -33,7 +37,14 @@ class CarService:
         # Check subscription limits
         if not CarService.check_listing_limits(db, user_id):
             raise ValueError("Listing limit reached for current subscription")
-        
+
+        # Run fraud detection checks BEFORE creating listing
+        fraud_indicators = FraudDetectionService.run_all_checks(db, user_id, car_data)
+
+        if fraud_indicators:
+            logger.warning(f"Fraud detected for user {user_id}: {len(fraud_indicators)} indicators")
+            # Continue with listing creation but flag for review
+
         # Extract feature IDs
         feature_ids = car_data.pop("feature_ids", [])
         
@@ -92,10 +103,13 @@ class CarService:
         
         db.commit()
         db.refresh(car)
-        
+
+        # Run fraud detection checks again with car_id
+        fraud_indicators_post = FraudDetectionService.run_all_checks(db, user_id, car_data, car_id_value)
+
         # Clear cache
         cache.delete(f"user_cars:{user_id}")
-        
+
         return car
     
     @staticmethod
