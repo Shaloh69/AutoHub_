@@ -408,6 +408,17 @@ export interface Subscription {
   plan?: SubscriptionPlan;
 }
 
+export interface QRCodePaymentResponse {
+  payment_id: number;
+  subscription_id: number;
+  amount: number;
+  currency: string;
+  qr_code_url: string;
+  instructions: string;
+  status: string;
+  created_at: string;
+}
+
 export interface Notification {
   id: number;
   user_id: number;

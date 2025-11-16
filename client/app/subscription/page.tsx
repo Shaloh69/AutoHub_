@@ -23,7 +23,13 @@ export default function SubscriptionPage() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [pendingSubscription, setPendingSubscription] = useState<{ id: number; planName: string; amount: number } | null>(null);
+  const [pendingSubscription, setPendingSubscription] = useState<{
+    paymentId: number;
+    planName: string;
+    amount: number;
+    qrCodeUrl: string;
+    instructions: string;
+  } | null>(null);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -73,9 +79,11 @@ export default function SubscriptionPage() {
         const plan = plans.find(p => p.id === planId);
         if (plan) {
           setPendingSubscription({
-            id: response.data.id,
+            paymentId: response.data.payment_id,
             planName: plan.name,
-            amount: plan.price
+            amount: response.data.amount,
+            qrCodeUrl: response.data.qr_code_url,
+            instructions: response.data.instructions
           });
           setShowPaymentModal(true);
         }
@@ -98,9 +106,11 @@ export default function SubscriptionPage() {
         const plan = plans.find(p => p.id === planId);
         if (plan) {
           setPendingSubscription({
-            id: response.data.id,
+            paymentId: response.data.payment_id,
             planName: plan.name,
-            amount: plan.price
+            amount: response.data.amount,
+            qrCodeUrl: response.data.qr_code_url,
+            instructions: response.data.instructions
           });
           setShowPaymentModal(true);
         }
@@ -501,9 +511,11 @@ export default function SubscriptionPage() {
         <PaymentQRModal
           isOpen={showPaymentModal}
           onClose={() => setShowPaymentModal(false)}
-          subscriptionId={pendingSubscription.id}
+          paymentId={pendingSubscription.paymentId}
           planName={pendingSubscription.planName}
           amount={pendingSubscription.amount}
+          qrCodeUrl={pendingSubscription.qrCodeUrl}
+          instructions={pendingSubscription.instructions}
           onPaymentSubmitted={handlePaymentSubmitted}
         />
       )}

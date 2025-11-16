@@ -8,7 +8,7 @@ PRESERVED: All original endpoints
 """
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Dict
 from decimal import Decimal
 from datetime import datetime
 from app.database import get_db
@@ -402,6 +402,31 @@ async def get_payment_details(
         created_at=getattr(payment, 'created_at', datetime.utcnow()),
         paid_at=getattr(payment, 'paid_at', None)
     )
+
+
+@router.get("/qr-code", response_model=Dict)
+async def get_qr_code_settings(db: Session = Depends(get_db)):
+    """
+    Get QR code payment settings (GCash QR code image and instructions)
+
+    Returns the GCash QR code image URL and payment instructions configured by admin
+    """
+    try:
+        qr_settings = SubscriptionService.get_qr_code_settings(db)
+
+        return {
+            "success": True,
+            "data": {
+                "qr_code_url": qr_settings["qr_code_image_url"],
+                "instructions": qr_settings["payment_instructions"]
+            }
+        }
+    except Exception as e:
+        logger.error(f"Error getting QR code settings: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve QR code settings"
+        )
 
 
 # ========================================

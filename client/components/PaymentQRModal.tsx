@@ -18,44 +18,28 @@ import { apiService } from '@/services/api';
 interface PaymentQRModalProps {
   isOpen: boolean;
   onClose: () => void;
-  subscriptionId: number;
+  paymentId: number;
   planName: string;
   amount: number;
+  qrCodeUrl: string;
+  instructions: string;
   onPaymentSubmitted: () => void;
 }
 
 export default function PaymentQRModal({
   isOpen,
   onClose,
-  subscriptionId,
+  paymentId,
   planName,
   amount,
+  qrCodeUrl,
+  instructions,
   onPaymentSubmitted
 }: PaymentQRModalProps) {
   const [referenceNumber, setReferenceNumber] = useState('');
-  const [qrCodeData, setQrCodeData] = useState<{ qr_code_url: string; instructions: string } | null>(null);
-  const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-
-  const loadQRCode = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const response = await apiService.getPaymentQRCode();
-
-      if (response.success && response.data) {
-        setQrCodeData(response.data);
-      } else {
-        setError(response.error || 'Failed to load QR code');
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load QR code');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleSubmit = async () => {
     if (!referenceNumber.trim()) {
@@ -68,7 +52,7 @@ export default function PaymentQRModal({
       setError(null);
 
       const response = await apiService.submitPaymentReference({
-        subscription_id: subscriptionId,
+        payment_id: paymentId,
         reference_number: referenceNumber.trim()
       });
 
@@ -87,13 +71,6 @@ export default function PaymentQRModal({
       setSubmitting(false);
     }
   };
-
-  // Load QR code when modal opens
-  React.useEffect(() => {
-    if (isOpen && !qrCodeData) {
-      loadQRCode();
-    }
-  }, [isOpen]);
 
   return (
     <Modal
@@ -114,11 +91,7 @@ export default function PaymentQRModal({
         </ModalHeader>
 
         <ModalBody>
-          {loading ? (
-            <div className="flex justify-center items-center py-12">
-              <Spinner size="lg" color="primary" />
-            </div>
-          ) : success ? (
+          {success ? (
             <div className="text-center py-12 space-y-4">
               <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto">
                 <svg className="w-10 h-10 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -140,61 +113,57 @@ export default function PaymentQRModal({
                 </div>
               )}
 
-              {qrCodeData && (
-                <>
-                  {/* Instructions */}
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <h4 className="font-semibold text-autohub-secondary-900 mb-2">
-                      Payment Instructions:
-                    </h4>
-                    <p className="text-sm text-autohub-accent1-700 whitespace-pre-line">
-                      {qrCodeData.instructions}
-                    </p>
-                  </div>
+              {/* Instructions */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h4 className="font-semibold text-autohub-secondary-900 mb-2">
+                  Payment Instructions:
+                </h4>
+                <p className="text-sm text-autohub-accent1-700 whitespace-pre-line">
+                  {instructions}
+                </p>
+              </div>
 
-                  {/* QR Code */}
-                  <div className="flex flex-col items-center space-y-4">
-                    <div className="bg-white p-6 rounded-lg shadow-lg border-2 border-autohub-primary-200">
-                      <Image
-                        src={qrCodeData.qr_code_url}
-                        alt="Payment QR Code"
-                        width={300}
-                        height={300}
-                        className="rounded-lg"
-                      />
-                    </div>
-                    <p className="text-sm text-autohub-accent1-600 text-center">
-                      Scan this QR code with your mobile banking app
-                    </p>
-                  </div>
+              {/* QR Code */}
+              <div className="flex flex-col items-center space-y-4">
+                <div className="bg-white p-6 rounded-lg shadow-lg border-2 border-autohub-primary-200">
+                  <Image
+                    src={qrCodeUrl}
+                    alt="GCash Payment QR Code"
+                    width={300}
+                    height={300}
+                    className="rounded-lg"
+                  />
+                </div>
+                <p className="text-sm text-autohub-accent1-600 text-center">
+                  Scan this QR code with your GCash app to make payment
+                </p>
+              </div>
 
-                  {/* Reference Number Input */}
-                  <div className="space-y-2">
-                    <label className="block text-sm font-medium text-autohub-secondary-900 dark:text-autohub-neutral-50">
-                      Enter Payment Reference Number
-                    </label>
-                    <Input
-                      type="text"
-                      placeholder="e.g., REF123456789"
-                      value={referenceNumber}
-                      onChange={(e) => setReferenceNumber(e.target.value)}
-                      disabled={submitting}
-                      classNames={{
-                        input: "text-autohub-secondary-900",
-                        inputWrapper: "border-autohub-accent1-300"
-                      }}
-                    />
-                    <p className="text-xs text-autohub-accent1-600">
-                      After payment, enter the reference number from your payment confirmation
-                    </p>
-                  </div>
-                </>
-              )}
+              {/* Reference Number Input */}
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-autohub-secondary-900 dark:text-autohub-neutral-50">
+                  Enter Payment Reference Number
+                </label>
+                <Input
+                  type="text"
+                  placeholder="e.g., REF123456789"
+                  value={referenceNumber}
+                  onChange={(e) => setReferenceNumber(e.target.value)}
+                  disabled={submitting}
+                  classNames={{
+                    input: "text-autohub-secondary-900",
+                    inputWrapper: "border-autohub-accent1-300"
+                  }}
+                />
+                <p className="text-xs text-autohub-accent1-600">
+                  After completing payment via GCash, enter the reference number from your payment confirmation
+                </p>
+              </div>
             </div>
           )}
         </ModalBody>
 
-        {!success && !loading && (
+        {!success && (
           <ModalFooter>
             <Button
               variant="light"

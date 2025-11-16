@@ -19,6 +19,8 @@ import {
 import { apiService } from '@/services/api';
 import { useRequireAdmin } from '@/contexts/AuthContext';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import QRCodeSettings from '@/components/admin/QRCodeSettings';
+import { Tabs, Tab } from "@heroui/tabs";
 
 interface Payment {
   id: number;
@@ -241,8 +243,11 @@ export default function AdminPaymentsPage() {
         </div>
       )}
 
-      {/* Pending Payments Table */}
-      <Card className="bg-dark-900 border border-dark-700">
+      {/* Tabs for Payment Verification and QR Settings */}
+      <Tabs aria-label="Payment Management" color="primary" variant="underlined">
+        <Tab key="verifications" title="Payment Verifications">
+          {/* Pending Payments Table */}
+          <Card className="bg-dark-900 border border-dark-700 mt-4">
         <CardHeader className="border-b border-dark-700 p-6">
           <div className="flex items-center justify-between w-full">
             <div className="flex items-center gap-2">
@@ -349,6 +354,14 @@ export default function AdminPaymentsPage() {
           )}
         </CardBody>
       </Card>
+        </Tab>
+
+        <Tab key="qr-settings" title="QR Code Settings">
+          <div className="mt-4">
+            <QRCodeSettings />
+          </div>
+        </Tab>
+      </Tabs>
 
       {/* Verify Modal */}
       <Modal

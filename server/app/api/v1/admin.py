@@ -16,7 +16,7 @@ COMPLETE ADMIN ENDPOINTS:
 ✅ Dashboard Statistics (NEW)
 """
 from decimal import Decimal
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File
 from sqlalchemy.orm import Session
 from sqlalchemy import func, desc, or_, and_
 from typing import List, Optional
@@ -1477,6 +1477,161 @@ async def update_payment_setting(
     
     return MessageResponse(
         message="Payment setting updated successfully",
+        success=True
+    )
+
+
+@router.post("/settings/qr-code/upload", response_model=MessageResponse)
+async def upload_qr_code(
+    file: UploadFile = File(...),
+    current_admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """
+    Upload GCash QR code image for subscription payments
+
+    Accepts: image/png, image/jpeg, image/jpg
+    Max size: 5MB
+    """
+    import os
+    import uuid
+    from pathlib import Path
+
+    # Validate file type
+    allowed_types = ["image/png", "image/jpeg", "image/jpg"]
+    if file.content_type not in allowed_types:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid file type. Allowed types: {', '.join(allowed_types)}"
+        )
+
+    # Validate file size (5MB max)
+    file_content = await file.read()
+    if len(file_content) > 5 * 1024 * 1024:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="File size exceeds 5MB limit"
+        )
+
+    # Create uploads directory if it doesn't exist
+    upload_dir = Path("uploads/qr")
+    upload_dir.mkdir(parents=True, exist_ok=True)
+
+    # Generate unique filename
+    file_extension = file.filename.split(".")[-1] if file.filename else "png"
+    unique_filename = f"gcash_qr_{uuid.uuid4().hex}.{file_extension}"
+    file_path = upload_dir / unique_filename
+
+    # Save file
+    try:
+        with open(file_path, "wb") as f:
+            f.write(file_content)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to save file: {str(e)}"
+        )
+
+    # Update or create payment_qr_code_image setting
+    qr_setting = db.query(PaymentSetting).filter(
+        PaymentSetting.setting_key == "payment_qr_code_image"
+    ).first()
+
+    file_url = f"/uploads/qr/{unique_filename}"
+    admin_id = int(getattr(current_admin, 'id', 0))
+
+    if qr_setting:
+        # Delete old file if exists
+        old_path = getattr(qr_setting, 'setting_value', '')
+        if old_path and old_path.startswith('/uploads/qr/'):
+            old_file = Path(old_path.lstrip('/'))
+            if old_file.exists():
+                try:
+                    old_file.unlink()
+                except:
+                    pass
+
+        # Update existing setting
+        setattr(qr_setting, 'setting_value', file_url)
+        setattr(qr_setting, 'updated_by', admin_id)
+        setattr(qr_setting, 'updated_at', datetime.utcnow())
+    else:
+        # Create new setting
+        qr_setting = PaymentSetting(
+            setting_key="payment_qr_code_image",
+            setting_value=file_url,
+            setting_type="IMAGE",
+            description="GCash QR code image for subscription payments",
+            is_active=True,
+            created_by=admin_id,
+            updated_by=admin_id
+        )
+        db.add(qr_setting)
+
+    # Create audit log
+    audit = AuditLog(
+        user_id=admin_id,
+        action="upload_qr_code",
+        entity_type="payment_setting",
+        entity_id=getattr(qr_setting, 'id', None),
+        new_values={
+            "setting_key": "payment_qr_code_image",
+            "file_url": file_url
+        }
+    )
+    db.add(audit)
+
+    db.commit()
+
+    return MessageResponse(
+        message=f"QR code uploaded successfully: {file_url}",
+        success=True
+    )
+
+
+@router.put("/settings/payment-instructions", response_model=MessageResponse)
+async def update_payment_instructions(
+    instructions: str = Query(..., min_length=10, max_length=1000),
+    current_admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """Update payment instructions for QR code payments"""
+    admin_id = int(getattr(current_admin, 'id', 0))
+
+    setting = db.query(PaymentSetting).filter(
+        PaymentSetting.setting_key == "payment_instructions"
+    ).first()
+
+    if setting:
+        setattr(setting, 'setting_value', instructions)
+        setattr(setting, 'updated_by', admin_id)
+        setattr(setting, 'updated_at', datetime.utcnow())
+    else:
+        setting = PaymentSetting(
+            setting_key="payment_instructions",
+            setting_value=instructions,
+            setting_type="TEXT",
+            description="Payment instructions for QR code payments",
+            is_active=True,
+            created_by=admin_id,
+            updated_by=admin_id
+        )
+        db.add(setting)
+
+    # Create audit log
+    audit = AuditLog(
+        user_id=admin_id,
+        action="update_payment_instructions",
+        entity_type="payment_setting",
+        entity_id=getattr(setting, 'id', None),
+        new_values={"instructions": instructions}
+    )
+    db.add(audit)
+
+    db.commit()
+
+    return MessageResponse(
+        message="Payment instructions updated successfully",
         success=True
     )
 

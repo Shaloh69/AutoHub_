@@ -5,7 +5,8 @@
 import {
   User, Car, Brand, Model, Category, Feature, Inquiry, InquiryResponse,
   Transaction, SubscriptionPlan, Subscription, Notification,
-  PaginatedResponse, ApiResponse, SearchFilters, CarFormData, Analytics
+  PaginatedResponse, ApiResponse, SearchFilters, CarFormData, Analytics,
+  QRCodePaymentResponse
 } from '@/types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
@@ -426,8 +427,8 @@ class ApiService {
     billing_cycle: 'monthly' | 'annual';
     payment_method: string;
     promo_code?: string;
-  }): Promise<ApiResponse<Subscription>> {
-    return this.request<Subscription>('/subscriptions/subscribe', {
+  }): Promise<ApiResponse<QRCodePaymentResponse>> {
+    return this.request<QRCodePaymentResponse>('/subscriptions/subscribe', {
       method: 'POST',
       body: JSON.stringify(planData),
     });
@@ -443,15 +444,15 @@ class ApiService {
     return this.request('/users/statistics');
   }
 
-  async upgradeSubscription(planId: number): Promise<ApiResponse<Subscription>> {
-    return this.request<Subscription>('/subscriptions/subscribe', {
+  async upgradeSubscription(planId: number): Promise<ApiResponse<QRCodePaymentResponse>> {
+    return this.request<QRCodePaymentResponse>('/subscriptions/subscribe', {
       method: 'POST',
-      body: JSON.stringify({ plan_id: planId }),
+      body: JSON.stringify({ plan_id: planId, billing_cycle: 'monthly', payment_method: 'qr_code' }),
     });
   }
 
   async submitPaymentReference(data: {
-    subscription_id: number;
+    payment_id: number;
     reference_number: string;
   }): Promise<ApiResponse<any>> {
     return this.request('/subscriptions/submit-reference', {
