@@ -182,7 +182,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const isDealer = user?.role?.toUpperCase() === 'DEALER';
   const isAdmin = user?.role?.toUpperCase() === 'ADMIN';
   const isModerator = user?.role?.toUpperCase() === 'MODERATOR' || isAdmin;
-  const canListCars = isAuthenticated && isSeller && user?.email_verified && user?.phone_verified && !user?.is_banned;
+  // UPDATED: Phone verification is now OPTIONAL - only email verification required
+  const canListCars = isAuthenticated && isSeller && user?.email_verified && !user?.is_banned;
 
   const value: AuthContextType = {
     user,

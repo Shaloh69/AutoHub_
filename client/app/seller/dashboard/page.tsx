@@ -145,10 +145,10 @@ export default function SellerDashboardPage() {
                 <Clock size={24} className="text-yellow-600 flex-shrink-0" />
                 <div>
                   <h3 className="font-bold text-yellow-900 dark:text-yellow-100 mb-1">
-                    Verification Required
+                    Email Verification Required
                   </h3>
                   <p className="text-sm text-yellow-800 dark:text-yellow-200">
-                    Please verify your email and phone number to start listing vehicles.
+                    Please verify your email address to start listing vehicles.
                   </p>
                   <Button
                     size="sm"
