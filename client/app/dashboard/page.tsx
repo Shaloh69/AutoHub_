@@ -11,7 +11,7 @@ import { Tabs, Tab } from "@heroui/tabs";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure } from "@heroui/modal";
 import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@heroui/dropdown";
 import { PlusIcon, EditIcon, DeleteIcon, VerticalDotsIcon, EyeIcon, DashboardIcon } from "@/components/icons";
-import { apiService, Car } from '@/services/api';
+import { apiService, getImageUrl, Car } from '@/services/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 
@@ -222,7 +222,7 @@ export default function DashboardPage() {
             <CardBody className="p-0">
               <div className="relative">
                 <Image
-              src={car.images[0] || '/placeholder-car.jpg'}
+              src={getImageUrl(car.images?.[0]?.image_url)}
               alt={`${car.year} ${car.make} ${car.model}`}
               className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
               radius="none"
