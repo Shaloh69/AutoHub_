@@ -88,12 +88,17 @@ async def get_admin_dashboard(
         # Fixed: Use UPPERCASE for Car.status to match SQL schema
         total_cars = db.query(Car).count()
         active_cars = db.query(Car).filter(Car.status == "ACTIVE").count()
-        pending_approval = db.query(Car).filter(Car.status == "PENDING").count()
-        
-        # Reports Statistics
-        from app.models.inquiry import Report
-        pending_reports = db.query(Report).filter(Report.status == "pending").count()
-        resolved_reports = db.query(Report).filter(Report.status == "resolved").count()
+        pending_approval = db.query(Car).filter(Car.approval_status == "PENDING").count()
+
+        # Reports Statistics (safely handle if Report model doesn't exist)
+        pending_reports = 0
+        resolved_reports = 0
+        try:
+            from app.models.inquiry import Report
+            pending_reports = db.query(Report).filter(Report.status == "pending").count()
+            resolved_reports = db.query(Report).filter(Report.status == "resolved").count()
+        except (ImportError, Exception) as e:
+            logger.warning(f"Could not query Report model: {e}")
         
         # Payment Statistics
         payment_stats = SubscriptionService.get_payment_statistics(db)

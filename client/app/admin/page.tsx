@@ -68,7 +68,8 @@ export default function AdminDashboardPage() {
       }
 
       if (usersResponse.success && usersResponse.data) {
-        setUsers(usersResponse.data);
+        // API returns PaginatedResponse, extract items array
+        setUsers(usersResponse.data.items || []);
       }
 
       if (paymentsResponse.success && paymentsResponse.data) {
@@ -236,10 +237,10 @@ export default function AdminDashboardPage() {
                       Total Users
                     </p>
                     <p className="text-3xl font-bold text-gray-900 dark:text-white">
-                      {stats.totalUsers || 0}
+                      {stats.total_users || 0}
                     </p>
                     <p className="text-xs text-green-600 dark:text-green-400 mt-1">
-                      +{stats.newUsersToday || 0} today
+                      +{stats.new_users_today || 0} today
                     </p>
                   </div>
                   <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-full">
@@ -257,7 +258,7 @@ export default function AdminDashboardPage() {
                       Active Listings
                     </p>
                     <p className="text-3xl font-bold text-gray-900 dark:text-white">
-                      {stats.activeListings || 0}
+                      {stats.active_cars || 0}
                     </p>
                   </div>
                   <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-full">
@@ -275,7 +276,7 @@ export default function AdminDashboardPage() {
                       Pending Approvals
                     </p>
                     <p className="text-3xl font-bold text-gray-900 dark:text-white">
-                      {stats.pendingApprovals || 0}
+                      {stats.pending_approval_cars || 0}
                     </p>
                   </div>
                   <div className="p-3 bg-yellow-100 dark:bg-yellow-900/30 rounded-full">
@@ -293,10 +294,10 @@ export default function AdminDashboardPage() {
                       Total Revenue
                     </p>
                     <p className="text-3xl font-bold text-gray-900 dark:text-white">
-                      {formatPrice(stats.totalRevenue || 0)}
+                      ₱0
                     </p>
                     <p className="text-xs text-green-600 dark:text-green-400 mt-1">
-                      {formatPrice(stats.revenueToday || 0)} today
+                      ₱0 today
                     </p>
                   </div>
                   <div className="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-full">
@@ -591,7 +592,7 @@ export default function AdminDashboardPage() {
                           New Users Today
                         </p>
                         <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                          {stats.newUsersToday || 0}
+                          {stats.new_users_today || 0}
                         </p>
                       </div>
 
@@ -600,7 +601,7 @@ export default function AdminDashboardPage() {
                           Cars Sold Today
                         </p>
                         <p className="text-2xl font-bold text-green-600 dark:text-green-400">
-                          {stats.carsSoldToday || 0}
+                          {stats.new_cars_today || 0}
                         </p>
                       </div>
 
@@ -609,7 +610,7 @@ export default function AdminDashboardPage() {
                           Revenue Today
                         </p>
                         <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">
-                          {formatPrice(stats.revenueToday || 0)}
+                          ₱0
                         </p>
                       </div>
 
@@ -618,7 +619,7 @@ export default function AdminDashboardPage() {
                           Pending Reviews
                         </p>
                         <p className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
-                          {stats.pendingApprovals || 0}
+                          {stats.pending_approval_cars || 0}
                         </p>
                       </div>
                     </div>

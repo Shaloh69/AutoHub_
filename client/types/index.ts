@@ -527,11 +527,40 @@ export interface Analytics {
 }
 
 export interface DashboardStats {
-  totalUsers: number;
-  activeListings: number;
-  pendingApprovals: number;
-  totalRevenue: number;
-  revenueToday: number;
-  carsSoldToday: number;
-  newUsersToday: number;
+  // User Statistics
+  total_users: number;
+  active_users: number;
+  verified_users: number;
+  banned_users: number;
+  buyers_count: number;
+  sellers_count: number;
+  dealers_count: number;
+  new_users_today: number;
+
+  // Car Statistics
+  total_cars: number;
+  active_cars: number;
+  pending_approval_cars: number;
+  new_cars_today: number;
+
+  // Reports
+  pending_reports: number;
+  resolved_reports: number;
+
+  // Payments
+  pending_payments: number;
+  verified_payments_today: number;
+
+  // Security
+  fraud_indicators: number;
+  high_severity_fraud: number;
+
+  // Legacy fields for backward compatibility (computed)
+  totalUsers?: number;
+  activeListings?: number;
+  pendingApprovals?: number;
+  totalRevenue?: number;
+  revenueToday?: number;
+  carsSoldToday?: number;
+  newUsersToday?: number;
 }
