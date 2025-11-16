@@ -16,7 +16,8 @@ import { Divider } from '@heroui/divider';
 import {
   Heart, Share2, MapPin, Calendar, Gauge, Fuel, Settings,
   Users, DoorOpen, Palette, Shield, FileText, Star,
-  Phone, Mail, MessageCircle, Eye, TrendingUp
+  Phone, Mail, MessageCircle, Eye, TrendingUp,
+  ChevronLeft, ChevronRight, Play, Pause
 } from 'lucide-react';
 import { apiService } from '@/services/api';
 import { Car } from '@/types';
@@ -33,12 +34,55 @@ export default function CarDetailPage() {
   const [selectedImage, setSelectedImage] = useState(0);
   const [contactModalOpen, setContactModalOpen] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
+  const [isAutoPlaying, setIsAutoPlaying] = useState(true);
+  const [autoPlayInterval, setAutoPlayInterval] = useState<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (params.id) {
       loadCarDetails();
     }
   }, [params.id]);
+
+  // Auto-play carousel effect
+  useEffect(() => {
+    if (!car || !car.images || car.images.length <= 1) {
+      return;
+    }
+
+    if (isAutoPlaying) {
+      const interval = setInterval(() => {
+        setSelectedImage(prev => (prev + 1) % car.images.length);
+      }, 4000); // Change image every 4 seconds
+
+      setAutoPlayInterval(interval);
+      return () => clearInterval(interval);
+    } else {
+      if (autoPlayInterval) {
+        clearInterval(autoPlayInterval);
+      }
+    }
+  }, [isAutoPlaying, car]);
+
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (!car || !car.images || car.images.length <= 1) return;
+
+      if (e.key === 'ArrowLeft') {
+        previousImage();
+        setIsAutoPlaying(false); // Pause on manual navigation
+      } else if (e.key === 'ArrowRight') {
+        nextImage();
+        setIsAutoPlaying(false); // Pause on manual navigation
+      } else if (e.key === ' ') {
+        e.preventDefault(); // Prevent page scroll
+        toggleAutoPlay();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [car]);
 
   const loadCarDetails = async () => {
     try {
@@ -106,6 +150,44 @@ export default function CarDetailPage() {
 
   const formatMileage = (mileage: number) => {
     return new Intl.NumberFormat('en-US').format(mileage) + ' km';
+  };
+
+  const nextImage = () => {
+    if (!car || !car.images) return;
+    setSelectedImage(prev => (prev + 1) % car.images.length);
+  };
+
+  const previousImage = () => {
+    if (!car || !car.images) return;
+    setSelectedImage(prev => (prev - 1 + car.images.length) % car.images.length);
+  };
+
+  const toggleAutoPlay = () => {
+    setIsAutoPlaying(prev => !prev);
+  };
+
+  const getImageTypeIcon = (type: string) => {
+    const icons: { [key: string]: string } = {
+      exterior: '🚗',
+      interior: '🪑',
+      engine: '⚙️',
+      damage: '⚠️',
+      document: '📄',
+      other: '📸'
+    };
+    return icons[type] || '📸';
+  };
+
+  const getImageTypeLabel = (type: string) => {
+    const labels: { [key: string]: string } = {
+      exterior: 'Exterior',
+      interior: 'Interior',
+      engine: 'Engine',
+      damage: 'Damage',
+      document: 'Documents',
+      other: 'Other'
+    };
+    return labels[type] || 'Photo';
   };
 
   if (loading) {
@@ -180,7 +262,53 @@ export default function CarDetailPage() {
                     alt={car.title}
                     className="w-full h-full object-cover"
                   />
-                  
+
+                  {/* Navigation Arrows */}
+                  {images.length > 1 && (
+                    <>
+                      <button
+                        onClick={previousImage}
+                        className="absolute left-2 top-1/2 -translate-y-1/2 p-2 bg-black/50 hover:bg-black/70 text-white rounded-full transition-all backdrop-blur-sm"
+                        aria-label="Previous image"
+                      >
+                        <ChevronLeft size={24} />
+                      </button>
+                      <button
+                        onClick={nextImage}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-black/50 hover:bg-black/70 text-white rounded-full transition-all backdrop-blur-sm"
+                        aria-label="Next image"
+                      >
+                        <ChevronRight size={24} />
+                      </button>
+                    </>
+                  )}
+
+                  {/* Auto-play Control */}
+                  {images.length > 1 && (
+                    <button
+                      onClick={toggleAutoPlay}
+                      className="absolute bottom-4 right-4 p-2 bg-black/50 hover:bg-black/70 text-white rounded-full transition-all backdrop-blur-sm"
+                      aria-label={isAutoPlaying ? "Pause slideshow" : "Play slideshow"}
+                    >
+                      {isAutoPlaying ? <Pause size={20} /> : <Play size={20} />}
+                    </button>
+                  )}
+
+                  {/* Image Counter & Type */}
+                  {images.length > 0 && (
+                    <div className="absolute bottom-4 left-4 flex gap-2">
+                      <Chip variant="solid" className="bg-black/60 text-white backdrop-blur-sm">
+                        {selectedImage + 1} / {images.length}
+                      </Chip>
+                      {currentImage?.image_type && (
+                        <Chip variant="solid" className="bg-black/60 text-white backdrop-blur-sm">
+                          <span className="mr-1">{getImageTypeIcon(currentImage.image_type)}</span>
+                          {getImageTypeLabel(currentImage.image_type)}
+                        </Chip>
+                      )}
+                    </div>
+                  )}
+
                   {/* Badges */}
                   <div className="absolute top-4 left-4 flex flex-col gap-2">
                     {car.is_featured && (
@@ -203,21 +331,36 @@ export default function CarDetailPage() {
                 {/* Thumbnail Grid */}
                 {images.length > 1 && (
                   <div className="grid grid-cols-6 gap-2 p-4">
-                    {images.slice(0, 6).map((img, idx) => (
+                    {images.map((img, idx) => (
                       <div
                         key={img.id}
-                        onClick={() => setSelectedImage(idx)}
-                        className={`aspect-square rounded-lg overflow-hidden cursor-pointer border-2 ${
+                        onClick={() => {
+                          setSelectedImage(idx);
+                          setIsAutoPlaying(false); // Pause auto-play when user manually selects
+                        }}
+                        className={`relative aspect-square rounded-lg overflow-hidden cursor-pointer border-2 transition-all ${
                           selectedImage === idx
-                            ? 'border-blue-500'
+                            ? 'border-primary-500 shadow-lg'
                             : 'border-transparent hover:border-gray-300'
                         }`}
                       >
                         <Image
-                          src={img.thumbnail_url || img.image_url}
+                          src={img.image_url}
                           alt={`View ${idx + 1}`}
                           className="w-full h-full object-cover"
                         />
+                        {/* Main photo indicator */}
+                        {img.is_main && (
+                          <div className="absolute top-1 left-1">
+                            <Chip size="sm" color="primary" className="text-xs px-1 py-0 min-w-0 h-5">
+                              Main
+                            </Chip>
+                          </div>
+                        )}
+                        {/* Image type icon */}
+                        <div className="absolute bottom-1 right-1 text-xs bg-black/60 text-white rounded px-1 backdrop-blur-sm">
+                          {getImageTypeIcon(img.image_type || 'other')}
+                        </div>
                       </div>
                     ))}
                   </div>
