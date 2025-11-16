@@ -24,6 +24,7 @@
     "@heroui/navbar": "2.2.23",
     "@heroui/pagination": "^2.2.23",
     "@heroui/progress": "^2.2.22",
+    "@heroui/radio": "^2.3.27",
     "@heroui/select": "^2.4.26",
     "@heroui/slider": "^2.4.24",
     "@heroui/snippet": "2.2.26",
