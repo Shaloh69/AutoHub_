@@ -194,6 +194,220 @@ async def search_cars(
     )
 
 
+@router.get("/brands", response_model=List[BrandResponse])
+def get_brands(
+    is_popular: Optional[bool] = Query(None),
+    db: Session = Depends(get_db)
+):
+    """
+    Get all car brands
+
+    Optionally filter by popular brands in Philippines.
+    """
+    import logging
+    logger = logging.getLogger(__name__)
+
+    try:
+        logger.info("=" * 80)
+        logger.info("🔍 GET /api/v1/cars/brands")
+        logger.info(f"  📥 Parameters: is_popular={is_popular} (type: {type(is_popular)})")
+
+        query = db.query(Brand)
+        logger.info(f"  🔍 Initial query created")
+
+        if is_popular is not None:
+            logger.info(f"  🔍 Filtering by is_popular={is_popular}")
+            query = query.filter(Brand.is_popular == is_popular)
+
+        brands = query.order_by(Brand.name).all()
+        logger.info(f"  ✅ Found {len(brands)} brands from database")
+
+        if brands:
+            sample = brands[0]
+            logger.info(f"  📊 Sample brand: id={sample.id}, name={sample.name}, is_popular={sample.is_popular}, is_active={sample.is_active}")
+
+        # Validate and convert to response models
+        logger.info(f"  🔄 Converting to response models...")
+        result = []
+        for i, brand in enumerate(brands):
+            try:
+                validated = BrandResponse.model_validate(brand)
+                result.append(validated)
+            except Exception as e:
+                logger.error(f"  ❌ Validation error for brand {brand.id} ({brand.name}): {e}")
+                raise
+
+        logger.info(f"  ✅ Successfully validated {len(result)} brands")
+        logger.info("=" * 80)
+        return result
+
+    except Exception as e:
+        logger.error(f"  ❌ ERROR in get_brands: {type(e).__name__}: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+        raise
+
+
+@router.get("/models", response_model=List[ModelResponse])
+def get_models(
+    brand_id: Optional[int] = Query(None),
+    is_popular: Optional[bool] = Query(None),
+    db: Session = Depends(get_db)
+):
+    """
+    Get car models
+
+    Optionally filter by brand_id or popular models in Philippines.
+    """
+    query = db.query(Model)
+
+    if brand_id is not None:
+        query = query.filter(Model.brand_id == brand_id)
+
+    # Note: is_popular filter removed as Model table doesn't have is_popular field
+    # if is_popular is not None:
+    #     query = query.filter(Model.is_popular == is_popular)
+
+    models = query.order_by(Model.name).all()
+
+    return [ModelResponse.model_validate(model) for model in models]
+
+
+@router.get("/brands/{brand_id}/models", response_model=List[ModelResponse])
+def get_models_by_brand(
+    brand_id: int,
+    is_popular: Optional[bool] = Query(None),
+    db: Session = Depends(get_db)
+):
+    """
+    Get all models for a specific brand (alternative endpoint)
+
+    Optionally filter by popular models in Philippines.
+    """
+    query = db.query(Model).filter(Model.brand_id == brand_id)
+
+    # Note: is_popular filter removed as Model table doesn't have is_popular field
+    # if is_popular is not None:
+    #     query = query.filter(Model.is_popular == is_popular)
+
+    models = query.order_by(Model.name).all()
+
+    return [ModelResponse.model_validate(model) for model in models]
+
+
+@router.get("/categories", response_model=List[CategoryResponse])
+def get_categories(
+    is_active: bool = Query(True),
+    db: Session = Depends(get_db)
+):
+    """
+    Get all car categories
+
+    Optionally filter by active categories (default: True).
+    """
+    import logging
+    logger = logging.getLogger(__name__)
+
+    try:
+        logger.info("=" * 80)
+        logger.info("🔍 GET /api/v1/cars/categories")
+        logger.info(f"  📥 Parameters: is_active={is_active} (type: {type(is_active)})")
+
+        query = db.query(Category)
+        logger.info(f"  🔍 Initial query created")
+
+        if is_active is not None:
+            logger.info(f"  🔍 Filtering by is_active={is_active}")
+            query = query.filter(Category.is_active == is_active)
+
+        categories = query.order_by(Category.display_order, Category.name).all()
+        logger.info(f"  ✅ Found {len(categories)} categories from database")
+
+        if categories:
+            sample = categories[0]
+            logger.info(f"  📊 Sample category: id={sample.id}, name={sample.name}, is_active={sample.is_active}, display_order={sample.display_order}")
+
+        # Validate and convert to response models
+        logger.info(f"  🔄 Converting to response models...")
+        result = []
+        for i, category in enumerate(categories):
+            try:
+                validated = CategoryResponse.model_validate(category)
+                result.append(validated)
+            except Exception as e:
+                logger.error(f"  ❌ Validation error for category {category.id} ({category.name}): {e}")
+                raise
+
+        logger.info(f"  ✅ Successfully validated {len(result)} categories")
+        logger.info("=" * 80)
+        return result
+
+    except Exception as e:
+        logger.error(f"  ❌ ERROR in get_categories: {type(e).__name__}: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+        raise
+
+
+@router.get("/features", response_model=List[FeatureResponse])
+def get_features(
+    category: Optional[str] = Query(None),
+    is_popular: Optional[bool] = Query(None),
+    db: Session = Depends(get_db)
+):
+    """
+    Get all car features
+
+    Optionally filter by category or popular features.
+    """
+    import logging
+    logger = logging.getLogger(__name__)
+
+    try:
+        logger.info("=" * 80)
+        logger.info("🔍 GET /api/v1/cars/features")
+        logger.info(f"  📥 Parameters: category={category}, is_popular={is_popular}")
+
+        query = db.query(Feature)
+        logger.info(f"  🔍 Initial query created")
+
+        if category:
+            logger.info(f"  🔍 Filtering by category={category}")
+            query = query.filter(Feature.category == category)
+
+        # Note: is_popular filter removed as Feature table doesn't have is_popular field
+        # if is_popular is not None:
+        #     query = query.filter(Feature.is_popular == is_popular)
+
+        features = query.order_by(Feature.name).all()
+        logger.info(f"  ✅ Found {len(features)} features from database")
+
+        if features:
+            sample = features[0]
+            logger.info(f"  📊 Sample feature: id={sample.id}, name={sample.name}, category={sample.category}, is_premium={sample.is_premium}")
+
+        # Validate and convert to response models
+        logger.info(f"  🔄 Converting to response models...")
+        result = []
+        for i, feature in enumerate(features):
+            try:
+                validated = FeatureResponse.model_validate(feature)
+                result.append(validated)
+            except Exception as e:
+                logger.error(f"  ❌ Validation error for feature {feature.id} ({feature.name}): {e}")
+                raise
+
+        logger.info(f"  ✅ Successfully validated {len(result)} features")
+        logger.info("=" * 80)
+        return result
+
+    except Exception as e:
+        logger.error(f"  ❌ ERROR in get_features: {type(e).__name__}: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+        raise
+
+
 @router.get("/{car_id}", response_model=CarDetailResponse)
 async def get_car(
     car_id: int,
@@ -697,215 +911,3 @@ async def get_price_history(
     return [PriceHistoryResponse.model_validate(ph) for ph in price_history]
 
 
-@router.get("/brands", response_model=List[BrandResponse])
-def get_brands(
-    is_popular: Optional[bool] = Query(None),
-    db: Session = Depends(get_db)
-):
-    """
-    Get all car brands
-
-    Optionally filter by popular brands in Philippines.
-    """
-    import logging
-    logger = logging.getLogger(__name__)
-
-    try:
-        logger.info("=" * 80)
-        logger.info("🔍 GET /api/v1/cars/brands")
-        logger.info(f"  📥 Parameters: is_popular={is_popular} (type: {type(is_popular)})")
-
-        query = db.query(Brand)
-        logger.info(f"  🔍 Initial query created")
-
-        if is_popular is not None:
-            logger.info(f"  🔍 Filtering by is_popular={is_popular}")
-            query = query.filter(Brand.is_popular == is_popular)
-
-        brands = query.order_by(Brand.name).all()
-        logger.info(f"  ✅ Found {len(brands)} brands from database")
-
-        if brands:
-            sample = brands[0]
-            logger.info(f"  📊 Sample brand: id={sample.id}, name={sample.name}, is_popular={sample.is_popular}, is_active={sample.is_active}")
-
-        # Validate and convert to response models
-        logger.info(f"  🔄 Converting to response models...")
-        result = []
-        for i, brand in enumerate(brands):
-            try:
-                validated = BrandResponse.model_validate(brand)
-                result.append(validated)
-            except Exception as e:
-                logger.error(f"  ❌ Validation error for brand {brand.id} ({brand.name}): {e}")
-                raise
-
-        logger.info(f"  ✅ Successfully validated {len(result)} brands")
-        logger.info("=" * 80)
-        return result
-
-    except Exception as e:
-        logger.error(f"  ❌ ERROR in get_brands: {type(e).__name__}: {e}")
-        import traceback
-        logger.error(traceback.format_exc())
-        raise
-
-
-@router.get("/models", response_model=List[ModelResponse])
-def get_models(
-    brand_id: Optional[int] = Query(None),
-    is_popular: Optional[bool] = Query(None),
-    db: Session = Depends(get_db)
-):
-    """
-    Get car models
-
-    Optionally filter by brand_id or popular models in Philippines.
-    """
-    query = db.query(Model)
-
-    if brand_id is not None:
-        query = query.filter(Model.brand_id == brand_id)
-
-    # Note: is_popular filter removed as Model table doesn't have is_popular field
-    # if is_popular is not None:
-    #     query = query.filter(Model.is_popular == is_popular)
-
-    models = query.order_by(Model.name).all()
-
-    return [ModelResponse.model_validate(model) for model in models]
-
-
-@router.get("/brands/{brand_id}/models", response_model=List[ModelResponse])
-def get_models_by_brand(
-    brand_id: int,
-    is_popular: Optional[bool] = Query(None),
-    db: Session = Depends(get_db)
-):
-    """
-    Get all models for a specific brand (alternative endpoint)
-
-    Optionally filter by popular models in Philippines.
-    """
-    query = db.query(Model).filter(Model.brand_id == brand_id)
-
-    # Note: is_popular filter removed as Model table doesn't have is_popular field
-    # if is_popular is not None:
-    #     query = query.filter(Model.is_popular == is_popular)
-
-    models = query.order_by(Model.name).all()
-
-    return [ModelResponse.model_validate(model) for model in models]
-
-
-@router.get("/categories", response_model=List[CategoryResponse])
-def get_categories(
-    is_active: bool = Query(True),
-    db: Session = Depends(get_db)
-):
-    """
-    Get all car categories
-
-    Optionally filter by active categories (default: True).
-    """
-    import logging
-    logger = logging.getLogger(__name__)
-
-    try:
-        logger.info("=" * 80)
-        logger.info("🔍 GET /api/v1/cars/categories")
-        logger.info(f"  📥 Parameters: is_active={is_active} (type: {type(is_active)})")
-
-        query = db.query(Category)
-        logger.info(f"  🔍 Initial query created")
-
-        if is_active is not None:
-            logger.info(f"  🔍 Filtering by is_active={is_active}")
-            query = query.filter(Category.is_active == is_active)
-
-        categories = query.order_by(Category.display_order, Category.name).all()
-        logger.info(f"  ✅ Found {len(categories)} categories from database")
-
-        if categories:
-            sample = categories[0]
-            logger.info(f"  📊 Sample category: id={sample.id}, name={sample.name}, is_active={sample.is_active}, display_order={sample.display_order}")
-
-        # Validate and convert to response models
-        logger.info(f"  🔄 Converting to response models...")
-        result = []
-        for i, category in enumerate(categories):
-            try:
-                validated = CategoryResponse.model_validate(category)
-                result.append(validated)
-            except Exception as e:
-                logger.error(f"  ❌ Validation error for category {category.id} ({category.name}): {e}")
-                raise
-
-        logger.info(f"  ✅ Successfully validated {len(result)} categories")
-        logger.info("=" * 80)
-        return result
-
-    except Exception as e:
-        logger.error(f"  ❌ ERROR in get_categories: {type(e).__name__}: {e}")
-        import traceback
-        logger.error(traceback.format_exc())
-        raise
-
-
-@router.get("/features", response_model=List[FeatureResponse])
-def get_features(
-    category: Optional[str] = Query(None),
-    is_popular: Optional[bool] = Query(None),
-    db: Session = Depends(get_db)
-):
-    """
-    Get all car features
-
-    Optionally filter by category or popular features.
-    """
-    import logging
-    logger = logging.getLogger(__name__)
-
-    try:
-        logger.info("=" * 80)
-        logger.info("🔍 GET /api/v1/cars/features")
-        logger.info(f"  📥 Parameters: category={category}, is_popular={is_popular}")
-
-        query = db.query(Feature)
-        logger.info(f"  🔍 Initial query created")
-
-        if category:
-            logger.info(f"  🔍 Filtering by category={category}")
-            query = query.filter(Feature.category == category)
-
-        # Note: is_popular filter removed as Feature table doesn't have is_popular field
-        # if is_popular is not None:
-        #     query = query.filter(Feature.is_popular == is_popular)
-
-        features = query.order_by(Feature.name).all()
-        logger.info(f"  ✅ Found {len(features)} features from database")
-
-        if features:
-            sample = features[0]
-            logger.info(f"  📊 Sample feature: id={sample.id}, name={sample.name}, category={sample.category}, is_premium={sample.is_premium}")
-
-        # Validate and convert to response models
-        logger.info(f"  🔄 Converting to response models...")
-        result = []
-        for i, feature in enumerate(features):
-            try:
-                validated = FeatureResponse.model_validate(feature)
-                result.append(validated)
-            except Exception as e:
-                logger.error(f"  ❌ Validation error for feature {feature.id} ({feature.name}): {e}")
-                raise
-
-        logger.info(f"  ✅ Successfully validated {len(result)} features")
-        logger.info("=" * 80)
-        return result
-
-    except Exception as e:
-        logger.error(f"  ❌ ERROR in get_features: {type(e).__name__}: {e}")
-        import traceback
-        logger.error(traceback.format_exc())
-        raise
