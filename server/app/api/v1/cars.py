@@ -57,7 +57,10 @@ async def search_cars(
     brand_id: Optional[int] = None,
     model_id: Optional[int] = None,
     category_id: Optional[int] = None,
-    
+
+    # Seller filter
+    seller_id: Optional[int] = None,
+
     # Price range
     min_price: Optional[float] = None,
     max_price: Optional[float] = None,
@@ -143,6 +146,7 @@ async def search_cars(
         "brand_id": brand_id,
         "model_id": model_id,
         "category_id": category_id,
+        "seller_id": seller_id,
         "min_price": min_price,
         "max_price": max_price,
         "min_year": min_year,

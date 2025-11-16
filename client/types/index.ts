@@ -44,6 +44,7 @@ export interface User {
   first_name: string;
   last_name: string;
   phone?: string;
+  phone_number?: string; // Backend returns phone_number for public profiles
   role: UserRole;
   gender?: Gender;
   profile_image?: string;
@@ -51,12 +52,15 @@ export interface User {
   city_id?: number;
   province_id?: number;
   region_id?: number;
+  city?: string; // City name for public profiles
+  province?: string; // Province name for public profiles
   is_active: boolean;
   email_verified: boolean;
   phone_verified: boolean;
   identity_verified: boolean;
   business_verified: boolean;
   verification_level: VerificationLevel;
+  is_verified?: boolean; // Alias for identity_verified in public profiles
   is_banned: boolean;
   business_name?: string;
   business_address?: string;
@@ -66,11 +70,13 @@ export interface User {
   total_views: number;
   average_rating: number;
   total_ratings: number;
+  total_reviews?: number; // Total reviews received (used in seller profiles)
   positive_feedback: number;
   negative_feedback: number;
   response_rate: number;
   subscription_status: SubscriptionStatus;
   created_at: string;
+  member_since?: string; // Alias for created_at in public profiles
 }
 
 export interface Brand {
@@ -436,6 +442,7 @@ export interface SearchFilters {
   model_id?: number;
   category_id?: number;
   color_id?: number;
+  seller_id?: number; // Filter by seller
   min_price?: number;
   max_price?: number;
   min_year?: number;

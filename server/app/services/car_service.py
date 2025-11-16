@@ -281,7 +281,10 @@ class CarService:
         
         if filters.get("model_id"):
             query = query.filter(Car.model_id == filters["model_id"])
-        
+
+        if filters.get("seller_id"):
+            query = query.filter(Car.seller_id == filters["seller_id"])
+
         if filters.get("min_price"):
             query = query.filter(Car.price >= filters["min_price"])
         
