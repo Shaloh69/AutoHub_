@@ -25,6 +25,7 @@ from app.models.analytics import Notification
 from app.models.security import AuditLog
 from app.services.file_service import FileService
 from app.services.notification_service import NotificationService
+from app.services.fraud_detection_service import FraudDetectionService
 
 router = APIRouter()
 
@@ -581,8 +582,39 @@ async def get_public_profile(
         "is_verified": getattr(user, 'identity_verified', False),
         "phone_number": str(getattr(user, 'phone_number', '')) if getattr(user, 'phone_verified', False) else None,
         "city": getattr(user, 'city', None),
-        "province": getattr(user, 'province', None)
+        "province": getattr(user, 'province', None),
+        "response_rate": float(getattr(user, 'response_rate', 0.0)),
+        "email_verified": getattr(user, 'email_verified', False),
+        "created_at": getattr(user, 'created_at', None)
     }
+
+
+@router.get("/{user_id}/reputation")
+async def get_user_reputation(
+    user_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Get user reputation score and metrics
+
+    Returns detailed reputation analysis including:
+    - Overall reputation score (0-100)
+    - Trust level (excellent/good/average/poor/very_poor)
+    - Trust score (0-5 stars)
+    - Individual metrics breakdown
+    """
+    user = db.query(User).filter(User.id == user_id).first()
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+
+    # Calculate reputation using fraud detection service
+    reputation = FraudDetectionService.calculate_user_reputation(db, user_id)
+
+    return reputation
 
 
 # ===========================================

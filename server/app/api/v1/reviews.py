@@ -16,6 +16,7 @@ from app.models.car import Car
 from app.models.review import Review, ReviewStatus
 from app.models.transaction import Transaction
 from app.services.notification_service import NotificationService
+from app.services.fraud_detection_service import FraudDetectionService
 
 router = APIRouter()
 
@@ -74,6 +75,14 @@ async def create_review(
         ).first()
         if transaction:
             verified_purchase = True
+
+    # Run fraud detection on review
+    review_dict = review_data.model_dump()
+    fraud_indicators = FraudDetectionService.check_review_fraud(db, review_dict, buyer_id)
+
+    if fraud_indicators:
+        # Flag review for manual review if fraud detected
+        pass
 
     # Create review
     review = Review(

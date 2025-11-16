@@ -23,6 +23,7 @@ import { apiService, getImageUrl } from '@/services/api';
 import { Car } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import ContactSellerModal from '@/components/ContactSellerModal';
+import CarReviews from '@/components/CarReviews';
 
 export default function CarDetailPage() {
   const params = useParams();
@@ -561,7 +562,11 @@ export default function CarDetailPage() {
 
             {/* Seller Info */}
             {car.seller && (
-              <Card>
+              <Card
+                isPressable
+                onPress={() => router.push(`/seller/${car.seller_id}`)}
+                className="hover:shadow-lg transition-shadow cursor-pointer"
+              >
                 <CardHeader>
                   <h3 className="font-bold text-lg">Seller Information</h3>
                 </CardHeader>
@@ -662,6 +667,11 @@ export default function CarDetailPage() {
             )}
           </div>
         </div>
+      </div>
+
+      {/* Reviews Section */}
+      <div className="max-w-7xl mx-auto mt-8">
+        <CarReviews carId={car.id} sellerId={car.seller_id} />
       </div>
 
       {/* Contact Seller Modal */}
