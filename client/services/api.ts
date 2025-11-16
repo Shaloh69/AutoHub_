@@ -119,6 +119,14 @@ class ApiService {
     localStorage.removeItem('refresh_token');
   }
 
+  async verifyEmail(token: string): Promise<ApiResponse<{ message: string }>> {
+    return this.request('/auth/verify-email', {
+      method: 'POST',
+      body: JSON.stringify({ token }),
+      headers: { 'Authorization': 'skip' },
+    });
+  }
+
   async getProfile(): Promise<ApiResponse<User>> {
     return this.request<User>('/users/profile');
   }
