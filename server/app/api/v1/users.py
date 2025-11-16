@@ -243,7 +243,11 @@ async def get_my_listings(
 
     cars = query.offset(skip).limit(limit).all()
 
-    # Convert ORM objects to dicts to avoid serialization errors
+    # CRITICAL FIX: Convert ORM objects to dicts to avoid serialization errors
+    # Issue: SQLAlchemy ORM objects with relationships (like Car.images containing CarImage objects)
+    # cannot be directly serialized by Pydantic. The error was:
+    # "Unable to serialize unknown type: <class 'app.models.car.CarImage'>"
+    # Solution: Manually convert to dict with only scalar fields before validation
     items = []
     for car in cars:
         car_dict = {

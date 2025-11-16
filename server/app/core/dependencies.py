@@ -124,7 +124,10 @@ async def get_current_seller(
     current_user: User = Depends(get_current_verified_user)
 ) -> User:
     """Get current user with seller/dealer role"""
-    # FIX: Use getattr to safely access Column role value and compare with UPPERCASE enum values
+    # CRITICAL FIX: Use getattr to safely access Column role value and compare with UPPERCASE enum values
+    # Issue: UserRole enum defines UPPERCASE values (SELLER, DEALER), but code was trying to access
+    # lowercase attributes (UserRole.seller, UserRole.dealer) which don't exist
+    # Error was: "AttributeError: type object 'UserRole' has no attribute 'seller'"
     user_role = getattr(current_user, 'role', None)
 
     # Convert to uppercase string for comparison (database stores UPPERCASE)
@@ -133,7 +136,7 @@ async def get_current_seller(
     else:
         user_role_str = str(user_role).upper() if user_role else None
 
-    # Compare with UPPERCASE enum values
+    # Compare with UPPERCASE enum values (e.g., UserRole.SELLER.value = "SELLER")
     if user_role_str not in [UserRole.SELLER.value, UserRole.DEALER.value, UserRole.ADMIN.value]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

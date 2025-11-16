@@ -819,7 +819,9 @@ async def update_car(
 
         car = CarService.update_car(db, car_id, user_id, normalized_update)
 
-        # Convert to dict to avoid ORM serialization issues
+        # CRITICAL FIX: Convert to dict to avoid ORM serialization issues
+        # Prevents: "Unable to serialize unknown type: <class 'app.models.car.CarImage'>"
+        # See also: /api/v1/users/listings for same pattern
         car_dict = {
             "id": car.id,
             "seller_id": car.seller_id,
@@ -1005,7 +1007,8 @@ async def boost_car(
         user_id = int(getattr(current_user, 'id', 0))
         car = CarService.boost_car(db, car_id, user_id, boost_data.duration_hours)
 
-        # Convert to dict to avoid ORM serialization issues
+        # CRITICAL FIX: Convert to dict to avoid ORM serialization issues
+        # Prevents: "Unable to serialize unknown type: <class 'app.models.car.CarImage'>"
         car_dict = {
             "id": car.id,
             "seller_id": car.seller_id,
@@ -1086,7 +1089,8 @@ async def feature_car(
     db.commit()
     db.refresh(car)
 
-    # Convert to dict to avoid ORM serialization issues
+    # CRITICAL FIX: Convert to dict to avoid ORM serialization issues
+    # Prevents: "Unable to serialize unknown type: <class 'app.models.car.CarImage'>"
     car_dict = {
         "id": car.id,
         "seller_id": car.seller_id,
