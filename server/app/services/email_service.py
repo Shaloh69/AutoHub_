@@ -85,13 +85,13 @@ class EmailService:
         verification_url = f"{settings.FRONTEND_URL}/auth/verify-email?token={token}"
 
         # Email subject
-        subject = "Verify your email - Car Marketplace Philippines"
-        
+        subject = "Verify your email - AutoHub"
+
         # Plain text version
         text_body = f"""
 Hello{f' {user_name}' if user_name else ''},
 
-Welcome to Car Marketplace Philippines!
+Welcome to AutoHub - Your trusted car marketplace!
 
 Please verify your email address by clicking the link below:
 {verification_url}
@@ -101,113 +101,128 @@ This link will expire in 24 hours.
 If you didn't create an account with us, please ignore this email.
 
 Best regards,
-Car Marketplace Philippines Team
+AutoHub Team
 
 ---
-Need help? Contact us at support@carmarketplace.ph
+Need help? Contact us at support@autohub.ph
         """.strip()
         
-        # HTML version
+        # HTML version with modern AutoHub design
         html_body = f"""
 <!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Verify Your Email</title>
+    <title>Verify Your Email - AutoHub</title>
 </head>
-<body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4;">
-    <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f4; padding: 20px;">
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; background: linear-gradient(135deg, #EFF6FF 0%, #F3E8FF 100%);">
+    <table width="100%" cellpadding="0" cellspacing="0" style="background: linear-gradient(135deg, #EFF6FF 0%, #F3E8FF 100%); padding: 40px 20px;">
         <tr>
             <td align="center">
-                <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                    <!-- Header -->
+                <!-- Main Card -->
+                <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.1); border: 1px solid rgba(147, 197, 253, 0.3);">
+                    <!-- Header with Gradient -->
                     <tr>
-                        <td style="background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%); padding: 40px 20px; text-align: center;">
-                            <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: bold;">
-                                Car Marketplace PH
-                            </h1>
-                            <p style="margin: 10px 0 0 0; color: #e0e7ff; font-size: 14px;">
-                                Your trusted car marketplace in the Philippines
+                        <td style="background: linear-gradient(135deg, #3B82F6 0%, #8B5CF6 100%); padding: 48px 32px; text-align: center;">
+                            <div style="display: inline-block; background-color: rgba(255, 255, 255, 0.15); backdrop-filter: blur(10px); padding: 12px 28px; border-radius: 50px; margin-bottom: 16px; border: 1px solid rgba(255, 255, 255, 0.2);">
+                                <h1 style="margin: 0; color: #ffffff; font-size: 32px; font-weight: 700; letter-spacing: -0.5px;">
+                                    AutoHub
+                                </h1>
+                            </div>
+                            <p style="margin: 8px 0 0 0; color: #E0E7FF; font-size: 15px; font-weight: 500;">
+                                Your Trusted Car Marketplace
                             </p>
                         </td>
                     </tr>
-                    
+
                     <!-- Content -->
                     <tr>
-                        <td style="padding: 40px 30px;">
-                            <h2 style="margin: 0 0 20px 0; color: #1f2937; font-size: 24px;">
-                                Welcome{f' {user_name}' if user_name else ''}! 🎉
+                        <td style="padding: 48px 40px;">
+                            <!-- Welcome Icon -->
+                            <div style="text-align: center; margin-bottom: 24px;">
+                                <div style="display: inline-block; width: 80px; height: 80px; background: linear-gradient(135deg, #3B82F6 0%, #8B5CF6 100%); border-radius: 50%; text-align: center; line-height: 80px; font-size: 40px;">
+                                    ✉️
+                                </div>
+                            </div>
+
+                            <h2 style="margin: 0 0 16px 0; color: #111827; font-size: 28px; font-weight: 700; text-align: center;">
+                                Welcome{f' {user_name}' if user_name else ''} to AutoHub!
                             </h2>
-                            
-                            <p style="margin: 0 0 20px 0; color: #4b5563; font-size: 16px; line-height: 1.6;">
-                                Thank you for registering with Car Marketplace Philippines. 
-                                We're excited to have you on board!
+
+                            <p style="margin: 0 0 24px 0; color: #6B7280; font-size: 16px; line-height: 1.7; text-align: center;">
+                                Thank you for joining our community of car enthusiasts. We're thrilled to have you on board!
                             </p>
-                            
-                            <p style="margin: 0 0 30px 0; color: #4b5563; font-size: 16px; line-height: 1.6;">
-                                To get started, please verify your email address by clicking the button below:
+
+                            <p style="margin: 0 0 32px 0; color: #374151; font-size: 16px; line-height: 1.7; text-align: center;">
+                                To unlock all features and start your journey, please verify your email address:
                             </p>
-                            
-                            <!-- Button -->
+
+                            <!-- Button with Gradient -->
                             <table width="100%" cellpadding="0" cellspacing="0">
                                 <tr>
-                                    <td align="center" style="padding: 20px 0;">
-                                        <a href="{verification_url}" 
-                                           style="display: inline-block; background-color: #2563eb; color: #ffffff; 
-                                                  text-decoration: none; padding: 16px 40px; border-radius: 6px; 
-                                                  font-size: 16px; font-weight: bold; box-shadow: 0 4px 6px rgba(37, 99, 235, 0.3);">
-                                            Verify Email Address
+                                    <td align="center" style="padding: 8px 0 32px 0;">
+                                        <a href="{verification_url}"
+                                           style="display: inline-block; background: linear-gradient(135deg, #3B82F6 0%, #8B5CF6 100%);
+                                                  color: #ffffff; text-decoration: none; padding: 18px 48px; border-radius: 12px;
+                                                  font-size: 17px; font-weight: 600; box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4);
+                                                  transition: all 0.3s ease;">
+                                            Verify My Email Address
                                         </a>
                                     </td>
                                 </tr>
                             </table>
-                            
-                            <p style="margin: 20px 0; color: #6b7280; font-size: 14px; line-height: 1.6;">
-                                Or copy and paste this link in your browser:
-                            </p>
-                            
-                            <p style="margin: 0 0 30px 0; padding: 15px; background-color: #f3f4f6; 
-                                      border-radius: 4px; word-break: break-all;">
-                                <a href="{verification_url}" 
-                                   style="color: #2563eb; text-decoration: none; font-size: 14px;">
-                                    {verification_url}
-                                </a>
-                            </p>
-                            
-                            <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; 
-                                        padding: 15px; margin: 20px 0; border-radius: 4px;">
-                                <p style="margin: 0; color: #92400e; font-size: 14px; line-height: 1.6;">
-                                    ⏰ <strong>Important:</strong> This verification link will expire in 24 hours.
+
+                            <!-- Alternative Link -->
+                            <div style="background: linear-gradient(135deg, #F0F9FF 0%, #FAF5FF 100%); padding: 20px; border-radius: 12px; margin: 24px 0; border: 1px solid #DBEAFE;">
+                                <p style="margin: 0 0 8px 0; color: #6B7280; font-size: 13px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;">
+                                    Or copy this link:
+                                </p>
+                                <p style="margin: 0; word-break: break-all;">
+                                    <a href="{verification_url}"
+                                       style="color: #3B82F6; text-decoration: none; font-size: 14px; font-weight: 500;">
+                                        {verification_url}
+                                    </a>
                                 </p>
                             </div>
-                            
-                            <p style="margin: 20px 0 0 0; color: #6b7280; font-size: 14px; line-height: 1.6;">
-                                If you didn't create an account with Car Marketplace Philippines, 
-                                please ignore this email.
+
+                            <!-- Important Notice -->
+                            <div style="background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%); border-left: 4px solid #F59E0B;
+                                        padding: 20px; margin: 24px 0; border-radius: 8px; box-shadow: 0 2px 8px rgba(245, 158, 11, 0.1);">
+                                <p style="margin: 0; color: #92400E; font-size: 14px; line-height: 1.6; font-weight: 500;">
+                                    ⏰ <strong>Important:</strong> This verification link will expire in 24 hours for security purposes.
+                                </p>
+                            </div>
+
+                            <p style="margin: 24px 0 0 0; color: #9CA3AF; font-size: 14px; line-height: 1.6; text-align: center;">
+                                Didn't create an account with AutoHub? You can safely ignore this email.
                             </p>
                         </td>
                     </tr>
-                    
+
                     <!-- Footer -->
                     <tr>
-                        <td style="background-color: #f9fafb; padding: 30px; text-align: center; 
-                                   border-top: 1px solid #e5e7eb;">
-                            <p style="margin: 0 0 10px 0; color: #6b7280; font-size: 14px;">
-                                Need help? Contact us at 
-                                <a href="mailto:support@carmarketplace.ph" 
-                                   style="color: #2563eb; text-decoration: none;">
-                                    support@carmarketplace.ph
+                        <td style="background: linear-gradient(135deg, #F9FAFB 0%, #F3F4F6 100%); padding: 32px 40px; text-align: center;
+                                   border-top: 1px solid #E5E7EB;">
+                            <p style="margin: 0 0 12px 0; color: #6B7280; font-size: 14px; font-weight: 500;">
+                                Need assistance? We're here to help!
+                            </p>
+                            <p style="margin: 0 0 16px 0; color: #6B7280; font-size: 14px;">
+                                Contact us at
+                                <a href="mailto:support@autohub.ph"
+                                   style="color: #3B82F6; text-decoration: none; font-weight: 600;">
+                                    support@autohub.ph
                                 </a>
                             </p>
-                            
-                            <p style="margin: 10px 0 0 0; color: #9ca3af; font-size: 12px;">
-                                © 2024 Car Marketplace Philippines. All rights reserved.
-                            </p>
-                            
-                            <p style="margin: 10px 0 0 0; color: #9ca3af; font-size: 12px;">
-                                This is an automated email. Please do not reply.
-                            </p>
+
+                            <div style="border-top: 1px solid #E5E7EB; padding-top: 16px; margin-top: 16px;">
+                                <p style="margin: 0 0 8px 0; color: #9CA3AF; font-size: 12px; font-weight: 500;">
+                                    © 2024 AutoHub Philippines. All rights reserved.
+                                </p>
+                                <p style="margin: 0; color: #D1D5DB; font-size: 11px;">
+                                    This is an automated message. Please do not reply to this email.
+                                </p>
+                            </div>
                         </td>
                     </tr>
                 </table>
@@ -224,13 +239,13 @@ Need help? Contact us at support@carmarketplace.ph
     async def send_password_reset_email(email: str, token: str, user_name: str = "") -> bool:
         """Send password reset email"""
         reset_url = f"{settings.FRONTEND_URL}/reset-password?token={token}"
-        
-        subject = "Reset your password - Car Marketplace Philippines"
-        
+
+        subject = "Reset your password - AutoHub"
+
         text_body = f"""
 Hello{f' {user_name}' if user_name else ''},
 
-We received a request to reset your password for your Car Marketplace Philippines account.
+We received a request to reset your password for your AutoHub account.
 
 Click the link below to reset your password:
 {reset_url}
@@ -240,64 +255,123 @@ This link will expire in 1 hour.
 If you didn't request a password reset, please ignore this email and your password will remain unchanged.
 
 Best regards,
-Car Marketplace Philippines Team
+AutoHub Team
         """.strip()
-        
+
         html_body = f"""
 <!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Password Reset - AutoHub</title>
 </head>
-<body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4;">
-    <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f4; padding: 20px;">
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; background: linear-gradient(135deg, #FEE2E2 0%, #FECACA 100%);">
+    <table width="100%" cellpadding="0" cellspacing="0" style="background: linear-gradient(135deg, #FEE2E2 0%, #FECACA 100%); padding: 40px 20px;">
         <tr>
             <td align="center">
-                <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden;">
+                <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.1); border: 1px solid rgba(252, 165, 165, 0.3);">
+                    <!-- Header -->
                     <tr>
-                        <td style="background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); padding: 40px 20px; text-align: center;">
-                            <h1 style="margin: 0; color: #ffffff; font-size: 28px;">Password Reset</h1>
+                        <td style="background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%); padding: 48px 32px; text-align: center;">
+                            <div style="display: inline-block; background-color: rgba(255, 255, 255, 0.15); backdrop-filter: blur(10px); padding: 12px 28px; border-radius: 50px; margin-bottom: 16px; border: 1px solid rgba(255, 255, 255, 0.2);">
+                                <h1 style="margin: 0; color: #ffffff; font-size: 32px; font-weight: 700; letter-spacing: -0.5px;">
+                                    AutoHub
+                                </h1>
+                            </div>
+                            <p style="margin: 8px 0 0 0; color: #FEE2E2; font-size: 15px; font-weight: 500;">
+                                Password Reset Request
+                            </p>
                         </td>
                     </tr>
+
+                    <!-- Content -->
                     <tr>
-                        <td style="padding: 40px 30px;">
-                            <h2 style="margin: 0 0 20px 0; color: #1f2937; font-size: 24px;">
+                        <td style="padding: 48px 40px;">
+                            <!-- Lock Icon -->
+                            <div style="text-align: center; margin-bottom: 24px;">
+                                <div style="display: inline-block; width: 80px; height: 80px; background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%); border-radius: 50%; text-align: center; line-height: 80px; font-size: 40px;">
+                                    🔐
+                                </div>
+                            </div>
+
+                            <h2 style="margin: 0 0 16px 0; color: #111827; font-size: 28px; font-weight: 700; text-align: center;">
                                 Reset Your Password
                             </h2>
-                            <p style="margin: 0 0 20px 0; color: #4b5563; font-size: 16px; line-height: 1.6;">
-                                We received a request to reset your password. Click the button below to create a new password:
+
+                            <p style="margin: 0 0 24px 0; color: #6B7280; font-size: 16px; line-height: 1.7; text-align: center;">
+                                We received a request to reset the password for your AutoHub account.
                             </p>
+
+                            <p style="margin: 0 0 32px 0; color: #374151; font-size: 16px; line-height: 1.7; text-align: center;">
+                                Click the button below to create a new password:
+                            </p>
+
+                            <!-- Button -->
                             <table width="100%" cellpadding="0" cellspacing="0">
                                 <tr>
-                                    <td align="center" style="padding: 20px 0;">
-                                        <a href="{reset_url}" 
-                                           style="display: inline-block; background-color: #dc2626; color: #ffffff; 
-                                                  text-decoration: none; padding: 16px 40px; border-radius: 6px; 
-                                                  font-size: 16px; font-weight: bold;">
-                                            Reset Password
+                                    <td align="center" style="padding: 8px 0 32px 0;">
+                                        <a href="{reset_url}"
+                                           style="display: inline-block; background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
+                                                  color: #ffffff; text-decoration: none; padding: 18px 48px; border-radius: 12px;
+                                                  font-size: 17px; font-weight: 600; box-shadow: 0 8px 20px rgba(239, 68, 68, 0.4);">
+                                            Reset My Password
                                         </a>
                                     </td>
                                 </tr>
                             </table>
-                            <p style="margin: 20px 0; color: #6b7280; font-size: 14px;">
-                                Or copy this link: <a href="{reset_url}" style="color: #2563eb;">{reset_url}</a>
-                            </p>
-                            <div style="background-color: #fee2e2; border-left: 4px solid #dc2626; padding: 15px; margin: 20px 0;">
-                                <p style="margin: 0; color: #991b1b; font-size: 14px;">
-                                    ⏰ This link will expire in 1 hour.
+
+                            <!-- Alternative Link -->
+                            <div style="background: linear-gradient(135deg, #FEF2F2 0%, #FEE2E2 100%); padding: 20px; border-radius: 12px; margin: 24px 0; border: 1px solid #FECACA;">
+                                <p style="margin: 0 0 8px 0; color: #6B7280; font-size: 13px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;">
+                                    Or copy this link:
+                                </p>
+                                <p style="margin: 0; word-break: break-all;">
+                                    <a href="{reset_url}"
+                                       style="color: #DC2626; text-decoration: none; font-size: 14px; font-weight: 500;">
+                                        {reset_url}
+                                    </a>
                                 </p>
                             </div>
-                            <p style="margin: 20px 0 0 0; color: #6b7280; font-size: 14px;">
-                                If you didn't request this, please ignore this email.
-                            </p>
+
+                            <!-- Security Notice -->
+                            <div style="background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%); border-left: 4px solid #F59E0B;
+                                        padding: 20px; margin: 24px 0; border-radius: 8px; box-shadow: 0 2px 8px rgba(245, 158, 11, 0.1);">
+                                <p style="margin: 0; color: #92400E; font-size: 14px; line-height: 1.6; font-weight: 500;">
+                                    ⏰ <strong>Security Alert:</strong> This reset link will expire in 1 hour for your protection.
+                                </p>
+                            </div>
+
+                            <div style="background: linear-gradient(135deg, #DBEAFE 0%, #BFDBFE 100%); padding: 20px; border-radius: 8px; margin: 24px 0;">
+                                <p style="margin: 0; color: #1E40AF; font-size: 14px; line-height: 1.6; font-weight: 500;">
+                                    🛡️ <strong>Didn't request this?</strong> If you didn't request a password reset, please ignore this email. Your password will remain unchanged and your account is secure.
+                                </p>
+                            </div>
                         </td>
                     </tr>
+
+                    <!-- Footer -->
                     <tr>
-                        <td style="background-color: #f9fafb; padding: 20px; text-align: center;">
-                            <p style="margin: 0; color: #9ca3af; font-size: 12px;">
-                                © 2024 Car Marketplace Philippines
+                        <td style="background: linear-gradient(135deg, #F9FAFB 0%, #F3F4F6 100%); padding: 32px 40px; text-align: center; border-top: 1px solid #E5E7EB;">
+                            <p style="margin: 0 0 12px 0; color: #6B7280; font-size: 14px; font-weight: 500;">
+                                Need assistance? We're here to help!
                             </p>
+                            <p style="margin: 0 0 16px 0; color: #6B7280; font-size: 14px;">
+                                Contact us at
+                                <a href="mailto:support@autohub.ph"
+                                   style="color: #EF4444; text-decoration: none; font-weight: 600;">
+                                    support@autohub.ph
+                                </a>
+                            </p>
+
+                            <div style="border-top: 1px solid #E5E7EB; padding-top: 16px; margin-top: 16px;">
+                                <p style="margin: 0 0 8px 0; color: #9CA3AF; font-size: 12px; font-weight: 500;">
+                                    © 2024 AutoHub Philippines. All rights reserved.
+                                </p>
+                                <p style="margin: 0; color: #D1D5DB; font-size: 11px;">
+                                    This is an automated message. Please do not reply to this email.
+                                </p>
+                            </div>
                         </td>
                     </tr>
                 </table>
@@ -307,18 +381,18 @@ Car Marketplace Philippines Team
 </body>
 </html>
         """.strip()
-        
+
         return await EmailService.send_email(email, subject, text_body, html_body)
     
     @staticmethod
     async def send_welcome_email(email: str, user_name: str) -> bool:
         """Send welcome email after verification"""
-        subject = "Welcome to Car Marketplace Philippines! 🎉"
-        
+        subject = "Welcome to AutoHub - Let's Get Started! 🎉"
+
         text_body = f"""
 Hello {user_name},
 
-Your email has been successfully verified! Welcome to Car Marketplace Philippines.
+Your email has been successfully verified! Welcome to AutoHub.
 
 You can now:
 - Browse thousands of cars for sale
@@ -329,54 +403,135 @@ You can now:
 Get started now: {settings.FRONTEND_URL}
 
 Best regards,
-Car Marketplace Philippines Team
+AutoHub Team
         """.strip()
-        
+
         html_body = f"""
 <!DOCTYPE html>
 <html>
-<body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4;">
-    <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f4; padding: 20px;">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to AutoHub</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; background: linear-gradient(135deg, #D1FAE5 0%, #A7F3D0 100%);">
+    <table width="100%" cellpadding="0" cellspacing="0" style="background: linear-gradient(135deg, #D1FAE5 0%, #A7F3D0 100%); padding: 40px 20px;">
         <tr>
             <td align="center">
-                <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px;">
+                <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.1); border: 1px solid rgba(134, 239, 172, 0.3);">
+                    <!-- Header -->
                     <tr>
-                        <td style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 40px 20px; text-align: center;">
-                            <h1 style="margin: 0; color: #ffffff; font-size: 28px;">Welcome! 🎉</h1>
+                        <td style="background: linear-gradient(135deg, #10B981 0%, #059669 100%); padding: 48px 32px; text-align: center;">
+                            <div style="display: inline-block; background-color: rgba(255, 255, 255, 0.15); backdrop-filter: blur(10px); padding: 12px 28px; border-radius: 50px; margin-bottom: 16px; border: 1px solid rgba(255, 255, 255, 0.2);">
+                                <h1 style="margin: 0; color: #ffffff; font-size: 32px; font-weight: 700; letter-spacing: -0.5px;">
+                                    AutoHub
+                                </h1>
+                            </div>
+                            <p style="margin: 8px 0 0 0; color: #D1FAE5; font-size: 15px; font-weight: 500;">
+                                Welcome Aboard! 🎉
+                            </p>
                         </td>
                     </tr>
+
+                    <!-- Content -->
                     <tr>
-                        <td style="padding: 40px 30px;">
-                            <h2 style="margin: 0 0 20px 0; color: #1f2937;">Hello {user_name}!</h2>
-                            <p style="margin: 0 0 20px 0; color: #4b5563; font-size: 16px; line-height: 1.6;">
-                                Your email has been successfully verified! You're all set to start using Car Marketplace Philippines.
+                        <td style="padding: 48px 40px;">
+                            <!-- Success Icon -->
+                            <div style="text-align: center; margin-bottom: 24px;">
+                                <div style="display: inline-block; width: 80px; height: 80px; background: linear-gradient(135deg, #10B981 0%, #059669 100%); border-radius: 50%; text-align: center; line-height: 80px; font-size: 40px;">
+                                    ✅
+                                </div>
+                            </div>
+
+                            <h2 style="margin: 0 0 16px 0; color: #111827; font-size: 28px; font-weight: 700; text-align: center;">
+                                Hello {user_name}!
+                            </h2>
+
+                            <p style="margin: 0 0 24px 0; color: #6B7280; font-size: 16px; line-height: 1.7; text-align: center;">
+                                Your email has been successfully verified! You're now a part of the AutoHub community.
                             </p>
-                            <h3 style="color: #1f2937; margin: 30px 0 15px 0;">What you can do now:</h3>
-                            <ul style="color: #4b5563; line-height: 1.8;">
-                                <li>Browse thousands of cars for sale</li>
-                                <li>Save your favorite listings</li>
-                                <li>Contact sellers directly</li>
-                                <li>Post your own car listings (after phone verification)</li>
-                            </ul>
+
+                            <p style="margin: 0 0 32px 0; color: #374151; font-size: 16px; line-height: 1.7; text-align: center; font-weight: 500;">
+                                Here's what you can do now:
+                            </p>
+
+                            <!-- Features Cards -->
+                            <div style="margin: 32px 0;">
+                                <div style="background: linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%); padding: 20px; border-radius: 12px; margin-bottom: 16px; border-left: 4px solid #3B82F6;">
+                                    <p style="margin: 0; color: #1E40AF; font-size: 15px; font-weight: 600;">
+                                        🚗 Browse thousands of cars for sale
+                                    </p>
+                                </div>
+
+                                <div style="background: linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%); padding: 20px; border-radius: 12px; margin-bottom: 16px; border-left: 4px solid #10B981;">
+                                    <p style="margin: 0; color: #065F46; font-size: 15px; font-weight: 600;">
+                                        💬 Connect with verified buyers and sellers
+                                    </p>
+                                </div>
+
+                                <div style="background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%); padding: 20px; border-radius: 12px; margin-bottom: 16px; border-left: 4px solid #F59E0B;">
+                                    <p style="margin: 0; color: #92400E; font-size: 15px; font-weight: 600;">
+                                        ❤️ Save your favorite listings
+                                    </p>
+                                </div>
+
+                                <div style="background: linear-gradient(135deg, #F5F3FF 0%, #EDE9FE 100%); padding: 20px; border-radius: 12px; border-left: 4px solid #8B5CF6;">
+                                    <p style="margin: 0; color: #5B21B6; font-size: 15px; font-weight: 600;">
+                                        📝 Post your own car listings (after phone verification)
+                                    </p>
+                                </div>
+                            </div>
+
+                            <!-- CTA Button -->
                             <table width="100%" cellpadding="0" cellspacing="0">
                                 <tr>
-                                    <td align="center" style="padding: 30px 0;">
+                                    <td align="center" style="padding: 32px 0 16px 0;">
                                         <a href="{settings.FRONTEND_URL}"
-                                           style="display: inline-block; background-color: #10b981; color: #ffffff;
-                                                  text-decoration: none; padding: 16px 40px; border-radius: 6px;
-                                                  font-size: 16px; font-weight: bold;">
-                                            Start Browsing Cars
+                                           style="display: inline-block; background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+                                                  color: #ffffff; text-decoration: none; padding: 18px 48px; border-radius: 12px;
+                                                  font-size: 17px; font-weight: 600; box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4);">
+                                            Start Exploring Cars
                                         </a>
                                     </td>
                                 </tr>
                             </table>
+
+                            <!-- Tips Section -->
+                            <div style="background: linear-gradient(135deg, #DBEAFE 0%, #BFDBFE 100%); padding: 24px; border-radius: 12px; margin: 32px 0;">
+                                <h3 style="margin: 0 0 12px 0; color: #1E40AF; font-size: 16px; font-weight: 700;">
+                                    💡 Pro Tips:
+                                </h3>
+                                <ul style="margin: 0; padding-left: 20px; color: #1E3A8A; font-size: 14px; line-height: 1.8;">
+                                    <li>Complete your profile to build trust with sellers</li>
+                                    <li>Verify your phone number to post car listings</li>
+                                    <li>Set up alerts for your favorite car models</li>
+                                </ul>
+                            </div>
                         </td>
                     </tr>
+
+                    <!-- Footer -->
                     <tr>
-                        <td style="background-color: #f9fafb; padding: 20px; text-align: center;">
-                            <p style="margin: 0; color: #9ca3af; font-size: 12px;">
-                                © 2024 Car Marketplace Philippines
+                        <td style="background: linear-gradient(135deg, #F9FAFB 0%, #F3F4F6 100%); padding: 32px 40px; text-align: center; border-top: 1px solid #E5E7EB;">
+                            <p style="margin: 0 0 12px 0; color: #6B7280; font-size: 14px; font-weight: 500;">
+                                Questions? We're here to help!
                             </p>
+                            <p style="margin: 0 0 16px 0; color: #6B7280; font-size: 14px;">
+                                Contact us at
+                                <a href="mailto:support@autohub.ph"
+                                   style="color: #10B981; text-decoration: none; font-weight: 600;">
+                                    support@autohub.ph
+                                </a>
+                            </p>
+
+                            <div style="border-top: 1px solid #E5E7EB; padding-top: 16px; margin-top: 16px;">
+                                <p style="margin: 0 0 8px 0; color: #9CA3AF; font-size: 12px; font-weight: 500;">
+                                    © 2024 AutoHub Philippines. All rights reserved.
+                                </p>
+                                <p style="margin: 0; color: #D1D5DB; font-size: 11px;">
+                                    This is an automated message. Please do not reply to this email.
+                                </p>
+                            </div>
                         </td>
                     </tr>
                 </table>
@@ -408,7 +563,7 @@ Car Marketplace Philippines Team
         is_offer = offered_price is not None and offered_price > 0
         email_type = "Offer" if is_offer else "Inquiry"
 
-        subject = f"New {email_type} for your car: {car_title}"
+        subject = f"New {email_type} for your car: {car_title} - AutoHub"
 
         car_url = f"{settings.FRONTEND_URL}/cars/{car_id}"
 
@@ -420,7 +575,7 @@ Car Marketplace Philippines Team
         text_body = f"""
 Hello {seller_name},
 
-Great news! You've received a new {email_type.lower()} for your car listing.
+Great news! You've received a new {email_type.lower()} for your car listing on AutoHub.
 
 Car: {car_title}
 From: {buyer_name}
@@ -439,16 +594,22 @@ Best regards,
 AutoHub Team
 
 ---
-Need help? Contact us at support@carmarketplace.ph
+Need help? Contact us at support@autohub.ph
         """.strip()
 
-        # HTML version with conditional offer styling
+        # HTML version with modern design
+        # Different gradient based on email type
+        header_gradient = "linear-gradient(135deg, #3B82F6 0%, #8B5CF6 100%)" if not is_offer else "linear-gradient(135deg, #F59E0B 0%, #D97706 100%)"
+        bg_gradient = "linear-gradient(135deg, #EFF6FF 0%, #F3E8FF 100%)" if not is_offer else "linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%)"
+        icon_emoji = "💬" if not is_offer else "💰"
+
+        # Offer price section
         offer_html = ""
         if is_offer:
             offer_html = f"""
-            <div style="background-color: #dcfce7; border-left: 4px solid #10b981;
-                        padding: 20px; margin: 20px 0; border-radius: 4px;">
-                <p style="margin: 0; color: #065f46; font-size: 18px; font-weight: bold;">
+            <div style="background: linear-gradient(135deg, #DCFCE7 0%, #BBF7D0 100%); border-left: 4px solid #10B981;
+                        padding: 24px; margin: 24px 0; border-radius: 12px; box-shadow: 0 2px 8px rgba(16, 185, 129, 0.1);">
+                <p style="margin: 0; color: #065F46; font-size: 20px; font-weight: 700;">
                     💰 Offered Price: ₱{offered_price:,.2f}
                 </p>
             </div>
@@ -460,127 +621,128 @@ Need help? Contact us at support@carmarketplace.ph
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New {email_type} - AutoHub</title>
 </head>
-<body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4;">
-    <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f4; padding: 20px;">
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; background: {bg_gradient};">
+    <table width="100%" cellpadding="0" cellspacing="0" style="background: {bg_gradient}; padding: 40px 20px;">
         <tr>
             <td align="center">
-                <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.1);">
                     <!-- Header -->
                     <tr>
-                        <td style="background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%); padding: 40px 20px; text-align: center;">
-                            <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: bold;">
-                                AutoHub
-                            </h1>
-                            <p style="margin: 10px 0 0 0; color: #e0e7ff; font-size: 16px;">
-                                New {email_type} Received 🎉
+                        <td style="background: {header_gradient}; padding: 48px 32px; text-align: center;">
+                            <div style="display: inline-block; background-color: rgba(255, 255, 255, 0.15); backdrop-filter: blur(10px); padding: 12px 28px; border-radius: 50px; margin-bottom: 16px; border: 1px solid rgba(255, 255, 255, 0.2);">
+                                <h1 style="margin: 0; color: #ffffff; font-size: 32px; font-weight: 700; letter-spacing: -0.5px;">
+                                    AutoHub
+                                </h1>
+                            </div>
+                            <p style="margin: 8px 0 0 0; color: rgba(255, 255, 255, 0.9); font-size: 15px; font-weight: 500;">
+                                New {email_type} Received {icon_emoji}
                             </p>
                         </td>
                     </tr>
 
                     <!-- Content -->
                     <tr>
-                        <td style="padding: 40px 30px;">
-                            <h2 style="margin: 0 0 20px 0; color: #1f2937; font-size: 24px;">
+                        <td style="padding: 48px 40px;">
+                            <h2 style="margin: 0 0 16px 0; color: #111827; font-size: 28px; font-weight: 700; text-align: center;">
                                 Hello {seller_name}!
                             </h2>
 
-                            <p style="margin: 0 0 20px 0; color: #4b5563; font-size: 16px; line-height: 1.6;">
-                                Great news! You've received a new {email_type.lower()} for your car listing:
+                            <p style="margin: 0 0 32px 0; color: #6B7280; font-size: 16px; line-height: 1.7; text-align: center;">
+                                Great news! You've received a new {email_type.lower()} for your car listing.
                             </p>
 
-                            <!-- Car Info Box -->
-                            <div style="background-color: #f3f4f6; padding: 20px; border-radius: 6px; margin: 20px 0;">
-                                <p style="margin: 0 0 10px 0; color: #1f2937; font-size: 18px; font-weight: bold;">
+                            <!-- Car Info Card -->
+                            <div style="background: linear-gradient(135deg, #F0F9FF 0%, #E0F2FE 100%); padding: 24px; border-radius: 12px; margin: 24px 0; border: 1px solid #DBEAFE;">
+                                <p style="margin: 0; color: #1E40AF; font-size: 18px; font-weight: 700;">
                                     🚗 {car_title}
                                 </p>
                             </div>
 
                             {offer_html}
 
-                            <!-- Buyer Details -->
-                            <div style="margin: 25px 0;">
-                                <h3 style="margin: 0 0 15px 0; color: #1f2937; font-size: 18px;">
-                                    Buyer Information
+                            <!-- Buyer Information Card -->
+                            <div style="background: linear-gradient(135deg, #F9FAFB 0%, #F3F4F6 100%); padding: 24px; border-radius: 12px; margin: 24px 0; border: 1px solid #E5E7EB;">
+                                <h3 style="margin: 0 0 20px 0; color: #111827; font-size: 18px; font-weight: 700;">
+                                    👤 Buyer Information
                                 </h3>
                                 <table style="width: 100%; border-collapse: collapse;">
                                     <tr>
-                                        <td style="padding: 8px 0; color: #6b7280; font-size: 14px; width: 100px;">
-                                            <strong>Name:</strong>
+                                        <td style="padding: 10px 0; color: #6B7280; font-size: 14px; font-weight: 600; width: 100px;">
+                                            Name:
                                         </td>
-                                        <td style="padding: 8px 0; color: #1f2937; font-size: 14px;">
+                                        <td style="padding: 10px 0; color: #111827; font-size: 15px; font-weight: 500;">
                                             {buyer_name}
                                         </td>
                                     </tr>
                                     <tr>
-                                        <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">
-                                            <strong>Email:</strong>
+                                        <td style="padding: 10px 0; color: #6B7280; font-size: 14px; font-weight: 600;">
+                                            Email:
                                         </td>
-                                        <td style="padding: 8px 0; color: #1f2937; font-size: 14px;">
-                                            <a href="mailto:{buyer_email}" style="color: #2563eb; text-decoration: none;">
+                                        <td style="padding: 10px 0; color: #111827; font-size: 15px;">
+                                            <a href="mailto:{buyer_email}" style="color: #3B82F6; text-decoration: none; font-weight: 500;">
                                                 {buyer_email}
                                             </a>
                                         </td>
                                     </tr>
                                     <tr>
-                                        <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">
-                                            <strong>Phone:</strong>
+                                        <td style="padding: 10px 0; color: #6B7280; font-size: 14px; font-weight: 600;">
+                                            Phone:
                                         </td>
-                                        <td style="padding: 8px 0; color: #1f2937; font-size: 14px;">
-                                            <a href="tel:{buyer_phone}" style="color: #2563eb; text-decoration: none;">
+                                        <td style="padding: 10px 0; color: #111827; font-size: 15px;">
+                                            <a href="tel:{buyer_phone}" style="color: #3B82F6; text-decoration: none; font-weight: 500;">
                                                 {buyer_phone}
                                             </a>
                                         </td>
                                     </tr>
                                     <tr>
-                                        <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">
-                                            <strong>Type:</strong>
+                                        <td style="padding: 10px 0; color: #6B7280; font-size: 14px; font-weight: 600;">
+                                            Type:
                                         </td>
-                                        <td style="padding: 8px 0; color: #1f2937; font-size: 14px;">
+                                        <td style="padding: 10px 0; color: #111827; font-size: 15px; font-weight: 500;">
                                             {inquiry_type.replace('_', ' ').title()}
                                         </td>
                                     </tr>
                                 </table>
                             </div>
 
-                            <!-- Message -->
-                            <div style="margin: 25px 0;">
-                                <h3 style="margin: 0 0 15px 0; color: #1f2937; font-size: 18px;">
-                                    Message
+                            <!-- Message Section -->
+                            <div style="margin: 24px 0;">
+                                <h3 style="margin: 0 0 16px 0; color: #111827; font-size: 18px; font-weight: 700;">
+                                    💬 Message
                                 </h3>
-                                <div style="background-color: #f9fafb; padding: 20px; border-radius: 6px;
-                                            border-left: 4px solid #2563eb;">
-                                    <p style="margin: 0; color: #4b5563; font-size: 15px; line-height: 1.6; white-space: pre-wrap;">
+                                <div style="background: linear-gradient(135deg, #F0F9FF 0%, #E0F2FE 100%); padding: 24px; border-radius: 12px; border-left: 4px solid #3B82F6;">
+                                    <p style="margin: 0; color: #374151; font-size: 15px; line-height: 1.7; white-space: pre-wrap;">
 {message}
                                     </p>
                                 </div>
                             </div>
 
                             <!-- Action Buttons -->
-                            <table width="100%" cellpadding="0" cellspacing="0" style="margin: 30px 0;">
+                            <table width="100%" cellpadding="0" cellspacing="0" style="margin: 32px 0;">
                                 <tr>
                                     <td align="center">
                                         <a href="{settings.FRONTEND_URL}/dashboard/inquiries"
-                                           style="display: inline-block; background-color: #2563eb; color: #ffffff;
-                                                  text-decoration: none; padding: 16px 32px; border-radius: 6px;
-                                                  font-size: 16px; font-weight: bold; margin-right: 10px;
-                                                  box-shadow: 0 4px 6px rgba(37, 99, 235, 0.3);">
+                                           style="display: inline-block; background: linear-gradient(135deg, #3B82F6 0%, #8B5CF6 100%);
+                                                  color: #ffffff; text-decoration: none; padding: 16px 32px; border-radius: 12px;
+                                                  font-size: 16px; font-weight: 600; margin: 8px; box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4);">
                                             View in Dashboard
                                         </a>
                                         <a href="{car_url}"
-                                           style="display: inline-block; background-color: #6b7280; color: #ffffff;
-                                                  text-decoration: none; padding: 16px 32px; border-radius: 6px;
-                                                  font-size: 16px; font-weight: bold;">
-                                            View Car Listing
+                                           style="display: inline-block; background-color: #6B7280; color: #ffffff;
+                                                  text-decoration: none; padding: 16px 32px; border-radius: 12px;
+                                                  font-size: 16px; font-weight: 600; margin: 8px;">
+                                            View Listing
                                         </a>
                                     </td>
                                 </tr>
                             </table>
 
-                            <div style="background-color: #dbeafe; border-left: 4px solid #2563eb;
-                                        padding: 15px; margin: 20px 0; border-radius: 4px;">
-                                <p style="margin: 0; color: #1e40af; font-size: 14px; line-height: 1.6;">
-                                    💡 <strong>Tip:</strong> Respond quickly to increase your chances of closing the deal!
+                            <!-- Tip -->
+                            <div style="background: linear-gradient(135deg, #DBEAFE 0%, #BFDBFE 100%); padding: 20px; border-radius: 12px; margin: 24px 0;">
+                                <p style="margin: 0; color: #1E40AF; font-size: 14px; line-height: 1.6; font-weight: 500;">
+                                    💡 <strong>Pro Tip:</strong> Respond quickly to increase your chances of closing the deal! Buyers appreciate fast responses.
                                 </p>
                             </div>
                         </td>
@@ -588,23 +750,26 @@ Need help? Contact us at support@carmarketplace.ph
 
                     <!-- Footer -->
                     <tr>
-                        <td style="background-color: #f9fafb; padding: 30px; text-align: center;
-                                   border-top: 1px solid #e5e7eb;">
-                            <p style="margin: 0 0 10px 0; color: #6b7280; font-size: 14px;">
-                                Need help? Contact us at
-                                <a href="mailto:support@carmarketplace.ph"
-                                   style="color: #2563eb; text-decoration: none;">
-                                    support@carmarketplace.ph
+                        <td style="background: linear-gradient(135deg, #F9FAFB 0%, #F3F4F6 100%); padding: 32px 40px; text-align: center; border-top: 1px solid #E5E7EB;">
+                            <p style="margin: 0 0 12px 0; color: #6B7280; font-size: 14px; font-weight: 500;">
+                                Need help? We're here to support you!
+                            </p>
+                            <p style="margin: 0 0 16px 0; color: #6B7280; font-size: 14px;">
+                                Contact us at
+                                <a href="mailto:support@autohub.ph"
+                                   style="color: #3B82F6; text-decoration: none; font-weight: 600;">
+                                    support@autohub.ph
                                 </a>
                             </p>
 
-                            <p style="margin: 10px 0 0 0; color: #9ca3af; font-size: 12px;">
-                                © 2024 AutoHub. All rights reserved.
-                            </p>
-
-                            <p style="margin: 10px 0 0 0; color: #9ca3af; font-size: 12px;">
-                                This is an automated email. Please do not reply directly to this email.
-                            </p>
+                            <div style="border-top: 1px solid #E5E7EB; padding-top: 16px; margin-top: 16px;">
+                                <p style="margin: 0 0 8px 0; color: #9CA3AF; font-size: 12px; font-weight: 500;">
+                                    © 2024 AutoHub Philippines. All rights reserved.
+                                </p>
+                                <p style="margin: 0; color: #D1D5DB; font-size: 11px;">
+                                    This is an automated message. Please do not reply to this email.
+                                </p>
+                            </div>
                         </td>
                     </tr>
                 </table>
@@ -628,7 +793,7 @@ Need help? Contact us at support@carmarketplace.ph
     ) -> bool:
         """Send email to buyer when seller responds to their inquiry"""
 
-        subject = f"Response to your inquiry: {car_title}"
+        subject = f"Response to your inquiry: {car_title} - AutoHub"
         car_url = f"{settings.FRONTEND_URL}/cars/{car_id}"
 
         text_body = f"""
@@ -654,71 +819,128 @@ AutoHub Team
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inquiry Response - AutoHub</title>
 </head>
-<body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4;">
-    <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f4; padding: 20px;">
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif; background: linear-gradient(135deg, #D1FAE5 0%, #A7F3D0 100%);">
+    <table width="100%" cellpadding="0" cellspacing="0" style="background: linear-gradient(135deg, #D1FAE5 0%, #A7F3D0 100%); padding: 40px 20px;">
         <tr>
             <td align="center">
-                <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden;">
+                <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.1); border: 1px solid rgba(134, 239, 172, 0.3);">
+                    <!-- Header -->
                     <tr>
-                        <td style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 40px 20px; text-align: center;">
-                            <h1 style="margin: 0; color: #ffffff; font-size: 28px;">AutoHub</h1>
-                            <p style="margin: 10px 0 0 0; color: #d1fae5; font-size: 16px;">
+                        <td style="background: linear-gradient(135deg, #10B981 0%, #059669 100%); padding: 48px 32px; text-align: center;">
+                            <div style="display: inline-block; background-color: rgba(255, 255, 255, 0.15); backdrop-filter: blur(10px); padding: 12px 28px; border-radius: 50px; margin-bottom: 16px; border: 1px solid rgba(255, 255, 255, 0.2);">
+                                <h1 style="margin: 0; color: #ffffff; font-size: 32px; font-weight: 700; letter-spacing: -0.5px;">
+                                    AutoHub
+                                </h1>
+                            </div>
+                            <p style="margin: 8px 0 0 0; color: #D1FAE5; font-size: 15px; font-weight: 500;">
                                 New Response Received 📧
                             </p>
                         </td>
                     </tr>
+
+                    <!-- Content -->
                     <tr>
-                        <td style="padding: 40px 30px;">
-                            <h2 style="margin: 0 0 20px 0; color: #1f2937; font-size: 24px;">
+                        <td style="padding: 48px 40px;">
+                            <!-- Success Icon -->
+                            <div style="text-align: center; margin-bottom: 24px;">
+                                <div style="display: inline-block; width: 80px; height: 80px; background: linear-gradient(135deg, #10B981 0%, #059669 100%); border-radius: 50%; text-align: center; line-height: 80px; font-size: 40px;">
+                                    📬
+                                </div>
+                            </div>
+
+                            <h2 style="margin: 0 0 16px 0; color: #111827; font-size: 28px; font-weight: 700; text-align: center;">
                                 Hello {buyer_name}!
                             </h2>
 
-                            <p style="margin: 0 0 20px 0; color: #4b5563; font-size: 16px; line-height: 1.6;">
-                                You've received a response to your inquiry about:
+                            <p style="margin: 0 0 32px 0; color: #6B7280; font-size: 16px; line-height: 1.7; text-align: center;">
+                                Good news! You've received a response to your inquiry.
                             </p>
 
-                            <div style="background-color: #f3f4f6; padding: 20px; border-radius: 6px; margin: 20px 0;">
-                                <p style="margin: 0 0 10px 0; color: #1f2937; font-size: 18px; font-weight: bold;">
+                            <!-- Car Info Card -->
+                            <div style="background: linear-gradient(135deg, #F0F9FF 0%, #E0F2FE 100%); padding: 24px; border-radius: 12px; margin: 24px 0; border: 1px solid #DBEAFE;">
+                                <p style="margin: 0 0 12px 0; color: #1E40AF; font-size: 18px; font-weight: 700;">
                                     🚗 {car_title}
                                 </p>
-                                <p style="margin: 0; color: #6b7280; font-size: 14px;">
-                                    From: {seller_name}
+                                <p style="margin: 0; color: #6B7280; font-size: 14px; font-weight: 500;">
+                                    <strong>From:</strong> {seller_name}
                                 </p>
                             </div>
 
-                            <div style="margin: 25px 0;">
-                                <h3 style="margin: 0 0 15px 0; color: #1f2937; font-size: 18px;">
-                                    Seller's Response
+                            <!-- Response Section -->
+                            <div style="margin: 32px 0;">
+                                <h3 style="margin: 0 0 16px 0; color: #111827; font-size: 18px; font-weight: 700;">
+                                    💬 Seller's Response
                                 </h3>
-                                <div style="background-color: #f9fafb; padding: 20px; border-radius: 6px;
-                                            border-left: 4px solid #10b981;">
-                                    <p style="margin: 0; color: #4b5563; font-size: 15px; line-height: 1.6; white-space: pre-wrap;">
+                                <div style="background: linear-gradient(135deg, #DCFCE7 0%, #BBF7D0 100%); padding: 24px; border-radius: 12px; border-left: 4px solid #10B981;">
+                                    <p style="margin: 0; color: #065F46; font-size: 15px; line-height: 1.7; white-space: pre-wrap; font-weight: 500;">
 {response_message}
                                     </p>
                                 </div>
                             </div>
 
-                            <table width="100%" cellpadding="0" cellspacing="0" style="margin: 30px 0;">
+                            <!-- Action Buttons -->
+                            <table width="100%" cellpadding="0" cellspacing="0" style="margin: 32px 0;">
                                 <tr>
                                     <td align="center">
                                         <a href="{car_url}"
-                                           style="display: inline-block; background-color: #10b981; color: #ffffff;
-                                                  text-decoration: none; padding: 16px 32px; border-radius: 6px;
-                                                  font-size: 16px; font-weight: bold;
-                                                  box-shadow: 0 4px 6px rgba(16, 185, 129, 0.3);">
+                                           style="display: inline-block; background: linear-gradient(135deg, #10B981 0%, #059669 100%);
+                                                  color: #ffffff; text-decoration: none; padding: 18px 48px; border-radius: 12px;
+                                                  font-size: 17px; font-weight: 600; margin: 8px; box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4);">
                                             View Car Listing
                                         </a>
                                     </td>
                                 </tr>
+                                <tr>
+                                    <td align="center" style="padding-top: 12px;">
+                                        <a href="{settings.FRONTEND_URL}/dashboard/my-inquiries"
+                                           style="display: inline-block; background-color: #6B7280; color: #ffffff;
+                                                  text-decoration: none; padding: 14px 36px; border-radius: 12px;
+                                                  font-size: 15px; font-weight: 600; margin: 8px;">
+                                            View All Inquiries
+                                        </a>
+                                    </td>
+                                </tr>
                             </table>
+
+                            <!-- Next Steps -->
+                            <div style="background: linear-gradient(135deg, #DBEAFE 0%, #BFDBFE 100%); padding: 24px; border-radius: 12px; margin: 24px 0;">
+                                <h3 style="margin: 0 0 12px 0; color: #1E40AF; font-size: 16px; font-weight: 700;">
+                                    📌 Next Steps:
+                                </h3>
+                                <ul style="margin: 0; padding-left: 20px; color: #1E3A8A; font-size: 14px; line-height: 1.8;">
+                                    <li>Review the seller's response carefully</li>
+                                    <li>Contact the seller directly for more details</li>
+                                    <li>Schedule a viewing if you're interested</li>
+                                    <li>Make an offer if the car meets your needs</li>
+                                </ul>
+                            </div>
                         </td>
                     </tr>
+
+                    <!-- Footer -->
                     <tr>
-                        <td style="background-color: #f9fafb; padding: 20px; text-align: center;">
-                            <p style="margin: 0; color: #9ca3af; font-size: 12px;">
-                                © 2024 AutoHub. All rights reserved.
+                        <td style="background: linear-gradient(135deg, #F9FAFB 0%, #F3F4F6 100%); padding: 32px 40px; text-align: center; border-top: 1px solid #E5E7EB;">
+                            <p style="margin: 0 0 12px 0; color: #6B7280; font-size: 14px; font-weight: 500;">
+                                Have questions? We're here to help!
                             </p>
+                            <p style="margin: 0 0 16px 0; color: #6B7280; font-size: 14px;">
+                                Contact us at
+                                <a href="mailto:support@autohub.ph"
+                                   style="color: #10B981; text-decoration: none; font-weight: 600;">
+                                    support@autohub.ph
+                                </a>
+                            </p>
+
+                            <div style="border-top: 1px solid #E5E7EB; padding-top: 16px; margin-top: 16px;">
+                                <p style="margin: 0 0 8px 0; color: #9CA3AF; font-size: 12px; font-weight: 500;">
+                                    © 2024 AutoHub Philippines. All rights reserved.
+                                </p>
+                                <p style="margin: 0; color: #D1D5DB; font-size: 11px;">
+                                    This is an automated message. Please do not reply to this email.
+                                </p>
+                            </div>
                         </td>
                     </tr>
                 </table>
