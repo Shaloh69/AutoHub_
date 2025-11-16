@@ -424,7 +424,7 @@ export default function AdminDashboardPage() {
                                     {car.title}
                                   </h3>
                                   <p className="text-sm text-gray-600 dark:text-gray-400">
-                                    {car.brand?.name} {car.model?.name} • {car.year}
+                                    {car.brand?.name || 'Unknown Brand'} {car.model?.name || ''} • {car.year || 'N/A'}
                                   </p>
                                   {car.seller && (
                                     <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
@@ -438,11 +438,11 @@ export default function AdminDashboardPage() {
                               </div>
 
                               <div className="flex items-center gap-4 mb-3 text-sm text-gray-600 dark:text-gray-400">
-                                <span>{formatPrice(car.price)}</span>
+                                <span>{formatPrice(car.price || 0)}</span>
                                 <span>•</span>
-                                <span>{car.mileage.toLocaleString()} km</span>
+                                <span>{(car.mileage || 0).toLocaleString()} km</span>
                                 <span>•</span>
-                                <span className="capitalize">{car.fuel_type}</span>
+                                <span className="capitalize">{car.fuel_type || 'N/A'}</span>
                               </div>
 
                               <div className="flex flex-wrap gap-2">
