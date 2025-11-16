@@ -47,7 +47,7 @@ class CarCreate(BaseModel):
 
     # Exterior
     exterior_color: Optional[str] = Field(None, max_length=50)
-    color_type: Optional[str] = Field(None, pattern="^(solid|metallic|pearl|matte)$")
+    # NOTE: color_type removed - not in database schema
 
     # Condition
     condition_rating: str = Field(..., pattern="^(BRAND_NEW|LIKE_NEW|EXCELLENT|GOOD|FAIR|POOR)$")  # Fixed: UPPERCASE to match SQL schema
@@ -130,7 +130,7 @@ class CarUpdate(BaseModel):
 
     # Exterior
     exterior_color: Optional[str] = Field(None, max_length=50)
-    color_type: Optional[str] = Field(None, pattern="^(solid|metallic|pearl|matte)$")
+    # NOTE: color_type removed - not in database schema
 
     # Condition
     condition_rating: Optional[str] = Field(None, pattern="^(BRAND_NEW|LIKE_NEW|EXCELLENT|GOOD|FAIR|POOR)$")  # Fixed: UPPERCASE to match SQL schema
@@ -246,7 +246,7 @@ class CarDetailResponse(CarResponse):
 
     # Exterior
     exterior_color: Optional[str] = None
-    color_type: Optional[str] = None
+    # NOTE: color_type removed - not in database schema
 
     # Condition
     accident_history: bool
