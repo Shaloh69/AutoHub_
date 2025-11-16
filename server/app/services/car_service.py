@@ -194,6 +194,8 @@ class CarService:
                 joinedload(Car.seller),
                 joinedload(Car.brand_rel),
                 joinedload(Car.model_rel),
+                joinedload(Car.color_rel),
+                joinedload(Car.currency_rel),
                 joinedload(Car.city)
             ).filter(Car.id == car_id).first()
             
@@ -226,6 +228,8 @@ class CarService:
             joinedload(Car.images),  # ADDED: Load images for display
             joinedload(Car.brand_rel),  # ADDED: Load brand info
             joinedload(Car.model_rel),  # ADDED: Load model info
+            joinedload(Car.color_rel),  # ADDED: Load color info
+            joinedload(Car.currency_rel),  # ADDED: Load currency info
             joinedload(Car.city)  # ADDED: Load city info
         ).filter(
             Car.is_active == True,  # noqa: E712
@@ -290,16 +294,25 @@ class CarService:
         
         if filters.get("max_mileage"):
             query = query.filter(Car.mileage <= filters["max_mileage"])
-        
+
+        if filters.get("car_condition"):
+            query = query.filter(Car.car_condition == filters["car_condition"])
+
+        if filters.get("price_negotiable") is not None:
+            query = query.filter(Car.price_negotiable == filters["price_negotiable"])
+
+        if filters.get("financing_available") is not None:
+            query = query.filter(Car.financing_available == filters["financing_available"])
+
         if filters.get("city_id"):
             query = query.filter(Car.city_id == filters["city_id"])
-        
+
         if filters.get("province_id"):
             query = query.filter(Car.province_id == filters["province_id"])
-        
+
         if filters.get("region_id"):
             query = query.filter(Car.region_id == filters["region_id"])
-        
+
         if filters.get("is_featured"):
             query = query.filter(Car.is_featured == True)  # noqa: E712
         
@@ -454,16 +467,17 @@ class CarService:
     def calculate_quality_score(car: Car) -> int:
         """Calculate quality score based on condition"""
         score = 50  # Base score
-        
-        # Condition rating
+
+        # Condition rating (UPPERCASE ENUMs)
         condition_scores = {
-            "excellent": 25,
-            "very_good": 20,
-            "good": 15,
-            "fair": 10,
-            "poor": 5
+            "EXCELLENT": 25,
+            "LIKE_NEW": 23,
+            "BRAND_NEW": 25,
+            "GOOD": 15,
+            "FAIR": 10,
+            "POOR": 5
         }
-        condition = str(getattr(car, 'condition_rating', 'fair'))
+        condition = str(getattr(car, 'car_condition', 'FAIR')).upper()
         
 
         score += condition_scores.get(condition, 10)

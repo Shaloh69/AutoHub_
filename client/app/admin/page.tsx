@@ -438,7 +438,7 @@ export default function AdminDashboardPage() {
                               </div>
 
                               <div className="flex items-center gap-4 mb-3 text-sm text-gray-600 dark:text-gray-400">
-                                <span>{formatPrice(car.price, car.currency)}</span>
+                                <span>{formatPrice(car.price)}</span>
                                 <span>•</span>
                                 <span>{car.mileage.toLocaleString()} km</span>
                                 <span>•</span>

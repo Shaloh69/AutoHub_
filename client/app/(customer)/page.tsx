@@ -317,9 +317,9 @@ export default function HomePage() {
 
                         <div className="flex items-center justify-between mb-3">
                           <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                            {formatPrice(car.price, car.currency)}
+                            {formatPrice(car.price)}
                           </span>
-                          {car.negotiable && (
+                          {car.price_negotiable && (
                             <Chip size="sm" variant="flat" color="success">
                               Negotiable
                             </Chip>

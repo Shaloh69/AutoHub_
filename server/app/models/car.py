@@ -328,10 +328,13 @@ class Car(Base):
     brand_rel = relationship("Brand")
     model_rel = relationship("Model")  # Renamed from 'model' to avoid conflict with model Column
     category = relationship("Category")
+    color_rel = relationship("StandardColor", foreign_keys=[color_id])
+    interior_color_rel = relationship("StandardColor", foreign_keys=[interior_color_id])
+    currency_rel = relationship("Currency", foreign_keys=[currency_id])
     city = relationship("PhCity")
     province = relationship("PhProvince")
     region = relationship("PhRegion")
-    
+
     images = relationship("CarImage", back_populates="car", cascade="all, delete-orphan")
     features = relationship("CarFeature", back_populates="car", cascade="all, delete-orphan")
     inquiries = relationship("Inquiry", back_populates="car", cascade="all, delete-orphan")
