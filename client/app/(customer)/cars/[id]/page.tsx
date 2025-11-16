@@ -127,7 +127,7 @@ export default function CarDetailPage() {
       try {
         await navigator.share({
           title: car.title,
-          text: `Check out this ${car.year} ${car.brand?.name} ${car.model?.name}`,
+          text: `Check out this ${car.year} ${car.brand_rel?.name} ${car.model_rel?.name}`,
           url: window.location.href,
         });
       } catch (error) {
@@ -222,7 +222,7 @@ export default function CarDetailPage() {
             <div className="flex items-center gap-4 text-gray-600 dark:text-gray-400">
               <span className="flex items-center gap-1">
                 <MapPin size={16} />
-                {car.location?.city_name || 'Philippines'}
+                {car.city?.name || 'Philippines'}
               </span>
               <span className="flex items-center gap-1">
                 <Eye size={16} />

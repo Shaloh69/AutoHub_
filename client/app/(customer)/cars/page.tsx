@@ -421,7 +421,7 @@ export default function SearchCarsPage() {
                               {car.title}
                             </h3>
                             <p className="text-sm text-gray-600 dark:text-gray-400">
-                              {car.brand?.name} {car.model?.name}
+                              {car.brand_rel?.name} {car.model_rel?.name}
                             </p>
                           </div>
 
@@ -459,7 +459,7 @@ export default function SearchCarsPage() {
                           {/* Location */}
                           <div className="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-500">
                             <MapPin size={14} />
-                            <span>{car.location?.city_name || 'Philippines'}</span>
+                            <span>{car.city?.name || 'Philippines'}</span>
                           </div>
                         </div>
                       </CardBody>

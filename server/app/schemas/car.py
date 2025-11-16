@@ -218,35 +218,11 @@ class CarResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
-    # Related data - ADDED for browse page
-    images: List[Any] = []  # Will be converted to CarImageResponse
-    brand_rel: Optional[Any] = None  # Brand ORM object
-    model_rel: Optional[Any] = None  # Model ORM object
-    city: Optional[Any] = None  # City object with name
-
-    # Computed fields for frontend compatibility
-    brand: Optional[Any] = None  # Populated from brand_rel
-    model: Optional[Any] = None  # Populated from model_rel
-    location: Optional[Any] = None  # Computed from city
-
-    @model_validator(mode='after')
-    def populate_computed_fields(self):
-        """Populate computed fields for frontend compatibility"""
-        # Copy brand_rel to brand
-        if self.brand_rel and not self.brand:
-            self.brand = self.brand_rel
-
-        # Copy model_rel to model
-        if self.model_rel and not self.model:
-            self.model = self.model_rel
-
-        # Create location from city
-        if self.city and not self.location:
-            city_name = getattr(self.city, 'name', None)
-            if city_name:
-                self.location = {'city_name': city_name}
-
-        return self
+    # Related data - WORKING: These match the Car model's relationship names
+    images: List[Any] = []  # Car.images relationship
+    brand_rel: Optional[Any] = None  # Car.brand_rel relationship
+    model_rel: Optional[Any] = None  # Car.model_rel relationship
+    city: Optional[Any] = None  # Car.city relationship
 
     model_config = ConfigDict(
         from_attributes=True,
