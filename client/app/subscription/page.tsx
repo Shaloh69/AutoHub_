@@ -214,11 +214,11 @@ export default function SubscriptionPage() {
                     </Chip>
                   </div>
                   <div className="text-autohub-accent1-600">
-                    <span>Renews:</span> <span className="font-medium">{new Date(currentSubscription.currentPeriodEnd).toLocaleDateString()}</span>
+                    <span>Renews:</span> <span className="font-medium">{new Date(currentSubscription.current_period_end || '').toLocaleDateString()}</span>
                   </div>
                   {userLimits && (
                     <div className="text-autohub-accent1-600">
-                      <span>Listings:</span> <span className="font-medium">{userLimits.usedListings} / {currentSubscription.plan.maxListings === -1 ? '∞' : currentSubscription.plan.maxListings}</span>
+                      <span>Listings:</span> <span className="font-medium">{userLimits.usedListings} / {currentSubscription.plan?.max_listings === -1 ? '∞' : currentSubscription.plan?.max_listings}</span>
                     </div>
                   )}
                 </div>
@@ -226,11 +226,11 @@ export default function SubscriptionPage() {
               <div className="text-right space-y-3">
                 <div>
                   <p className="text-3xl font-bold text-autohub-primary-500">
-                    ${currentSubscription.plan.price}
+                    ₱{currentSubscription.plan?.price || 0}
                   </p>
-                  <p className="text-autohub-accent1-600">per {currentSubscription.plan.interval.toLowerCase()}</p>
+                  <p className="text-autohub-accent1-600">per {currentSubscription.billing_cycle?.toLowerCase()}</p>
                 </div>
-                {currentSubscription.status === 'ACTIVE' && !currentSubscription.cancelAtPeriodEnd && (
+                {currentSubscription.status === 'ACTIVE' && !currentSubscription.cancelled_at && (
                   <Button
                     variant="bordered"
                     size="sm"
@@ -241,7 +241,7 @@ export default function SubscriptionPage() {
                     Cancel Subscription
                   </Button>
                 )}
-                {currentSubscription.cancelAtPeriodEnd && (
+                {currentSubscription.cancelled_at && currentSubscription.status !== 'CANCELLED' && (
                   <Chip color="warning" size="sm" className="bg-amber-500 text-white">
                     Cancels at period end
                   </Chip>
@@ -257,21 +257,22 @@ export default function SubscriptionPage() {
         {plans
           .sort((a, b) => a.price - b.price)
           .map((plan) => {
-            const isCurrent = currentSubscription?.planId === plan.id;
-            const canUpgrade = currentSubscription && 
-              currentSubscription.plan.price < plan.price && 
+            const isCurrent = currentSubscription?.plan_id === plan.id;
+            const canUpgrade = currentSubscription &&
+              currentSubscription.plan &&
+              currentSubscription.plan.price < plan.price &&
               !isCurrent;
             
             return (
-              <Card 
-                key={plan.id} 
+              <Card
+                key={plan.id}
                 className={`relative overflow-hidden transition-all duration-300 hover:-translate-y-2 hover:shadow-autohub ${
-                  plan.priority === 1 
-                    ? 'border-2 border-autohub-accent2-500 shadow-gold' 
+                  plan.is_popular
+                    ? 'border-2 border-autohub-accent2-500 shadow-gold'
                     : 'border border-autohub-accent1-200 hover:border-autohub-primary-500/50'
                 }`}
               >
-                {plan.priority === 1 && (
+                {plan.is_popular && (
                   <>
                     <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
                       <Chip className="bg-autohub-accent2-500 text-autohub-secondary-900 font-bold" size="lg">
@@ -296,10 +297,10 @@ export default function SubscriptionPage() {
                 <CardBody className="space-y-8">
                   <div className="text-center">
                     <div className="text-5xl font-bold text-autohub-primary-500 mb-2">
-                      ${plan.price}
+                      ₱{plan.price}
                     </div>
                     <div className="text-autohub-accent1-600">
-                      per {plan.interval.toLowerCase()}
+                      per {plan.billing_cycle?.toLowerCase()}
                     </div>
                   </div>
 
@@ -309,15 +310,61 @@ export default function SubscriptionPage() {
                     <div className="flex items-center gap-3">
                       <CheckIcon className="text-autohub-accent2-500 flex-shrink-0" size={20} />
                       <span className="text-autohub-secondary-900 dark:text-autohub-neutral-50">
-                        {plan.maxListings === -1 ? 'Unlimited' : plan.maxListings} premium listings
+                        {plan.max_listings === -1 ? 'Unlimited' : plan.max_listings} active listings
                       </span>
                     </div>
-                    {plan.features.map((feature, index) => (
-                      <div key={index} className="flex items-center gap-3">
+                    <div className="flex items-center gap-3">
+                      <CheckIcon className="text-autohub-accent2-500 flex-shrink-0" size={20} />
+                      <span className="text-autohub-secondary-900 dark:text-autohub-neutral-50">
+                        {plan.max_photos_per_listing} photos per listing
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <CheckIcon className="text-autohub-accent2-500 flex-shrink-0" size={20} />
+                      <span className="text-autohub-secondary-900 dark:text-autohub-neutral-50">
+                        {plan.max_featured_listings} featured listings
+                      </span>
+                    </div>
+                    {plan.can_add_video && (
+                      <div className="flex items-center gap-3">
                         <CheckIcon className="text-autohub-accent2-500 flex-shrink-0" size={20} />
-                        <span className="text-autohub-secondary-900 dark:text-autohub-neutral-50">{feature}</span>
+                        <span className="text-autohub-secondary-900 dark:text-autohub-neutral-50">
+                          Video uploads
+                        </span>
                       </div>
-                    ))}
+                    )}
+                    {plan.can_add_virtual_tour && (
+                      <div className="flex items-center gap-3">
+                        <CheckIcon className="text-autohub-accent2-500 flex-shrink-0" size={20} />
+                        <span className="text-autohub-secondary-900 dark:text-autohub-neutral-50">
+                          Virtual tour
+                        </span>
+                      </div>
+                    )}
+                    {plan.priority_support && (
+                      <div className="flex items-center gap-3">
+                        <CheckIcon className="text-autohub-accent2-500 flex-shrink-0" size={20} />
+                        <span className="text-autohub-secondary-900 dark:text-autohub-neutral-50">
+                          Priority support
+                        </span>
+                      </div>
+                    )}
+                    {plan.advanced_analytics && (
+                      <div className="flex items-center gap-3">
+                        <CheckIcon className="text-autohub-accent2-500 flex-shrink-0" size={20} />
+                        <span className="text-autohub-secondary-900 dark:text-autohub-neutral-50">
+                          Advanced analytics
+                        </span>
+                      </div>
+                    )}
+                    {plan.featured_badge && (
+                      <div className="flex items-center gap-3">
+                        <CheckIcon className="text-autohub-accent2-500 flex-shrink-0" size={20} />
+                        <span className="text-autohub-secondary-900 dark:text-autohub-neutral-50">
+                          Featured badge
+                        </span>
+                      </div>
+                    )}
                   </div>
 
                   <div className="pt-4">
@@ -341,24 +388,24 @@ export default function SubscriptionPage() {
                     ) : !currentSubscription ? (
                       <Button
                         className={`w-full font-semibold transition-all duration-200 hover:shadow-lg hover:scale-105 ${
-                          plan.priority === 1
+                          plan.is_popular
                             ? 'bg-autohub-accent2-500 hover:bg-autohub-accent2-600 text-autohub-secondary-900 shadow-gold'
                             : 'bg-autohub-primary-500 hover:bg-autohub-primary-600 text-white shadow-autohub'
                         }`}
                         size="lg"
                         onPress={() => handleSubscribe(plan.id)}
-                        isLoading={actionLoading === plan.id}
+                        isLoading={actionLoading === plan.id.toString()}
                       >
                         Get Started
                       </Button>
                     ) : (
-                      <Button 
+                      <Button
                         variant="bordered"
-                        className="w-full border-autohub-accent1-300 text-autohub-accent1-600 cursor-not-allowed" 
+                        className="w-full border-autohub-accent1-300 text-autohub-accent1-600 cursor-not-allowed"
                         disabled
                         size="lg"
                       >
-                        {currentSubscription.plan.price > plan.price ? 'Lower Tier' : 'Contact Support'}
+                        {currentSubscription.plan && currentSubscription.plan.price > plan.price ? 'Lower Tier' : 'Contact Support'}
                       </Button>
                     )}
                   </div>
