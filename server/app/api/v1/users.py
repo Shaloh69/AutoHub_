@@ -168,7 +168,7 @@ async def upgrade_user_role(
         else:
             verification_message = "Identity verification recommended to access all seller features."
     
-    # Send notification about successful role upgrade
+    # Send notification to user about successful role upgrade
     try:
         NotificationService.create_notification(
             db,
@@ -181,6 +181,34 @@ async def upgrade_user_role(
         )
     except Exception as e:
         # Don't fail the upgrade if notification fails
+        pass
+
+    # Notify all admins about new seller/dealer
+    try:
+        from app.models.user import UserRole as UR
+        admins = db.query(User).filter(User.role == UR.ADMIN.value).all()
+
+        user_first_name = str(getattr(current_user, 'first_name', ''))
+        user_last_name = str(getattr(current_user, 'last_name', ''))
+        user_full_name = f"{user_first_name} {user_last_name}".strip()
+
+        business_info = ""
+        if new_role == 'dealer' and upgrade_request.business_name:
+            business_info = f" ({upgrade_request.business_name})"
+
+        for admin in admins:
+            admin_id = int(getattr(admin, 'id', 0))
+            NotificationService.create_notification(
+                db,
+                user_id=admin_id,
+                title=f"New {new_role.title()} Registration",
+                message=f"{user_full_name}{business_info} ({user_email}) has upgraded to {new_role.upper()} role and can now create listings.",
+                notification_type="admin_alert",
+                related_id=user_id,
+                related_type="user"
+            )
+    except Exception as e:
+        # Don't fail the upgrade if admin notification fails
         pass
     
     return RoleUpgradeResponse(
