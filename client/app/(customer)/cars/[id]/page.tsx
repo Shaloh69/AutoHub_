@@ -678,6 +678,7 @@ export default function CarDetailPage() {
       {contactModalOpen && (
         <ContactSellerModal
           carId={car.id}
+          carPrice={car.price}
           isOpen={contactModalOpen}
           onClose={() => setContactModalOpen(false)}
         />

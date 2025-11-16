@@ -15,6 +15,7 @@ from app.models.user import User
 from app.models.car import Car
 from app.models.inquiry import Inquiry, InquiryResponse as InquiryResponseModel
 from app.services.notification_service import NotificationService
+from app.services.email_service import EmailService
 
 router = APIRouter()
 
@@ -77,18 +78,52 @@ async def create_inquiry(
     
     db.commit()
     db.refresh(inquiry)
-    
+
     # Send notification to seller - FIX: Use getattr
     car_id_value = int(getattr(car, 'id', 0))
     buyer_name_value = str(getattr(inquiry, 'buyer_name', 'A buyer'))
-    
+
     NotificationService.notify_new_inquiry(
         db,
         seller_id=seller_id_value,
         car_id=car_id_value,
         buyer_name=buyer_name_value
     )
-    
+
+    # Send email notification to seller
+    try:
+        # Get seller information
+        seller = db.query(User).filter(User.id == seller_id_value).first()
+        if seller:
+            seller_name = getattr(seller, 'full_name', 'Seller')
+            seller_email = getattr(seller, 'email', '')
+            car_title = getattr(car, 'title', 'Car Listing')
+
+            # Get inquiry details
+            inquiry_message = getattr(inquiry, 'message', '')
+            inquiry_type = getattr(inquiry, 'inquiry_type', 'GENERAL')
+            buyer_name_email = getattr(inquiry, 'buyer_name', '')
+            buyer_email_val = getattr(inquiry, 'buyer_email', '')
+            buyer_phone_val = getattr(inquiry, 'buyer_phone', '')
+            offered_price_val = getattr(inquiry, 'offered_price', None)
+
+            # Send email asynchronously
+            await EmailService.send_new_inquiry_email(
+                seller_email=seller_email,
+                seller_name=seller_name,
+                buyer_name=buyer_name_email,
+                buyer_email=buyer_email_val,
+                buyer_phone=buyer_phone_val,
+                car_title=car_title,
+                car_id=car_id_value,
+                message=inquiry_message,
+                inquiry_type=inquiry_type,
+                offered_price=offered_price_val
+            )
+    except Exception as e:
+        # Log error but don't fail the request
+        print(f"Failed to send inquiry email: {e}")
+
     # FIX: Use getattr for inquiry.id
     inquiry_id = int(getattr(inquiry, 'id', 0))
     return IDResponse(id=inquiry_id, message="Inquiry sent successfully")
@@ -196,12 +231,40 @@ async def respond_to_inquiry(
     
     db.commit()
     db.refresh(response)
-    
+
     # Send notification - FIX: Use getattr
     car_id = int(getattr(inquiry, 'car_id', 0))
     if seller_id == user_id and buyer_id:
         NotificationService.notify_inquiry_response(db, buyer_id, car_id)
-    
+
+    # Send email notification to buyer when seller responds
+    if seller_id == user_id and buyer_id:
+        try:
+            # Get buyer information
+            buyer = db.query(User).filter(User.id == buyer_id).first()
+            # Get car information
+            car = db.query(Car).filter(Car.id == car_id).first()
+
+            if buyer and car:
+                buyer_name = getattr(buyer, 'full_name', 'Buyer')
+                buyer_email = getattr(buyer, 'email', '')
+                seller_name = getattr(current_user, 'full_name', 'Seller')
+                car_title = getattr(car, 'title', 'Car Listing')
+                response_message = getattr(response, 'message', '')
+
+                # Send email to buyer
+                await EmailService.send_inquiry_response_email(
+                    buyer_email=buyer_email,
+                    buyer_name=buyer_name,
+                    seller_name=seller_name,
+                    car_title=car_title,
+                    car_id=car_id,
+                    response_message=response_message
+                )
+        except Exception as e:
+            # Log error but don't fail the request
+            print(f"Failed to send response email: {e}")
+
     return InquiryResponseResponse.model_validate(response)
 
 
