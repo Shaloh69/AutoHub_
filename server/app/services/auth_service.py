@@ -244,7 +244,7 @@ class AuthService:
     async def send_verification_email_async(user: User):
         """
         Send email verification link (async version)
-        
+
         IMPROVED: Now sends actual email instead of printing
         """
         try:
@@ -255,22 +255,38 @@ class AuthService:
             user_first_name = str(getattr(user, 'first_name', ''))
             user_last_name = str(getattr(user, 'last_name', ''))
             user_name = f"{user_first_name} {user_last_name}".strip()
-            
+
+            logger.info(f"📧 Generating verification token for user {user_id} ({user_email})")
+            logger.debug(f"Token length: {len(token)}, Token preview: {token[:10]}...")
+
             # Store token in cache (24 hours)
-            cache.set(f"email_verify:{token}", str(user_id), ttl=86400)
-            
+            cache_key = f"email_verify:{token}"
+            cache_success = cache.set(cache_key, str(user_id), ttl=86400)
+
+            if not cache_success:
+                logger.error(f"❌ Failed to store token in cache for user {user_id}")
+                return False
+
+            # Verify token was stored correctly
+            stored_value = cache.get(cache_key)
+            if stored_value != str(user_id):
+                logger.error(f"❌ Token verification failed - stored value doesn't match. Expected: {user_id}, Got: {stored_value}")
+                return False
+
+            logger.info(f"✅ Token stored successfully in cache with key: {cache_key}")
+
             # Send actual email
             success = await EmailService.send_verification_email(
                 email=user_email,
                 token=token,
                 user_name=user_name
             )
-            
+
             if success:
                 logger.info(f"✅ Verification email sent to {user_email}")
             else:
                 logger.error(f"❌ Failed to send verification email to {user_email}")
-            
+
             return success
         except Exception as e:
             logger.error(f"Error sending verification email: {e}")
@@ -309,36 +325,59 @@ class AuthService:
     def verify_email(db: Session, token: str) -> bool:
         """
         Verify email with token
-        
+
         IMPROVED: Sends welcome email after verification
         """
-        user_id = cache.get(f"email_verify:{token}")
-        if not user_id:
-            logger.warning("Invalid or expired email verification token")
+        # Sanitize token input
+        token = token.strip()
+        cache_key = f"email_verify:{token}"
+
+        logger.info(f"📧 Attempting to verify email with token")
+        logger.debug(f"Token length: {len(token)}, Token preview: {token[:10]}...")
+        logger.debug(f"Cache key: {cache_key}")
+
+        # Check if token exists in cache
+        if not cache.exists(cache_key):
+            logger.warning(f"❌ Token not found in cache - key doesn't exist: {cache_key}")
             return False
-        
+
+        user_id = cache.get(cache_key)
+        if not user_id:
+            logger.warning(f"❌ Invalid or expired email verification token - no value for key: {cache_key}")
+            return False
+
+        logger.info(f"✅ Token found in cache, user_id: {user_id}")
+
         user = db.query(User).filter(User.id == int(user_id)).first()
         if not user:
-            logger.error(f"User {user_id} not found")
+            logger.error(f"❌ User {user_id} not found in database")
             return False
-        
+
+        user_email = str(getattr(user, 'email', ''))
+
+        # Check if already verified
+        if getattr(user, 'email_verified', False):
+            logger.info(f"ℹ️ Email already verified for {user_email}")
+            # Still return True since the email is verified
+            cache.delete(cache_key)
+            return True
+
         # Mark email as verified
         setattr(user, 'email_verified', True)
         setattr(user, 'verified_at', datetime.utcnow())
         db.commit()
-        
+
         # Delete token from cache
-        cache.delete(f"email_verify:{token}")
-        
-        user_email = str(getattr(user, 'email', ''))
-        logger.info(f"Email verified successfully for {user_email}")
-        
+        cache.delete(cache_key)
+
+        logger.info(f"✅ Email verified successfully for {user_email}")
+
         # Send welcome email (async, don't block)
         try:
             asyncio.create_task(AuthService.send_welcome_email_async(user))
         except Exception as e:
             logger.error(f"Failed to queue welcome email: {e}")
-        
+
         return True
     
     @staticmethod
