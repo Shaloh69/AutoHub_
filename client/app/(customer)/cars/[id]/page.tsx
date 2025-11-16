@@ -19,7 +19,7 @@ import {
   Phone, Mail, MessageCircle, Eye, TrendingUp,
   ChevronLeft, ChevronRight, Play, Pause
 } from 'lucide-react';
-import { apiService } from '@/services/api';
+import { apiService, getImageUrl } from '@/services/api';
 import { Car } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import ContactSellerModal from '@/components/ContactSellerModal';
@@ -258,7 +258,7 @@ export default function CarDetailPage() {
                 {/* Main Image */}
                 <div className="relative aspect-[16/10] bg-gray-100 dark:bg-gray-800">
                   <Image
-                    src={currentImage?.image_url || '/placeholder-car.jpg'}
+                    src={getImageUrl(currentImage?.image_url)}
                     alt={car.title}
                     className="w-full h-full object-cover"
                   />
@@ -345,7 +345,7 @@ export default function CarDetailPage() {
                         }`}
                       >
                         <Image
-                          src={img.image_url}
+                          src={getImageUrl(img.image_url)}
                           alt={`View ${idx + 1}`}
                           className="w-full h-full object-cover"
                         />

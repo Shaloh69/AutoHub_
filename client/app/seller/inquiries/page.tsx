@@ -17,7 +17,7 @@ import {
   MessageCircle, Send, Clock, CheckCircle2, XCircle, User,
   Mail, Phone, Calendar, Car
 } from 'lucide-react';
-import { apiService } from '@/services/api';
+import { apiService, getImageUrl } from '@/services/api';
 import { Inquiry } from '@/types';
 import { useRequireSeller } from '@/contexts/AuthContext';
 
@@ -221,7 +221,7 @@ export default function SellerInquiriesPage() {
                         <div className="w-full md:w-32 h-24 bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden flex-shrink-0">
                           {inquiry.car?.images?.[0] ? (
                             <img
-                              src={inquiry.car.images[0].image_url}
+                              src={getImageUrl(inquiry.car.images[0].image_url)}
                               alt={inquiry.car.title}
                               className="w-full h-full object-cover"
                             />

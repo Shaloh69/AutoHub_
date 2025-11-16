@@ -19,7 +19,7 @@ import {
   Search, SlidersHorizontal, X, MapPin, Calendar,
   Gauge, Fuel, Settings, Heart, Star
 } from 'lucide-react';
-import { apiService } from '@/services/api';
+import { apiService, getImageUrl } from '@/services/api';
 import { Car, Brand, SearchFilters } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -388,7 +388,7 @@ export default function SearchCarsPage() {
                         {/* Image */}
                         <div className="relative aspect-[4/3] overflow-hidden">
                           <Image
-                            src={car.images?.[0]?.image_url || '/placeholder-car.jpg'}
+                            src={getImageUrl(car.images?.[0]?.image_url)}
                             alt={car.title}
                             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                           />

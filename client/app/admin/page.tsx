@@ -18,7 +18,7 @@ import {
   Users, Car, DollarSign, TrendingUp, CheckCircle,
   XCircle, AlertCircle, Shield, Eye, CreditCard, MessageSquare
 } from 'lucide-react';
-import { apiService } from '@/services/api';
+import { apiService, getImageUrl } from '@/services/api';
 import { Car as CarType, User as UserType, DashboardStats } from '@/types';
 import { useRequireAdmin } from '@/contexts/AuthContext';
 
@@ -405,7 +405,7 @@ export default function AdminDashboardPage() {
                             <div className="w-full md:w-48 h-32 bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden flex-shrink-0">
                               {car.images?.[0] ? (
                                 <img
-                                  src={car.images[0].image_url}
+                                  src={getImageUrl(car.images[0].image_url)}
                                   alt={car.title}
                                   className="w-full h-full object-cover"
                                 />

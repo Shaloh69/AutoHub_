@@ -760,5 +760,33 @@ class ApiService {
   }
 }
 
+// ==================== UTILITY FUNCTIONS ====================
+
+/**
+ * Converts a relative image URL to a full URL pointing to the backend server
+ * @param relativeUrl - The relative URL from the API (e.g., "/uploads/cars/123/image.jpg")
+ * @returns The full URL to the backend server
+ */
+export function getImageUrl(relativeUrl: string | null | undefined): string {
+  // Return placeholder if no URL provided
+  if (!relativeUrl) {
+    return '/placeholder-car.jpg';
+  }
+
+  // Return as-is if already a full URL (http/https) or a local placeholder
+  if (relativeUrl.startsWith('http://') ||
+      relativeUrl.startsWith('https://') ||
+      relativeUrl.startsWith('/placeholder')) {
+    return relativeUrl;
+  }
+
+  // Get the backend base URL (remove /api/v1 suffix)
+  const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+  const baseUrl = backendUrl.replace(/\/api\/v1$/, '');
+
+  // Combine base URL with relative path
+  return `${baseUrl}${relativeUrl}`;
+}
+
 export const apiService = new ApiService();
 export default apiService;

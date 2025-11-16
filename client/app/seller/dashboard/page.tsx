@@ -15,7 +15,7 @@ import {
   Plus, Car, Eye, MessageCircle, Heart, TrendingUp,
   DollarSign, Clock, CheckCircle, XCircle
 } from 'lucide-react';
-import { apiService } from '@/services/api';
+import { apiService, getImageUrl } from '@/services/api';
 import { Car as CarType, Analytics } from '@/types';
 import { useRequireSeller } from '@/contexts/AuthContext';
 
@@ -297,7 +297,7 @@ export default function SellerDashboardPage() {
                         <div className="w-full md:w-48 h-32 bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden flex-shrink-0">
                           {car.images?.[0] ? (
                             <img
-                              src={car.images[0].image_url}
+                              src={getImageUrl(car.images[0].image_url)}
                               alt={car.title}
                               className="w-full h-full object-cover"
                             />

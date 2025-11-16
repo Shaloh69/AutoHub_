@@ -8,7 +8,7 @@ import { Heart, MapPin, Calendar, Gauge, Fuel, Settings2 } from 'lucide-react';
 import { Car } from '@/types';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { apiService } from '@/services/api';
+import { apiService, getImageUrl } from '@/services/api';
 
 interface CarCardProps {
   car: Car;
@@ -61,7 +61,7 @@ export default function CarCard({ car, onFavoriteChange }: CarCardProps) {
     }
   };
 
-  const mainImage = car.images?.[0]?.image_url || '/placeholder-car.jpg';
+  const mainImage = getImageUrl(car.images?.[0]?.image_url);
 
   return (
     <Card
