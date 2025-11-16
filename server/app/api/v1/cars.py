@@ -177,12 +177,12 @@ async def search_cars(
         if hasattr(car, 'condition_rating') and car.condition_rating:
             car.condition_rating = normalize_enum_value('condition_rating', car.condition_rating)
 
-    # Convert to response models
-    items = [CarResponse.model_validate(car) for car in cars]
-    
+    # Convert to response models - CHANGED: Use CarDetailResponse to include images
+    items = [CarDetailResponse.model_validate(car) for car in cars]
+
     # Calculate pagination
     total_pages = (total + page_size - 1) // page_size
-    
+
     return PaginatedResponse(
         items=items,
         total=total,

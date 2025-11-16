@@ -219,7 +219,12 @@ class CarService:
         page_size: int = 20
     ) -> Tuple[List[Car], int]:
         """Search cars with filters"""
-        query = db.query(Car).filter(
+        query = db.query(Car).options(
+            joinedload(Car.images),  # ADDED: Load images for display
+            joinedload(Car.brand_rel),  # ADDED: Load brand info
+            joinedload(Car.model_rel),  # ADDED: Load model info
+            joinedload(Car.city)  # ADDED: Load city info
+        ).filter(
             Car.is_active == True,  # noqa: E712
             Car.approval_status == "APPROVED",  # Fixed: Use UPPERCASE to match SQL schema
             Car.status == "ACTIVE",  # Fixed: Use UPPERCASE to match SQL schema
