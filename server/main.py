@@ -6,6 +6,7 @@ from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi.exceptions import RequestValidationError
 from contextlib import asynccontextmanager
 import time
 import logging
@@ -95,27 +96,45 @@ app.add_middleware(
 async def add_process_time_header(request: Request, call_next):
     """Add processing time header to responses"""
     start_time = time.time()
-    
+
     # Generate request ID
     request_id = f"{int(time.time())}-{id(request)}"
     request.state.request_id = request_id
-    
-    response = await call_next(request)
-    
-    process_time = time.time() - start_time
-    response.headers["X-Process-Time"] = f"{process_time:.4f}"
-    response.headers["X-Request-ID"] = request_id
-    
-    # Log request (but not every single one in debug to reduce noise)
-    if not settings.DEBUG or request.url.path not in ["/health", "/favicon.ico"]:
-        logger.info(
-            f"Request: {request.method} {request.url.path} | "
-            f"Status: {response.status_code} | "
-            f"Time: {process_time:.4f}s | "
-            f"ID: {request_id}"
-        )
-    
-    return response
+
+    # DEBUG: Log incoming request details
+    logger.info(f"🔵 INCOMING: {request.method} {request.url.path} | Params: {dict(request.query_params)}")
+
+    try:
+        response = await call_next(request)
+
+        process_time = time.time() - start_time
+        response.headers["X-Process-Time"] = f"{process_time:.4f}"
+        response.headers["X-Request-ID"] = request_id
+
+        # Log request with status emoji
+        status_emoji = "✅" if response.status_code < 400 else "❌"
+        if not settings.DEBUG or request.url.path not in ["/health", "/favicon.ico"]:
+            logger.info(
+                f"{status_emoji} {request.method} {request.url.path} | "
+                f"Status: {response.status_code} | "
+                f"Time: {process_time:.4f}s | "
+                f"ID: {request_id}"
+            )
+
+        # DEBUG: Log error details for 422 responses
+        if response.status_code == 422:
+            logger.error(f"⚠️  422 UNPROCESSABLE ENTITY:")
+            logger.error(f"   URL: {request.url}")
+            logger.error(f"   Method: {request.method}")
+            logger.error(f"   Query params: {dict(request.query_params)}")
+
+        return response
+
+    except Exception as e:
+        logger.error(f"❌ MIDDLEWARE ERROR: {type(e).__name__}: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+        raise
 
 
 # Exception handlers
@@ -143,6 +162,28 @@ async def not_found_error_handler(request: Request, exc: FileNotFoundError):
     return JSONResponse(
         status_code=status.HTTP_404_NOT_FOUND,
         content={"success": False, "error": str(exc)}
+    )
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    """Handle request validation errors (422)"""
+    logger.error("=" * 80)
+    logger.error("🚨 REQUEST VALIDATION ERROR (422)")
+    logger.error(f"   URL: {request.url}")
+    logger.error(f"   Method: {request.method}")
+    logger.error(f"   Query params: {dict(request.query_params)}")
+    logger.error(f"   Validation errors:")
+    for error in exc.errors():
+        logger.error(f"     - {error}")
+    logger.error("=" * 80)
+
+    return JSONResponse(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        content={
+            "detail": exc.errors(),
+            "body": exc.body if hasattr(exc, 'body') else None
+        }
     )
 
 
