@@ -27,6 +27,8 @@ export default function ProfilePage() {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [cities, setCities] = useState<any[]>([]);
+  const [resendingVerification, setResendingVerification] = useState(false);
+  const [verificationSent, setVerificationSent] = useState(false);
 
   const [formData, setFormData] = useState({
     first_name: '',
@@ -125,6 +127,27 @@ export default function ProfilePage() {
     }
   };
 
+  const handleResendVerification = async () => {
+    try {
+      setResendingVerification(true);
+      setError(null);
+      setVerificationSent(false);
+
+      const response = await apiService.resendVerificationEmail();
+
+      if (response.success) {
+        setVerificationSent(true);
+        setTimeout(() => setVerificationSent(false), 10000); // Hide message after 10 seconds
+      } else {
+        setError(response.error || 'Failed to send verification email');
+      }
+    } catch (err) {
+      setError('Failed to send verification email. Please try again.');
+    } finally {
+      setResendingVerification(false);
+    }
+  };
+
   if (authLoading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -159,6 +182,25 @@ export default function ProfilePage() {
                 <p className="text-green-800 dark:text-green-200">
                   Profile updated successfully!
                 </p>
+              </div>
+            </CardBody>
+          </Card>
+        )}
+
+        {/* Verification Email Sent Message */}
+        {verificationSent && (
+          <Card className="mb-6 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+            <CardBody>
+              <div className="flex items-center gap-3">
+                <Mail size={24} className="text-blue-600 dark:text-blue-400" />
+                <div>
+                  <p className="text-blue-800 dark:text-blue-200 font-semibold">
+                    Verification email sent!
+                  </p>
+                  <p className="text-sm text-blue-700 dark:text-blue-300">
+                    Please check your email and click the verification link.
+                  </p>
+                </div>
               </div>
             </CardBody>
           </Card>
@@ -241,6 +283,26 @@ export default function ProfilePage() {
                     </Chip>
                   )}
                 </div>
+
+                {/* Resend Verification Button for Unverified Email */}
+                {!user.email_verified && (
+                  <div className="px-2">
+                    <Button
+                      size="sm"
+                      color="primary"
+                      variant="flat"
+                      className="w-full"
+                      onPress={handleResendVerification}
+                      isLoading={resendingVerification}
+                      startContent={!resendingVerification && <Mail size={14} />}
+                    >
+                      {resendingVerification ? 'Sending...' : 'Resend Verification Email'}
+                    </Button>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 text-center">
+                      Check your inbox for the verification link
+                    </p>
+                  </div>
+                )}
 
                 <div className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
                   <span className="text-sm flex items-center gap-2">

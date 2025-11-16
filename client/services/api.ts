@@ -127,6 +127,12 @@ class ApiService {
     });
   }
 
+  async resendVerificationEmail(): Promise<ApiResponse<{ message: string }>> {
+    return this.request('/auth/resend-verification', {
+      method: 'POST',
+    });
+  }
+
   async getProfile(): Promise<ApiResponse<User>> {
     return this.request<User>('/users/profile');
   }
