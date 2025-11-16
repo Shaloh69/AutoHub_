@@ -178,10 +178,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Computed properties
   const isAuthenticated = !!user;
-  const isSeller = user?.role === 'seller' || user?.role === 'dealer';
-  const isDealer = user?.role === 'dealer';
-  const isAdmin = user?.role === 'admin';
-  const isModerator = user?.role === 'moderator' || isAdmin;
+  const isSeller = user?.role?.toUpperCase() === 'SELLER' || user?.role?.toUpperCase() === 'DEALER';
+  const isDealer = user?.role?.toUpperCase() === 'DEALER';
+  const isAdmin = user?.role?.toUpperCase() === 'ADMIN';
+  const isModerator = user?.role?.toUpperCase() === 'MODERATOR' || isAdmin;
   const canListCars = isAuthenticated && isSeller && user?.email_verified && user?.phone_verified && !user?.is_banned;
 
   const value: AuthContextType = {

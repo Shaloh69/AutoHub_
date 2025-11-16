@@ -275,7 +275,7 @@ export default function ProfilePage() {
               </div>
 
               {/* Stats */}
-              {(user.role === 'seller' || user.role === 'dealer') && (
+              {(user.role?.toUpperCase() === 'SELLER' || user.role?.toUpperCase() === 'DEALER') && (
                 <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
                   <div className="grid grid-cols-2 gap-4 text-center">
                     <div>
@@ -395,7 +395,7 @@ export default function ProfilePage() {
                     </div>
                   </Tab>
 
-                  {(user.role === 'dealer') && (
+                  {(user.role?.toUpperCase() === 'DEALER') && (
                     <Tab key="business" title="Business Info">
                       <div className="space-y-4 pt-4">
                         <Input
