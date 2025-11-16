@@ -259,7 +259,7 @@ async def check_email_availability(email: str, db: Session = Depends(get_db)):
 async def get_verification_status(current_user: User = Depends(get_current_user)):
     """
     Get user verification status
-    
+
     - Returns all verification statuses
     - Email, phone, identity, business
     - Used for onboarding flow
@@ -277,4 +277,29 @@ async def get_verification_status(current_user: User = Depends(get_current_user)
             current_user.email_verified and   # type: ignore
             current_user.identity_verified  # type: ignore
         )
+    }
+
+
+@router.get("/debug/check-token/{token}")
+async def debug_check_token(token: str):
+    """
+    DEBUG ENDPOINT: Check if a verification token exists in cache
+
+    - Returns token status without consuming it
+    - Useful for debugging email verification issues
+    - Should be disabled in production
+    """
+    from app.database import cache
+
+    cache_key = f"email_verify:{token}"
+    exists = cache.exists(cache_key)
+    value = cache.get(cache_key) if exists else None
+
+    return {
+        "token_preview": f"{token[:10]}..." if len(token) > 10 else token,
+        "token_length": len(token),
+        "cache_key": cache_key,
+        "exists": exists,
+        "user_id": value if exists else None,
+        "message": "Token found" if exists else "Token not found or expired"
     }

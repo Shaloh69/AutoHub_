@@ -94,22 +94,50 @@ else
     exit 1
 fi
 
-# Check Redis connection
+# Check and start Redis if needed
 echo ""
 echo "Checking Redis connection..."
+
+# Try to ping Redis
+if redis-cli ping &> /dev/null; then
+    print_status "success" "Redis is already running"
+else
+    print_status "warning" "Redis is not running. Starting Redis..."
+
+    # Try to start Redis
+    if command -v redis-server &> /dev/null; then
+        redis-server --daemonize yes --port 6379
+        sleep 2
+
+        # Verify Redis started
+        if redis-cli ping &> /dev/null; then
+            print_status "success" "Redis started successfully"
+        else
+            print_status "error" "Failed to start Redis. Email verification will not work!"
+            print_status "info" "Please start Redis manually: redis-server --daemonize yes"
+        fi
+    else
+        print_status "error" "Redis server not installed. Please install Redis:"
+        print_status "info" "  Ubuntu/Debian: sudo apt-get install redis-server"
+        print_status "info" "  macOS: brew install redis"
+        print_status "warning" "Email verification will NOT work without Redis!"
+    fi
+fi
+
+# Verify Redis connection from Python
 python3 << END
 import sys
 from database import test_redis_connection
 if test_redis_connection():
-    print("Redis connection successful")
+    print("Python Redis connection successful")
     sys.exit(0)
 else:
-    print("Redis connection failed")
+    print("Python Redis connection failed")
     sys.exit(1)
 END
 
 if [ $? -eq 0 ]; then
-    print_status "success" "Redis connection successful"
+    print_status "success" "Redis connection verified"
 else
     print_status "warning" "Redis connection failed. Caching will be disabled."
 fi
