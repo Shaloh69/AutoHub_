@@ -361,9 +361,9 @@ Car Marketplace Philippines Team
                             <table width="100%" cellpadding="0" cellspacing="0">
                                 <tr>
                                     <td align="center" style="padding: 30px 0;">
-                                        <a href="{settings.FRONTEND_URL}" 
-                                           style="display: inline-block; background-color: #10b981; color: #ffffff; 
-                                                  text-decoration: none; padding: 16px 40px; border-radius: 6px; 
+                                        <a href="{settings.FRONTEND_URL}"
+                                           style="display: inline-block; background-color: #10b981; color: #ffffff;
+                                                  text-decoration: none; padding: 16px 40px; border-radius: 6px;
                                                   font-size: 16px; font-weight: bold;">
                                             Start Browsing Cars
                                         </a>
@@ -386,5 +386,347 @@ Car Marketplace Philippines Team
 </body>
 </html>
         """.strip()
-        
+
         return await EmailService.send_email(email, subject, text_body, html_body)
+
+    @staticmethod
+    async def send_new_inquiry_email(
+        seller_email: str,
+        seller_name: str,
+        buyer_name: str,
+        buyer_email: str,
+        buyer_phone: str,
+        car_title: str,
+        car_id: int,
+        message: str,
+        inquiry_type: str,
+        offered_price: Optional[float] = None
+    ) -> bool:
+        """Send email to seller when they receive a new inquiry or offer"""
+
+        # Determine if it's an offer or regular inquiry
+        is_offer = offered_price is not None and offered_price > 0
+        email_type = "Offer" if is_offer else "Inquiry"
+
+        subject = f"New {email_type} for your car: {car_title}"
+
+        car_url = f"{settings.FRONTEND_URL}/cars/{car_id}"
+
+        # Build offer details section
+        offer_section = ""
+        if is_offer:
+            offer_section = f"\n\nOffered Price: ₱{offered_price:,.2f}"
+
+        text_body = f"""
+Hello {seller_name},
+
+Great news! You've received a new {email_type.lower()} for your car listing.
+
+Car: {car_title}
+From: {buyer_name}
+Email: {buyer_email}
+Phone: {buyer_phone}
+Type: {inquiry_type.replace('_', ' ').title()}{offer_section}
+
+Message:
+{message}
+
+View car listing: {car_url}
+
+You can respond to this inquiry by logging into your dashboard at {settings.FRONTEND_URL}/dashboard
+
+Best regards,
+AutoHub Team
+
+---
+Need help? Contact us at support@carmarketplace.ph
+        """.strip()
+
+        # HTML version with conditional offer styling
+        offer_html = ""
+        if is_offer:
+            offer_html = f"""
+            <div style="background-color: #dcfce7; border-left: 4px solid #10b981;
+                        padding: 20px; margin: 20px 0; border-radius: 4px;">
+                <p style="margin: 0; color: #065f46; font-size: 18px; font-weight: bold;">
+                    💰 Offered Price: ₱{offered_price:,.2f}
+                </p>
+            </div>
+            """
+
+        html_body = f"""
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f4; padding: 20px;">
+        <tr>
+            <td align="center">
+                <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                    <!-- Header -->
+                    <tr>
+                        <td style="background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%); padding: 40px 20px; text-align: center;">
+                            <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: bold;">
+                                AutoHub
+                            </h1>
+                            <p style="margin: 10px 0 0 0; color: #e0e7ff; font-size: 16px;">
+                                New {email_type} Received 🎉
+                            </p>
+                        </td>
+                    </tr>
+
+                    <!-- Content -->
+                    <tr>
+                        <td style="padding: 40px 30px;">
+                            <h2 style="margin: 0 0 20px 0; color: #1f2937; font-size: 24px;">
+                                Hello {seller_name}!
+                            </h2>
+
+                            <p style="margin: 0 0 20px 0; color: #4b5563; font-size: 16px; line-height: 1.6;">
+                                Great news! You've received a new {email_type.lower()} for your car listing:
+                            </p>
+
+                            <!-- Car Info Box -->
+                            <div style="background-color: #f3f4f6; padding: 20px; border-radius: 6px; margin: 20px 0;">
+                                <p style="margin: 0 0 10px 0; color: #1f2937; font-size: 18px; font-weight: bold;">
+                                    🚗 {car_title}
+                                </p>
+                            </div>
+
+                            {offer_html}
+
+                            <!-- Buyer Details -->
+                            <div style="margin: 25px 0;">
+                                <h3 style="margin: 0 0 15px 0; color: #1f2937; font-size: 18px;">
+                                    Buyer Information
+                                </h3>
+                                <table style="width: 100%; border-collapse: collapse;">
+                                    <tr>
+                                        <td style="padding: 8px 0; color: #6b7280; font-size: 14px; width: 100px;">
+                                            <strong>Name:</strong>
+                                        </td>
+                                        <td style="padding: 8px 0; color: #1f2937; font-size: 14px;">
+                                            {buyer_name}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">
+                                            <strong>Email:</strong>
+                                        </td>
+                                        <td style="padding: 8px 0; color: #1f2937; font-size: 14px;">
+                                            <a href="mailto:{buyer_email}" style="color: #2563eb; text-decoration: none;">
+                                                {buyer_email}
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">
+                                            <strong>Phone:</strong>
+                                        </td>
+                                        <td style="padding: 8px 0; color: #1f2937; font-size: 14px;">
+                                            <a href="tel:{buyer_phone}" style="color: #2563eb; text-decoration: none;">
+                                                {buyer_phone}
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 8px 0; color: #6b7280; font-size: 14px;">
+                                            <strong>Type:</strong>
+                                        </td>
+                                        <td style="padding: 8px 0; color: #1f2937; font-size: 14px;">
+                                            {inquiry_type.replace('_', ' ').title()}
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+
+                            <!-- Message -->
+                            <div style="margin: 25px 0;">
+                                <h3 style="margin: 0 0 15px 0; color: #1f2937; font-size: 18px;">
+                                    Message
+                                </h3>
+                                <div style="background-color: #f9fafb; padding: 20px; border-radius: 6px;
+                                            border-left: 4px solid #2563eb;">
+                                    <p style="margin: 0; color: #4b5563; font-size: 15px; line-height: 1.6; white-space: pre-wrap;">
+{message}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <!-- Action Buttons -->
+                            <table width="100%" cellpadding="0" cellspacing="0" style="margin: 30px 0;">
+                                <tr>
+                                    <td align="center">
+                                        <a href="{settings.FRONTEND_URL}/dashboard/inquiries"
+                                           style="display: inline-block; background-color: #2563eb; color: #ffffff;
+                                                  text-decoration: none; padding: 16px 32px; border-radius: 6px;
+                                                  font-size: 16px; font-weight: bold; margin-right: 10px;
+                                                  box-shadow: 0 4px 6px rgba(37, 99, 235, 0.3);">
+                                            View in Dashboard
+                                        </a>
+                                        <a href="{car_url}"
+                                           style="display: inline-block; background-color: #6b7280; color: #ffffff;
+                                                  text-decoration: none; padding: 16px 32px; border-radius: 6px;
+                                                  font-size: 16px; font-weight: bold;">
+                                            View Car Listing
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <div style="background-color: #dbeafe; border-left: 4px solid #2563eb;
+                                        padding: 15px; margin: 20px 0; border-radius: 4px;">
+                                <p style="margin: 0; color: #1e40af; font-size: 14px; line-height: 1.6;">
+                                    💡 <strong>Tip:</strong> Respond quickly to increase your chances of closing the deal!
+                                </p>
+                            </div>
+                        </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                        <td style="background-color: #f9fafb; padding: 30px; text-align: center;
+                                   border-top: 1px solid #e5e7eb;">
+                            <p style="margin: 0 0 10px 0; color: #6b7280; font-size: 14px;">
+                                Need help? Contact us at
+                                <a href="mailto:support@carmarketplace.ph"
+                                   style="color: #2563eb; text-decoration: none;">
+                                    support@carmarketplace.ph
+                                </a>
+                            </p>
+
+                            <p style="margin: 10px 0 0 0; color: #9ca3af; font-size: 12px;">
+                                © 2024 AutoHub. All rights reserved.
+                            </p>
+
+                            <p style="margin: 10px 0 0 0; color: #9ca3af; font-size: 12px;">
+                                This is an automated email. Please do not reply directly to this email.
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+        """.strip()
+
+        return await EmailService.send_email(seller_email, subject, text_body, html_body)
+
+    @staticmethod
+    async def send_inquiry_response_email(
+        buyer_email: str,
+        buyer_name: str,
+        seller_name: str,
+        car_title: str,
+        car_id: int,
+        response_message: str
+    ) -> bool:
+        """Send email to buyer when seller responds to their inquiry"""
+
+        subject = f"Response to your inquiry: {car_title}"
+        car_url = f"{settings.FRONTEND_URL}/cars/{car_id}"
+
+        text_body = f"""
+Hello {buyer_name},
+
+You've received a response to your inquiry about: {car_title}
+
+From: {seller_name}
+
+Message:
+{response_message}
+
+View car listing: {car_url}
+View all your inquiries: {settings.FRONTEND_URL}/dashboard/my-inquiries
+
+Best regards,
+AutoHub Team
+        """.strip()
+
+        html_body = f"""
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f4; padding: 20px;">
+        <tr>
+            <td align="center">
+                <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden;">
+                    <tr>
+                        <td style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 40px 20px; text-align: center;">
+                            <h1 style="margin: 0; color: #ffffff; font-size: 28px;">AutoHub</h1>
+                            <p style="margin: 10px 0 0 0; color: #d1fae5; font-size: 16px;">
+                                New Response Received 📧
+                            </p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 40px 30px;">
+                            <h2 style="margin: 0 0 20px 0; color: #1f2937; font-size: 24px;">
+                                Hello {buyer_name}!
+                            </h2>
+
+                            <p style="margin: 0 0 20px 0; color: #4b5563; font-size: 16px; line-height: 1.6;">
+                                You've received a response to your inquiry about:
+                            </p>
+
+                            <div style="background-color: #f3f4f6; padding: 20px; border-radius: 6px; margin: 20px 0;">
+                                <p style="margin: 0 0 10px 0; color: #1f2937; font-size: 18px; font-weight: bold;">
+                                    🚗 {car_title}
+                                </p>
+                                <p style="margin: 0; color: #6b7280; font-size: 14px;">
+                                    From: {seller_name}
+                                </p>
+                            </div>
+
+                            <div style="margin: 25px 0;">
+                                <h3 style="margin: 0 0 15px 0; color: #1f2937; font-size: 18px;">
+                                    Seller's Response
+                                </h3>
+                                <div style="background-color: #f9fafb; padding: 20px; border-radius: 6px;
+                                            border-left: 4px solid #10b981;">
+                                    <p style="margin: 0; color: #4b5563; font-size: 15px; line-height: 1.6; white-space: pre-wrap;">
+{response_message}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <table width="100%" cellpadding="0" cellspacing="0" style="margin: 30px 0;">
+                                <tr>
+                                    <td align="center">
+                                        <a href="{car_url}"
+                                           style="display: inline-block; background-color: #10b981; color: #ffffff;
+                                                  text-decoration: none; padding: 16px 32px; border-radius: 6px;
+                                                  font-size: 16px; font-weight: bold;
+                                                  box-shadow: 0 4px 6px rgba(16, 185, 129, 0.3);">
+                                            View Car Listing
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="background-color: #f9fafb; padding: 20px; text-align: center;">
+                            <p style="margin: 0; color: #9ca3af; font-size: 12px;">
+                                © 2024 AutoHub. All rights reserved.
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+        """.strip()
+
+        return await EmailService.send_email(buyer_email, subject, text_body, html_body)

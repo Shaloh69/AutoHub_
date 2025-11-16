@@ -304,6 +304,8 @@ class ApiService {
     buyer_name?: string;
     buyer_email?: string;
     buyer_phone?: string;
+    inquiry_type?: string;
+    offered_price?: number;
   }): Promise<ApiResponse<{ id: number; message: string }>> {
     return this.request('/inquiries', {
       method: 'POST',
