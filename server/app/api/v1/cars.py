@@ -75,6 +75,9 @@ async def search_cars(
     # Condition
     car_condition: Optional[str] = None,
 
+    # Approval status
+    approval_status: Optional[str] = None,
+
     # Location
     city_id: Optional[int] = None,
     province_id: Optional[int] = None,
@@ -133,6 +136,7 @@ async def search_cars(
     normalized_fuel_type = normalize_enum_value('fuel_type', fuel_type) if fuel_type else None
     normalized_transmission = normalize_enum_value('transmission', transmission) if transmission else None
     normalized_condition = normalize_enum_value('car_condition', car_condition) if car_condition else None
+    normalized_approval_status = normalize_enum_value('approval_status', approval_status) if approval_status else None
 
     filters = {
         "q": q,
@@ -148,6 +152,7 @@ async def search_cars(
         "min_mileage": min_mileage,
         "max_mileage": max_mileage,
         "car_condition": normalized_condition,
+        "approval_status": normalized_approval_status,
         "city_id": city_id,
         "province_id": province_id,
         "region_id": region_id,

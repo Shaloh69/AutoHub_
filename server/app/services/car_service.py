@@ -233,20 +233,24 @@ class CarService:
         base_count = query.count()
         logger.info(f"  📊 Base query (is_active=True, deleted_at=None): {base_count} cars")
 
-        # TEMPORARY: Relaxed filtering to debug - show all active cars regardless of approval
-        # TODO: Re-enable strict filtering once database has approved cars
-        # Original strict filters:
-        # - Car.approval_status == "APPROVED"
-        # - Car.status == "ACTIVE"
-
-        # For now, let's just filter out DRAFT and REJECTED statuses
+        # Filter for APPROVED cars only in public search (unless explicitly specified)
+        # Only show cars that have been approved by admin
         from app.models.car import CarStatus, ApprovalStatus
-        query = query.filter(
-            Car.status.in_([CarStatus.ACTIVE, CarStatus.PENDING, CarStatus.RESERVED])
-        )
 
-        relaxed_count = query.count()
-        logger.info(f"  📊 After relaxed status filter: {relaxed_count} cars")
+        # If approval_status is explicitly provided (e.g., by admin), use it
+        # Otherwise, default to APPROVED only
+        if filters.get("approval_status"):
+            query = query.filter(Car.approval_status == filters["approval_status"])
+            logger.info(f"  📊 Using explicit approval_status filter: {filters['approval_status']}")
+        else:
+            query = query.filter(Car.approval_status == ApprovalStatus.APPROVED)
+            logger.info(f"  📊 Using default approval_status filter: APPROVED")
+
+        # Also filter by status - default to ACTIVE unless specified
+        query = query.filter(Car.status == CarStatus.ACTIVE)
+
+        filtered_count = query.count()
+        logger.info(f"  📊 After approval and status filters: {filtered_count} cars")
         
         # Apply filters
         if filters.get("q"):

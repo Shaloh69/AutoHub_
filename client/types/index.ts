@@ -445,6 +445,7 @@ export interface SearchFilters {
   min_mileage?: number;
   max_mileage?: number;
   car_condition?: ConditionRating;
+  approval_status?: ApprovalStatus;
   city_id?: number;
   province_id?: number;
   region_id?: number;
