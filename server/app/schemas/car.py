@@ -4,7 +4,7 @@ FILE: app/schemas/car.py (COMPLETE - FIXED)
 Path: car_marketplace_ph/app/schemas/car.py
 ===========================================
 """
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, model_validator
 from typing import Optional, List, Any
 from datetime import datetime
 from decimal import Decimal
@@ -217,7 +217,24 @@ class CarResponse(BaseModel):
     # Timestamps
     created_at: datetime
     updated_at: datetime
-    
+
+    # Related data - ADDED for browse page
+    images: List[Any] = []  # Will be converted to CarImageResponse
+    brand: Optional[Any] = None  # Brand object with name
+    model: Optional[Any] = None  # Model object with name
+    city: Optional[Any] = None  # City object with name
+    location: Optional[Any] = None  # Computed from city for frontend compatibility
+
+    @model_validator(mode='after')
+    def populate_location(self):
+        """Populate location from city for frontend compatibility"""
+        if self.city and not self.location:
+            # Create location dict with city_name from city.name
+            city_name = getattr(self.city, 'name', None)
+            if city_name:
+                self.location = {'city_name': city_name}
+        return self
+
     model_config = ConfigDict(
         from_attributes=True,
         protected_namespaces=()  # Allow model_id field
@@ -287,9 +304,7 @@ class CarDetailResponse(CarResponse):
     images: List[CarImageResponse] = []  # FIXED: Use proper type
     features: List[Any] = []  # Will be CarFeature ORM objects or dicts
     seller: Optional[Any] = None  # Will be User ORM object or dict
-    brand: Optional[Any] = None  # Will be Brand ORM object or dict
-    model: Optional[Any] = None  # Will be Model ORM object or dict
-    city: Optional[Any] = None  # Will be PhCity ORM object or dict
+    # brand, model, city, location inherited from CarResponse
 
     model_config = ConfigDict(from_attributes=True)
 
