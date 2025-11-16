@@ -53,7 +53,7 @@ export default function CreateCarPage() {
   ];
 
   const [formData, setFormData] = useState<Partial<CarFormData>>({
-    negotiable: true,
+    price_negotiable: true,
     accident_history: false,
     flood_history: false,
     number_of_owners: 1,
@@ -212,14 +212,11 @@ export default function CreateCarPage() {
           setError('Please select fuel type and transmission');
           return false;
         }
-        if (!formData.exterior_color) {
-          setError('Please enter exterior color');
-          return false;
-        }
+        // Color is optional in normalized schema
         break;
 
       case 4: // Condition
-        if (!formData.condition_rating) {
+        if (!formData.car_condition) {
           setError('Please select condition rating');
           return false;
         }
@@ -448,8 +445,8 @@ export default function CreateCarPage() {
                 />
 
                 <Checkbox
-                  isSelected={formData.negotiable}
-                  onValueChange={(checked) => setFormData(prev => ({ ...prev, negotiable: checked }))}
+                  isSelected={formData.price_negotiable}
+                  onValueChange={(checked) => setFormData(prev => ({ ...prev, price_negotiable: checked }))}
                 >
                   Price is negotiable
                 </Checkbox>
@@ -542,13 +539,8 @@ export default function CreateCarPage() {
                   />
                 </div>
 
-                <Input
-                  label="Exterior Color"
-                  placeholder="White Pearl"
-                  value={formData.exterior_color || ''}
-                  onChange={(e) => setFormData(prev => ({ ...prev, exterior_color: e.target.value }))}
-                  isRequired
-                />
+                {/* TODO: Add color picker from standard_colors table */}
+                {/* Color selection using color_id is now handled via normalized schema */}
 
                 <Input
                   label="Engine Size"
@@ -580,8 +572,8 @@ export default function CreateCarPage() {
                 <Select
                   label="Overall Condition"
                   placeholder="Select condition"
-                  selectedKeys={formData.condition_rating ? [formData.condition_rating] : []}
-                  onChange={(e) => setFormData(prev => ({ ...prev, condition_rating: e.target.value as any }))}
+                  selectedKeys={formData.car_condition ? [formData.car_condition] : []}
+                  onChange={(e) => setFormData(prev => ({ ...prev, car_condition: e.target.value as any }))}
                   isRequired
                 >
                   {CONDITION_RATINGS.map(rating => (

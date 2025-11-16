@@ -323,7 +323,7 @@ export default function CarDetailPage() {
                       </Chip>
                     )}
                     <Chip variant="solid" className="bg-white/90 text-gray-900">
-                      {car.condition_rating.replace('_', ' ').toUpperCase()}
+                      {car.car_condition.replace('_', ' ').toUpperCase()}
                     </Chip>
                   </div>
                 </div>
@@ -437,13 +437,15 @@ export default function CarDetailPage() {
                     </div>
                   )}
 
-                  <div>
-                    <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400 mb-1">
-                      <Palette size={18} />
-                      <span className="text-sm">Color</span>
+                  {car.color_rel && (
+                    <div>
+                      <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400 mb-1">
+                        <Palette size={18} />
+                        <span className="text-sm">Color</span>
+                      </div>
+                      <p className="font-semibold text-lg">{car.color_rel.name}</p>
                     </div>
-                    <p className="font-semibold text-lg">{car.exterior_color}</p>
-                  </div>
+                  )}
 
                   {car.engine_size && (
                     <div>
@@ -547,9 +549,9 @@ export default function CarDetailPage() {
               <CardBody className="text-center py-8">
                 <p className="text-gray-600 dark:text-gray-400 mb-2">Asking Price</p>
                 <h2 className="text-4xl font-bold text-blue-600 dark:text-blue-400 mb-4">
-                  {formatPrice(car.price, car.currency)}
+                  {formatPrice(car.price)}
                 </h2>
-                {car.negotiable && (
+                {car.price_negotiable && (
                   <Chip color="success" variant="flat">
                     Negotiable
                   </Chip>

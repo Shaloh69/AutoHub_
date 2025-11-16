@@ -44,7 +44,7 @@ export default function SearchCarsPage() {
     max_year: undefined,
     fuel_type: undefined,
     transmission: undefined,
-    condition_rating: undefined,
+    car_condition: undefined,
     page: 1,
     page_size: 20,
     sort: '-created_at',
@@ -110,7 +110,7 @@ export default function SearchCarsPage() {
       max_year: undefined,
       fuel_type: undefined,
       transmission: undefined,
-      condition_rating: undefined,
+      car_condition: undefined,
       page: 1,
       page_size: 20,
       sort: '-created_at',
@@ -279,8 +279,8 @@ export default function SearchCarsPage() {
                 <Select
                   label="Condition"
                   placeholder="All Conditions"
-                  selectedKeys={filters.condition_rating ? [filters.condition_rating] : []}
-                  onChange={(e) => setFilters(prev => ({ ...prev, condition_rating: e.target.value as any }))}
+                  selectedKeys={filters.car_condition ? [filters.car_condition] : []}
+                  onChange={(e) => setFilters(prev => ({ ...prev, car_condition: e.target.value as any }))}
                 >
                   <SelectItem key="BRAND_NEW" value="BRAND_NEW">Brand New</SelectItem>
                   <SelectItem key="LIKE_NEW" value="LIKE_NEW">Like New</SelectItem>
@@ -299,8 +299,8 @@ export default function SearchCarsPage() {
                     Featured only
                   </Checkbox>
                   <Checkbox
-                    isSelected={filters.negotiable}
-                    onValueChange={(checked) => setFilters(prev => ({ ...prev, negotiable: checked || undefined }))}
+                    isSelected={filters.price_negotiable}
+                    onValueChange={(checked) => setFilters(prev => ({ ...prev, price_negotiable: checked || undefined }))}
                   >
                     Negotiable price
                   </Checkbox>
@@ -428,9 +428,9 @@ export default function SearchCarsPage() {
 
                           <div className="flex items-center justify-between mb-3">
                             <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                              {formatPrice(car.price, car.currency)}
+                              {formatPrice(car.price)}
                             </span>
-                            {car.negotiable && (
+                            {car.price_negotiable && (
                               <Chip size="sm" variant="flat" color="success">
                                 Negotiable
                               </Chip>

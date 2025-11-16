@@ -341,7 +341,7 @@ export default function SellerDashboardPage() {
 
                           <div className="flex flex-wrap items-center gap-3">
                             <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                              {formatPrice(car.price, car.currency)}
+                              {formatPrice(car.price)}
                             </span>
 
                             <div className="flex gap-2 ml-auto">

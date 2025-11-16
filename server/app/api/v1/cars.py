@@ -73,21 +73,21 @@ async def search_cars(
     max_mileage: Optional[int] = None,
     
     # Condition
-    condition_rating: Optional[str] = None,
-    
+    car_condition: Optional[str] = None,
+
     # Location
     city_id: Optional[int] = None,
     province_id: Optional[int] = None,
     region_id: Optional[int] = None,
-    
+
     # Location-based search
     latitude: Optional[float] = None,
     longitude: Optional[float] = None,
     radius_km: Optional[int] = Query(25, ge=1, le=500),
-    
+
     # Features
     is_featured: Optional[bool] = None,
-    negotiable: Optional[bool] = None,
+    price_negotiable: Optional[bool] = None,
     financing_available: Optional[bool] = None,
     
     # Sorting - Support both legacy (sort_by/sort_order) and new (sort) formats
@@ -132,7 +132,7 @@ async def search_cars(
     # Normalize enum filter values before search
     normalized_fuel_type = normalize_enum_value('fuel_type', fuel_type) if fuel_type else None
     normalized_transmission = normalize_enum_value('transmission', transmission) if transmission else None
-    normalized_condition = normalize_enum_value('condition_rating', condition_rating) if condition_rating else None
+    normalized_condition = normalize_enum_value('car_condition', car_condition) if car_condition else None
 
     filters = {
         "q": q,
@@ -147,7 +147,7 @@ async def search_cars(
         "transmission": normalized_transmission,
         "min_mileage": min_mileage,
         "max_mileage": max_mileage,
-        "condition_rating": normalized_condition,
+        "car_condition": normalized_condition,
         "city_id": city_id,
         "province_id": province_id,
         "region_id": region_id,
@@ -155,7 +155,7 @@ async def search_cars(
         "longitude": longitude,
         "radius_km": radius_km,
         "is_featured": is_featured,
-        "negotiable": negotiable,
+        "price_negotiable": price_negotiable,
         "financing_available": financing_available,
         "sort_by": sort_by,
         "sort_order": sort_order
@@ -174,8 +174,8 @@ async def search_cars(
             car.fuel_type = normalize_enum_value('fuel_type', car.fuel_type)
         if hasattr(car, 'transmission') and car.transmission:
             car.transmission = normalize_enum_value('transmission', car.transmission)
-        if hasattr(car, 'condition_rating') and car.condition_rating:
-            car.condition_rating = normalize_enum_value('condition_rating', car.condition_rating)
+        if hasattr(car, 'car_condition') and car.car_condition:
+            car.car_condition = normalize_enum_value('car_condition', car.car_condition)
 
     # Convert to response models - WORKING: This function works correctly
     try:
@@ -463,7 +463,7 @@ async def get_car(
         logger.info(f"    approval_status: {repr(car.approval_status)} (type: {type(car.approval_status).__name__})")
         logger.info(f"    fuel_type: {repr(car.fuel_type)} (type: {type(car.fuel_type).__name__})")
         logger.info(f"    transmission: {repr(car.transmission)} (type: {type(car.transmission).__name__})")
-        logger.info(f"    condition_rating: {repr(getattr(car, 'condition_rating', 'MISSING'))}")
+        logger.info(f"    car_condition: {repr(getattr(car, 'car_condition', 'MISSING'))}")
         logger.info(f"    body_type: {repr(getattr(car, 'body_type', 'MISSING'))}")
         logger.info(f"    engine_type: {repr(getattr(car, 'engine_type', 'MISSING'))}")
         logger.info(f"    visibility: {repr(getattr(car, 'visibility', 'MISSING'))}")
@@ -505,10 +505,10 @@ async def get_car(
             car.drivetrain = normalize_enum_value('drivetrain', car.drivetrain)
             logger.info(f"    drivetrain: {old} → {repr(car.drivetrain)}")
 
-        if hasattr(car, 'condition_rating') and car.condition_rating:
-            old = repr(car.condition_rating)
-            car.condition_rating = normalize_enum_value('condition_rating', car.condition_rating)
-            logger.info(f"    condition_rating: {old} → {repr(car.condition_rating)}")
+        if hasattr(car, 'car_condition') and car.car_condition:
+            old = repr(car.car_condition)
+            car.car_condition = normalize_enum_value('car_condition', car.car_condition)
+            logger.info(f"    car_condition: {old} → {repr(car.car_condition)}")
 
         if hasattr(car, 'body_type') and car.body_type:
             old = repr(car.body_type)
@@ -633,7 +633,7 @@ async def get_car(
         logger.error(f"    approval_status: {getattr(car, 'approval_status', 'N/A')}")
         logger.error(f"    fuel_type: {getattr(car, 'fuel_type', 'N/A')}")
         logger.error(f"    transmission: {getattr(car, 'transmission', 'N/A')}")
-        logger.error(f"    condition_rating: {getattr(car, 'condition_rating', 'N/A')}")
+        logger.error(f"    car_condition: {getattr(car, 'car_condition', 'N/A')}")
         logger.error(f"    body_type: {getattr(car, 'body_type', 'N/A')}")
         logger.error(f"    engine_type: {getattr(car, 'engine_type', 'N/A')}")
         logger.error(f"    visibility: {getattr(car, 'visibility', 'N/A')}")
@@ -681,8 +681,8 @@ async def update_car(
             car.fuel_type = normalize_enum_value('fuel_type', car.fuel_type)
         if hasattr(car, 'transmission') and car.transmission:
             car.transmission = normalize_enum_value('transmission', car.transmission)
-        if hasattr(car, 'condition_rating') and car.condition_rating:
-            car.condition_rating = normalize_enum_value('condition_rating', car.condition_rating)
+        if hasattr(car, 'car_condition') and car.car_condition:
+            car.car_condition = normalize_enum_value('car_condition', car.car_condition)
 
         return CarResponse.model_validate(car)
     except ValueError as e:
@@ -841,8 +841,8 @@ async def boost_car(
             car.fuel_type = normalize_enum_value('fuel_type', car.fuel_type)
         if hasattr(car, 'transmission') and car.transmission:
             car.transmission = normalize_enum_value('transmission', car.transmission)
-        if hasattr(car, 'condition_rating') and car.condition_rating:
-            car.condition_rating = normalize_enum_value('condition_rating', car.condition_rating)
+        if hasattr(car, 'car_condition') and car.car_condition:
+            car.car_condition = normalize_enum_value('car_condition', car.car_condition)
 
         return CarResponse.model_validate(car)
     except ValueError as e:
@@ -896,8 +896,8 @@ async def feature_car(
         car.fuel_type = normalize_enum_value('fuel_type', car.fuel_type)
     if hasattr(car, 'transmission') and car.transmission:
         car.transmission = normalize_enum_value('transmission', car.transmission)
-    if hasattr(car, 'condition_rating') and car.condition_rating:
-        car.condition_rating = normalize_enum_value('condition_rating', car.condition_rating)
+    if hasattr(car, 'car_condition') and car.car_condition:
+        car.car_condition = normalize_enum_value('car_condition', car.car_condition)
 
     return CarResponse.model_validate(car)
 
