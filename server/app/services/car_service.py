@@ -11,6 +11,7 @@ from app.models.analytics import CarView
 from app.models.subscription import UserSubscription, SubscriptionPlan
 from app.database import cache
 from app.utils.helpers import generate_slug, calculate_distance
+from app.utils.enum_normalizer import normalize_car_data
 from app.services.fraud_detection_service import FraudDetectionService
 import json
 import logging
@@ -47,7 +48,10 @@ class CarService:
 
         # Extract feature IDs
         feature_ids = car_data.pop("feature_ids", [])
-        
+
+        # Normalize enum values to match SQL schema
+        car_data = normalize_car_data(car_data)
+
         # Verify location
         city = db.query(PhCity).filter(PhCity.id == car_data["city_id"]).first()
         if not city:
