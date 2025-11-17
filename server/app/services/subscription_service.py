@@ -267,16 +267,32 @@ class SubscriptionService:
     @staticmethod
     def get_qr_code_settings(db: Session) -> Dict[str, str]:
         """Get QR code payment settings"""
+        import os
+
         qr_image = db.query(PaymentSetting).filter(
             PaymentSetting.setting_key == "payment_qr_code_image"
         ).first()
-        
+
         instructions = db.query(PaymentSetting).filter(
             PaymentSetting.setting_key == "payment_instructions"
         ).first()
-        
+
+        # Get QR code path from settings
+        qr_code_path = getattr(qr_image, 'setting_value', '/uploads/qr/default_payment_qr.png') if qr_image else '/uploads/qr/default_payment_qr.png'
+
+        # Construct full URL using API server base URL from environment
+        api_base_url = os.getenv('API_BASE_URL', 'http://localhost:8000')
+        # Remove /api/v1 suffix if present
+        if api_base_url.endswith('/api/v1'):
+            api_base_url = api_base_url[:-7]
+        elif api_base_url.endswith('/api'):
+            api_base_url = api_base_url[:-4]
+
+        # Construct full QR code URL
+        qr_code_url = f"{api_base_url}{qr_code_path}" if qr_code_path.startswith('/') else f"{api_base_url}/{qr_code_path}"
+
         return {
-            "qr_code_image_url": getattr(qr_image, 'setting_value', '/uploads/qr/default_payment_qr.png') if qr_image else '/uploads/qr/default_payment_qr.png',
+            "qr_code_image_url": qr_code_url,
             "payment_instructions": getattr(instructions, 'setting_value', 'Please scan the QR code and enter the reference number from your payment confirmation.') if instructions else 'Please scan the QR code and enter the reference number from your payment confirmation.'
         }
     
