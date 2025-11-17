@@ -31,7 +31,7 @@ class SubscriptionService:
         """Get all active subscription plans"""
         return db.query(SubscriptionPlan).filter(
             SubscriptionPlan.is_active == True  # noqa: E712
-        ).order_by(SubscriptionPlan.monthly_price).all()
+        ).order_by(SubscriptionPlan.price).all()
     
     @staticmethod
     def get_user_subscription(db: Session, user_id: int) -> Optional[UserSubscription]:
@@ -187,16 +187,14 @@ class SubscriptionService:
             raise ValueError("User already has an active or pending subscription")
         
         # Calculate price
+        # Fixed: Use 'price' field directly from plan (not monthly_price/yearly_price)
+        base_price = Decimal(str(getattr(plan, 'price', 0)))
+
+        # Apply multiplier for yearly subscriptions (typically 10x monthly for annual discount)
         if billing_cycle == "yearly":
-            yearly_price_value = getattr(plan, 'yearly_price', None)
-            if yearly_price_value is not None:
-                amount = Decimal(str(yearly_price_value))
-            else:
-                monthly_price_value = getattr(plan, 'monthly_price', 0)
-                amount = Decimal(str(monthly_price_value)) * Decimal('10')
+            amount = base_price * Decimal('10')  # 10 months worth (2 months free)
         else:
-            monthly_price_value = getattr(plan, 'monthly_price', 0)
-            amount = Decimal(str(monthly_price_value))
+            amount = base_price
         
         # Apply promo code
         discount_applied = Decimal('0')

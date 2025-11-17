@@ -17,32 +17,34 @@ from decimal import Decimal
 # ========================================
 
 class SubscriptionPlanResponse(BaseModel):
-    """Subscription plan response - Complete with all fields"""
+    """Subscription plan response - Fixed to match actual database schema"""
     id: int
     name: str
-    plan_type: str
-    monthly_price: Decimal
-    yearly_price: Optional[Decimal] = None
-    currency: str
-    
-    # Limits
+    slug: str
+    description: Optional[str] = None
+
+    # Pricing - Fixed: Match SQL schema (price + billing_cycle, not monthly_price/yearly_price)
+    price: Decimal
+    currency_id: int = 1
+    billing_cycle: str
+
+    # Limits - Fixed: Match SQL schema exactly
     max_listings: int  # Fixed: was max_active_listings
     max_featured_listings: int
     max_photos_per_listing: int  # Fixed: was max_images_per_listing
-    storage_mb: int
-    boost_credits_monthly: int
-    
-    # Features
-    priority_ranking: int
-    advanced_analytics: bool
-    homepage_featured: bool
-    verified_badge: bool
-    priority_support: bool
-    
+
+    # Features - Fixed: Match SQL schema exactly
+    can_add_video: bool = False
+    can_add_virtual_tour: bool = False
+    priority_support: bool = False
+    advanced_analytics: bool = False
+    featured_badge: bool = False
+
     # Status
     is_active: bool
     is_popular: bool
-    
+    display_order: int = 0
+
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -72,24 +74,20 @@ class UserSubscriptionResponse(BaseModel):
 
 
 class SubscriptionUsageResponse(BaseModel):
-    """Subscription usage response - Complete"""
-    # Current usage
-    active_listings: int
-    featured_listings: int
-    premium_listings: int
-    boost_credits_used: int
-    storage_used_mb: int
-    
-    # Limits
+    """Subscription usage response - Fixed to match actual database schema"""
+    # Current usage (from subscription_usage table)
+    current_listings: int  # Fixed: was active_listings
+    current_featured: int  # Fixed: was featured_listings
+    total_listings_created: int
+
+    # Limits (from subscription_plans table)
     max_listings: int  # Fixed: was max_active_listings
     max_featured_listings: int
     max_photos_per_listing: int  # Fixed: was max_images_per_listing
-    boost_credits_monthly: int
-    storage_mb: int
-    
+
     # Period
-    period_start: datetime
-    period_end: datetime
+    reset_at: Optional[datetime] = None
+    updated_at: datetime
 
 
 class PromoCodeValidation(BaseModel):
