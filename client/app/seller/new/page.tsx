@@ -39,9 +39,18 @@ export default function CreateCarPage() {
   const [features, setFeatures] = useState<Feature[]>([]);
   const [cities, setCities] = useState<any[]>([]);
   const [selectedFeatures, setSelectedFeatures] = useState<number[]>([]);
-  const [mainImage, setMainImage] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [imageMetadata, setImageMetadata] = useState<{ type: string; isMain: boolean }[]>([]);
   const [error, setError] = useState<string | null>(null);
+
+  const IMAGE_TYPES = [
+    { value: 'exterior', label: 'Exterior', icon: '🚗' },
+    { value: 'interior', label: 'Interior', icon: '🪑' },
+    { value: 'engine', label: 'Engine', icon: '⚙️' },
+    { value: 'damage', label: 'Damage', icon: '⚠️' },
+    { value: 'document', label: 'Documents', icon: '📄' },
+    { value: 'other', label: 'Other', icon: '📸' },
+  ];
 
   const [formData, setFormData] = useState<Partial<CarFormData>>({
     price_negotiable: true,
@@ -106,38 +115,49 @@ export default function CreateCarPage() {
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      setError('Please upload an image file');
+    const files = Array.from(e.target.files || []);
+    if (files.length + imageFiles.length > 10) {
+      setError('Maximum 10 images allowed');
       return;
     }
+    setImageFiles(prev => [...prev, ...files]);
 
-    // Validate file size (max 10MB)
-    if (file.size > 10 * 1024 * 1024) {
-      setError('Image size must be less than 10MB');
-      return;
-    }
-
-    setMainImage(file);
-
-    // Create preview URL
-    const previewUrl = URL.createObjectURL(file);
-    if (imagePreview) {
-      URL.revokeObjectURL(imagePreview);
-    }
-    setImagePreview(previewUrl);
+    // Initialize metadata for new images
+    const newMetadata = files.map((_, index) => ({
+      type: 'exterior',
+      isMain: imageFiles.length === 0 && index === 0 // First image is main by default
+    }));
+    setImageMetadata(prev => [...prev, ...newMetadata]);
     setError(null);
   };
 
-  const removeImage = () => {
-    if (imagePreview) {
-      URL.revokeObjectURL(imagePreview);
-    }
-    setMainImage(null);
-    setImagePreview(null);
+  const removeImage = (index: number) => {
+    setImageFiles(prev => prev.filter((_, i) => i !== index));
+    setImageMetadata(prev => {
+      const updated = prev.filter((_, i) => i !== index);
+      // If we removed the main image, make the first image main
+      if (prev[index]?.isMain && updated.length > 0) {
+        updated[0].isMain = true;
+      }
+      return updated;
+    });
+  };
+
+  const setMainImage = (index: number) => {
+    setImageMetadata(prev =>
+      prev.map((meta, i) => ({
+        ...meta,
+        isMain: i === index
+      }))
+    );
+  };
+
+  const setImageType = (index: number, type: string) => {
+    setImageMetadata(prev =>
+      prev.map((meta, i) =>
+        i === index ? { ...meta, type } : meta
+      )
+    );
   };
 
   const toggleFeature = (featureId: number) => {
@@ -210,8 +230,8 @@ export default function CreateCarPage() {
         break;
 
       case 6: // Images
-        if (!mainImage) {
-          setError('Please upload a main image');
+        if (imageFiles.length === 0) {
+          setError('Please upload at least one image');
           return false;
         }
         break;
@@ -251,9 +271,9 @@ export default function CreateCarPage() {
       if (response.success && response.data) {
         const carId = response.data.id;
 
-        // Upload main image
-        if (mainImage) {
-          await apiService.uploadCarImage(carId, mainImage, 'exterior', true);
+        // Upload images with metadata (type and main image flag)
+        if (imageFiles.length > 0) {
+          await apiService.uploadCarImages(carId, imageFiles, imageMetadata);
         }
 
         router.push('/seller/dashboard');
@@ -647,79 +667,129 @@ export default function CreateCarPage() {
               </div>
             )}
 
-            {/* Step 6: Main Image */}
+            {/* Step 6: Images */}
             {step === 6 && (
               <div className="space-y-4">
-                <h2 className="text-2xl font-bold mb-4">Upload Main Image</h2>
+                <h2 className="text-2xl font-bold mb-4">Upload Images</h2>
                 <p className="text-gray-600 dark:text-gray-400 mb-4">
-                  Upload a high-quality main image of your vehicle
+                  Upload up to 10 high-quality images of your vehicle. Select one as the main spotlight image.
                 </p>
 
-                {!mainImage ? (
-                  <div className="border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg p-8 text-center">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                      className="hidden"
-                      id="image-upload"
-                    />
-                    <label
-                      htmlFor="image-upload"
-                      className="cursor-pointer flex flex-col items-center"
-                    >
-                      <Upload className="text-gray-400 mb-2" size={48} />
-                      <span className="text-gray-700 dark:text-gray-300 font-semibold">
-                        Click to upload main image
-                      </span>
-                      <span className="text-sm text-gray-500 mt-1">
-                        PNG, JPG up to 10MB
-                      </span>
-                    </label>
-                  </div>
-                ) : (
-                  <div className="border-2 border-primary-500 bg-primary-50 dark:bg-primary-900/20 rounded-lg p-4">
-                    <div className="flex gap-4 items-start">
-                      {/* Image Preview */}
-                      <div className="relative flex-shrink-0">
-                        <img
-                          src={imagePreview || ''}
-                          alt="Main car image preview"
-                          className="w-64 h-64 object-cover rounded-lg shadow-lg"
-                        />
-                        <Chip
-                          size="sm"
-                          color="primary"
-                          className="absolute top-2 left-2"
-                          startContent={<Check size={12} />}
-                        >
-                          Main Photo
-                        </Chip>
-                      </div>
+                <div className="border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg p-8 text-center">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleImageUpload}
+                    className="hidden"
+                    id="image-upload"
+                  />
+                  <label
+                    htmlFor="image-upload"
+                    className="cursor-pointer flex flex-col items-center"
+                  >
+                    <Upload className="text-gray-400 mb-2" size={48} />
+                    <span className="text-gray-700 dark:text-gray-300 font-semibold">
+                      Click to upload images
+                    </span>
+                    <span className="text-sm text-gray-500 mt-1">
+                      PNG, JPG up to 10MB each
+                    </span>
+                  </label>
+                </div>
 
-                      {/* Image Info & Actions */}
-                      <div className="flex-1 space-y-4">
-                        <div>
-                          <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
-                            {mainImage.name}
-                          </h3>
-                          <p className="text-sm text-gray-600 dark:text-gray-400">
-                            Size: {(mainImage.size / 1024 / 1024).toFixed(2)}MB
-                          </p>
-                          <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
-                            This image will be displayed as the main photo for your listing
-                          </p>
-                        </div>
+                {imageFiles.length > 0 && (
+                  <div className="space-y-4">
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      {imageFiles.length} image{imageFiles.length !== 1 ? 's' : ''} uploaded. Click "Set as Main Photo" to choose the spotlight image for Browse Cars page.
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {imageFiles.map((file, index) => {
+                        const metadata = imageMetadata[index] || { type: 'exterior', isMain: false };
+                        const imageType = IMAGE_TYPES.find(t => t.value === metadata.type) || IMAGE_TYPES[0];
 
-                        <Button
-                          color="danger"
-                          variant="flat"
-                          onPress={removeImage}
-                          startContent={<X size={16} />}
-                        >
-                          Remove & Upload Different Image
-                        </Button>
-                      </div>
+                        return (
+                          <div
+                            key={index}
+                            className={`relative border-2 rounded-lg p-3 transition-all ${
+                              metadata.isMain
+                                ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
+                                : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800'
+                            }`}
+                          >
+                            <div className="flex gap-3">
+                              {/* Image Preview */}
+                              <div className="relative flex-shrink-0">
+                                <img
+                                  src={URL.createObjectURL(file)}
+                                  alt={`Preview ${index + 1}`}
+                                  className="w-32 h-32 object-cover rounded-lg"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => removeImage(index)}
+                                  className="absolute -top-2 -right-2 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors shadow-lg"
+                                >
+                                  <X size={14} />
+                                </button>
+                                {metadata.isMain && (
+                                  <Chip
+                                    size="sm"
+                                    color="primary"
+                                    className="absolute bottom-2 left-2"
+                                    startContent={<Check size={12} />}
+                                  >
+                                    Main Photo
+                                  </Chip>
+                                )}
+                              </div>
+
+                              {/* Controls */}
+                              <div className="flex-1 space-y-3">
+                                <div>
+                                  <label className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1 block">
+                                    Image Category
+                                  </label>
+                                  <Select
+                                    size="sm"
+                                    selectedKeys={[metadata.type]}
+                                    onChange={(e) => setImageType(index, e.target.value)}
+                                    className="max-w-full"
+                                    startContent={<span className="text-lg">{imageType.icon}</span>}
+                                  >
+                                    {IMAGE_TYPES.map(type => (
+                                      <SelectItem
+                                        key={type.value}
+                                        value={type.value}
+                                        startContent={<span className="text-lg">{type.icon}</span>}
+                                      >
+                                        {type.label}
+                                      </SelectItem>
+                                    ))}
+                                  </Select>
+                                </div>
+
+                                {!metadata.isMain && (
+                                  <Button
+                                    size="sm"
+                                    color="primary"
+                                    variant="flat"
+                                    onPress={() => setMainImage(index)}
+                                    fullWidth
+                                    startContent={<Check size={16} />}
+                                  >
+                                    Set as Main Photo
+                                  </Button>
+                                )}
+
+                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                  {file.name} • {(file.size / 1024 / 1024).toFixed(2)}MB
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
