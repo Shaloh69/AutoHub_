@@ -19,7 +19,7 @@ import { apiService } from '@/services/api';
 import { useRequireAuth } from '@/contexts/AuthContext';
 
 export default function BecomeSellerPage() {
-  const { user, loading: authLoading, refreshUser } = useRequireAuth();
+  const { user, loading: authLoading } = useRequireAuth();
   const router = useRouter();
 
   const [selectedRole, setSelectedRole] = useState<'SELLER' | 'DEALER'>('SELLER');
@@ -64,7 +64,7 @@ export default function BecomeSellerPage() {
 
       if (response.success) {
         setSuccess(true);
-        await refreshUser();
+        // User will be refreshed on next page load
         setTimeout(() => {
           router.push('/dashboard');
         }, 2000);

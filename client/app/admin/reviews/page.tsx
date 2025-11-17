@@ -260,11 +260,11 @@ export default function AdminReviewsPage() {
                 selectedKeys={statusFilter ? [statusFilter] : []}
                 onChange={(e) => setStatusFilter(e.target.value)}
               >
-                <SelectItem key="" value="">All</SelectItem>
-                <SelectItem key="pending" value="pending">Pending</SelectItem>
-                <SelectItem key="approved" value="approved">Approved</SelectItem>
-                <SelectItem key="rejected" value="rejected">Rejected</SelectItem>
-                <SelectItem key="hidden" value="hidden">Hidden</SelectItem>
+                <SelectItem key="">All</SelectItem>
+                <SelectItem key="pending">Pending</SelectItem>
+                <SelectItem key="approved">Approved</SelectItem>
+                <SelectItem key="rejected">Rejected</SelectItem>
+                <SelectItem key="hidden">Hidden</SelectItem>
               </Select>
               {statusFilter && (
                 <Button

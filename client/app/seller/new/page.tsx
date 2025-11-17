@@ -359,7 +359,7 @@ export default function CreateCarPage() {
                   isRequired
                 >
                   {brands.map(brand => (
-                    <SelectItem key={brand.id} value={String(brand.id)}>
+                    <SelectItem key={brand.id}>
                       {brand.name}
                     </SelectItem>
                   ))}
@@ -374,7 +374,7 @@ export default function CreateCarPage() {
                   isRequired
                 >
                   {models.map(model => (
-                    <SelectItem key={model.id} value={String(model.id)}>
+                    <SelectItem key={model.id}>
                       {model.name}
                     </SelectItem>
                   ))}
@@ -387,7 +387,7 @@ export default function CreateCarPage() {
                   onChange={(e) => setFormData(prev => ({ ...prev, category_id: parseInt(e.target.value) }))}
                 >
                   {categories.map(category => (
-                    <SelectItem key={category.id} value={String(category.id)}>
+                    <SelectItem key={category.id}>
                       {category.name}
                     </SelectItem>
                   ))}
@@ -500,7 +500,7 @@ export default function CreateCarPage() {
                     isRequired
                   >
                     {FUEL_TYPES.map(type => (
-                      <SelectItem key={type} value={type}>
+                      <SelectItem key={type}>
                         {type.replace('_', ' ').toUpperCase()}
                       </SelectItem>
                     ))}
@@ -514,7 +514,7 @@ export default function CreateCarPage() {
                     isRequired
                   >
                     {TRANSMISSIONS.map(type => (
-                      <SelectItem key={type} value={type}>
+                      <SelectItem key={type}>
                         {type.toUpperCase()}
                       </SelectItem>
                     ))}
@@ -556,7 +556,7 @@ export default function CreateCarPage() {
                   onChange={(e) => setFormData(prev => ({ ...prev, drivetrain: e.target.value as any }))}
                 >
                   {DRIVETRAINS.map(type => (
-                    <SelectItem key={type} value={type}>
+                    <SelectItem key={type}>
                       {type.toUpperCase()}
                     </SelectItem>
                   ))}
@@ -577,7 +577,7 @@ export default function CreateCarPage() {
                   isRequired
                 >
                   {CONDITION_RATINGS.map(rating => (
-                    <SelectItem key={rating} value={rating}>
+                    <SelectItem key={rating}>
                       {rating.replace('_', ' ').toUpperCase()}
                     </SelectItem>
                   ))}
@@ -644,7 +644,7 @@ export default function CreateCarPage() {
                   isRequired
                 >
                   {cities.slice(0, 100).map(city => (
-                    <SelectItem key={city.id} value={String(city.id)}>
+                    <SelectItem key={city.id}>
                       {city.name}
                     </SelectItem>
                   ))}

@@ -133,6 +133,38 @@ export interface Color {
   is_popular: boolean;
 }
 
+export interface PhRegion {
+  id: number;
+  region_code: string;
+  name: string;
+  long_name?: string;
+  is_active: boolean;
+}
+
+export interface PhProvince {
+  id: number;
+  region_id: number;
+  province_code: string;
+  name: string;
+  capital?: string;
+  is_active: boolean;
+}
+
+export interface PhCity {
+  id: number;
+  province_id: number;
+  city_code?: string;
+  name: string;
+  city_type: CityType;
+  is_highly_urbanized: boolean;
+  latitude: number;
+  longitude: number;
+  zip_code?: string;
+  population: number;
+  is_capital: boolean;
+  is_active: boolean;
+}
+
 export interface Location {
   city_id?: number;
   province_id?: number;
@@ -275,9 +307,17 @@ export interface Car {
   // Relations (populated by joins)
   brand?: Brand;
   model?: Model;
+  brand_rel?: Brand;  // Backend uses brand_rel to avoid column name conflict
+  model_rel?: Model;  // Backend uses model_rel to avoid column name conflict
   category?: Category;
   color?: Color;
   interior_color?: Color;
+  color_rel?: Color;  // Backend uses color_rel to avoid column name conflict
+  interior_color_rel?: Color;  // Backend uses interior_color_rel to avoid column name conflict
+  currency_rel?: { id: number; code: string; name: string; symbol: string };  // Backend currency relationship
+  city?: PhCity;  // Backend populates city via relationship
+  province?: PhProvince;  // Backend populates province via relationship
+  region?: PhRegion;  // Backend populates region via relationship
   seller?: User;
   images?: CarImage[];
   features?: Feature[];

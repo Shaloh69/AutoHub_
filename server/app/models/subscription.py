@@ -6,7 +6,7 @@ FIX: Added missing 'user' relationship in UserSubscription model
 PRESERVED: All original functionality
 ===========================================
 """
-from sqlalchemy import Column, Integer, String, Boolean, DECIMAL, Text, TIMESTAMP, Date, ForeignKey, Enum
+from sqlalchemy import Column, Integer, String, Boolean, DECIMAL, Text, TIMESTAMP, Date, ForeignKey, Enum, Index
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from app.database import Base
@@ -133,7 +133,12 @@ class SubscriptionPayment(Base):
 
     # Timestamps
     created_at = Column(TIMESTAMP, default=datetime.utcnow)
-    
+
+    # Table-level constraints and indexes
+    __table_args__ = (
+        Index('idx_status_reference', 'status', 'reference_number'),
+    )
+
     # Relationships
     subscription = relationship("UserSubscription", back_populates="payments")
     plan = relationship("SubscriptionPlan", back_populates="payments")

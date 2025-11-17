@@ -11,7 +11,8 @@ import { Tabs, Tab } from "@heroui/tabs";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure } from "@heroui/modal";
 import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@heroui/dropdown";
 import { PlusIcon, EditIcon, DeleteIcon, VerticalDotsIcon, EyeIcon, DashboardIcon } from "@/components/icons";
-import { apiService, getImageUrl, Car } from '@/services/api';
+import { apiService, getImageUrl } from '@/services/api';
+import { Car } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 
@@ -182,10 +183,10 @@ export default function DashboardPage() {
             <Spinner size="lg" color="primary" />
           </div>
             ) : error ? (
-          <div className="text-center py-16"></div>
+          <div className="text-center py-16">
             <p className="text-autohub-primary-500 text-lg mb-4">Error: {error}</p>
-            <Button 
-              className="bg-autohub-primary-500 hover:bg-autohub-primary-600 text-white" 
+            <Button
+              className="bg-autohub-primary-500 hover:bg-autohub-primary-600 text-white"
               onPress={fetchMyListings}
             >
               Try Again
@@ -193,22 +194,22 @@ export default function DashboardPage() {
           </div>
             ) : myListings.length === 0 ? (
           <Card className="border border-autohub-accent1-200">
-            <CardBody className="text-center py-16"></CardBody>
+            <CardBody className="text-center py-16">
               <div className="w-20 h-20 bg-autohub-accent1-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <PlusIcon className="text-autohub-accent1-500" size={32} />
+                <PlusIcon className="text-autohub-accent1-500" size={32} />
               </div>
               <h3 className="text-2xl font-semibold text-autohub-secondary-900 dark:text-autohub-neutral-50 mb-2">
-            No listings yet
+                No listings yet
               </h3>
-              <p className="text-autohub-accent1-600 mb-6 max-w-md mx-auto"></p>
-            Start building your automotive portfolio by listing your first premium vehicle
+              <p className="text-autohub-accent1-600 mb-6 max-w-md mx-auto">
+                Start building your automotive portfolio by listing your first premium vehicle
               </p>
               <Button
-            className="bg-autohub-primary-500 hover:bg-autohub-primary-600 text-white font-semibold"
-            size="lg"
-            onPress={() => router.push('/dashboard/create-listing')}
+                className="bg-autohub-primary-500 hover:bg-autohub-primary-600 text-white font-semibold"
+                size="lg"
+                onPress={() => router.push('/dashboard/create-listing')}
               >
-            Create First Listing
+                Create First Listing
               </Button>
             </CardBody>
           </Card>
@@ -284,32 +285,30 @@ export default function DashboardPage() {
                   <DropdownItem
                 key="delete"
                 className="text-autohub-primary-500"
-                              </DropdownItem>
-                            </DropdownMenu>={() => openDeleteModal(car)}
+                onPress={() => openDeleteModal(car)}
                   >
                 Delete Listing
                   </DropdownItem>
                 </DropdownMenu>
               </Dropdown>
-                        <h3 className="font-bold text-lg text-autohub-secondary-900 dark:text-autohub-neutral-50">
-                          {car.year} {car.make} {car.model}
-                        </h3>
-              <div className="p-6 space-y-3"></div>
-                <h3 className="font-bold text-lg text-autohub-secondary-900 dark:text-autohub-neutral-50"></h3>
-              {car.year} {car.make} {car.model}
+                </div>
+              </div>
+              <div className="p-6 space-y-3">
+                <h3 className="font-bold text-lg text-autohub-secondary-900 dark:text-autohub-neutral-50">
+                  {car.year} {car.make} {car.model}
                 </h3>
                 <p className="text-2xl font-bold text-autohub-primary-500">
-              {formatPrice(car.price)}
+                  {formatPrice(car.price)}
                 </p>
                 <div className="space-y-2">
-              <div className="flex justify-between text-sm text-autohub-accent1-600">
-                <span>{new Intl.NumberFormat().format(car.mileage)} miles</span>
-                <span>{car.location}</span>
-              </div>
-              <div className="flex justify-between text-sm text-autohub-accent1-600"></div>
-                <span>Listed: {new Date(car.createdAt).toLocaleDateString()}</span>
-                <span>{car.fuelType}</span>
-              </div>
+                  <div className="flex justify-between text-sm text-autohub-accent1-600">
+                    <span>{new Intl.NumberFormat().format(car.mileage)} miles</span>
+                    <span>{car.location}</span>
+                  </div>
+                  <div className="flex justify-between text-sm text-autohub-accent1-600">
+                    <span>Listed: {new Date(car.createdAt).toLocaleDateString()}</span>
+                    <span>{car.fuelType}</span>
+                  </div>
                 </div>
               </div>
             </CardBody>

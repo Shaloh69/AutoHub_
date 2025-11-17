@@ -52,7 +52,7 @@ export default function CarDetailPage() {
 
     if (isAutoPlaying) {
       const interval = setInterval(() => {
-        setSelectedImage(prev => (prev + 1) % car.images.length);
+        setSelectedImage(prev => (prev + 1) % (car.images?.length || 1));
       }, 4000); // Change image every 4 seconds
 
       setAutoPlayInterval(interval);
@@ -155,12 +155,12 @@ export default function CarDetailPage() {
 
   const nextImage = () => {
     if (!car || !car.images) return;
-    setSelectedImage(prev => (prev + 1) % car.images.length);
+    setSelectedImage(prev => (prev + 1) % (car.images?.length || 1));
   };
 
   const previousImage = () => {
     if (!car || !car.images) return;
-    setSelectedImage(prev => (prev - 1 + car.images.length) % car.images.length);
+    setSelectedImage(prev => (prev - 1 + (car.images?.length || 1)) % (car.images?.length || 1));
   };
 
   const toggleAutoPlay = () => {

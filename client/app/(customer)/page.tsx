@@ -199,7 +199,7 @@ export default function HomePage() {
                   size="sm"
                 >
                   {brands.map(brand => (
-                    <SelectItem key={brand.id} value={String(brand.id)}>
+                    <SelectItem key={brand.id}>
                       {brand.name}
                     </SelectItem>
                   ))}
@@ -295,8 +295,7 @@ export default function HomePage() {
                           size="sm"
                           variant="flat"
                           className="absolute top-3 right-3 bg-white/90 backdrop-blur"
-                          onPress={(e) => {
-                            e.stopPropagation();
+                          onPress={() => {
                             handleAddToFavorites(car.id);
                           }}
                         >

@@ -463,7 +463,7 @@ export default function ProfilePage() {
                         isDisabled={!editMode}
                       >
                         {cities.slice(0, 100).map(city => (
-                          <SelectItem key={city.id} value={String(city.id)}>
+                          <SelectItem key={city.id}>
                             {city.name}
                           </SelectItem>
                         ))}
