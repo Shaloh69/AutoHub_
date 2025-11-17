@@ -207,9 +207,9 @@ class SubscriptionService:
                 amount = amount - discount_applied
         
         # Determine subscription status based on payment method
-        # Fixed: Use UPPERCASE for UserSubscription.status to match SQL schema
+        # Fixed: Use UPPERCASE for UserSubscription.status and SubscriptionPayment.status to match SQL schema
         subscription_status = "PENDING" if payment_method == "qr_code" else "ACTIVE"
-        payment_status = "pending" if payment_method == "qr_code" else "completed"
+        payment_status = "PENDING" if payment_method == "qr_code" else "COMPLETED"
 
         # Create subscription
         subscription = UserSubscription(
@@ -241,7 +241,7 @@ class SubscriptionService:
         )
 
         # For non-QR payments, mark as paid immediately
-        if payment_status == "completed":
+        if payment_status == "COMPLETED":
             payment.paid_at = datetime.utcnow() # type: ignore[assignment]
 
         db.add(payment)
@@ -328,9 +328,10 @@ class SubscriptionService:
         # Check if already submitted
         if getattr(payment, 'reference_number', None):
             raise ValueError("Reference number already submitted for this payment")
-        
-        # Check if payment is pending
-        if getattr(payment, 'status', '') != "pending":
+
+        # Check if payment is pending (case-insensitive comparison)
+        payment_status = str(getattr(payment, 'status', '')).upper()
+        if payment_status != "PENDING":
             raise ValueError(f"Cannot submit reference number for payment with status: {getattr(payment, 'status', '')}")
         
         # Update payment
@@ -358,7 +359,7 @@ class SubscriptionService:
         ).join(
             SubscriptionPlan, SubscriptionPayment.plan_id == SubscriptionPlan.id
         ).filter(
-            SubscriptionPayment.status == "pending",
+            SubscriptionPayment.status == "PENDING",
             SubscriptionPayment.reference_number.isnot(None)
         ).order_by(
             SubscriptionPayment.submitted_at.desc()
@@ -411,52 +412,52 @@ class SubscriptionService:
         payment = db.query(SubscriptionPayment).filter(
             SubscriptionPayment.id == payment_id
         ).first()
-        
+
         if not payment:
             raise ValueError("Payment not found")
-        
-        previous_status = getattr(payment, 'status', 'pending')
-        
-        if previous_status != "pending":
+
+        previous_status = str(getattr(payment, 'status', 'PENDING')).upper()
+
+        if previous_status != "PENDING":
             raise ValueError(f"Cannot verify payment with status: {previous_status}")
-        
-        # Update payment based on action
-        if action == "approve":
-            new_status = "completed"
+
+        # Update payment based on action (use UPPERCASE to match database)
+        if action == "approve" or action == "verify":
+            new_status = "COMPLETED"
             setattr(payment, 'status', new_status)
             setattr(payment, 'paid_at', datetime.utcnow())
-            
+
             # Activate subscription
             subscription = db.query(UserSubscription).filter(
                 UserSubscription.id == getattr(payment, 'subscription_id', 0)
             ).first()
-            
+
             if subscription:
-                setattr(subscription, 'status', 'active')
+                setattr(subscription, 'status', 'ACTIVE')
                 setattr(subscription, 'current_period_start', datetime.utcnow())
-                
+
                 billing_cycle = getattr(subscription, 'billing_cycle', 'monthly')
                 days = 30 if billing_cycle == "monthly" else 365
                 setattr(subscription, 'current_period_end', datetime.utcnow() + timedelta(days=days))
                 setattr(subscription, 'next_billing_date', datetime.utcnow() + timedelta(days=days))
-                
+
                 # Update user
                 user = db.query(User).filter(User.id == getattr(payment, 'user_id', 0)).first()
                 if user:
                     setattr(user, 'current_subscription_id', getattr(subscription, 'id', 0))
-                    setattr(user, 'subscription_status', 'active')
+                    setattr(user, 'subscription_status', 'ACTIVE')
         else:
-            new_status = "failed"
+            new_status = "FAILED"
             setattr(payment, 'status', new_status)
             setattr(payment, 'rejection_reason', rejection_reason)
-            
+
             # Cancel subscription
             subscription = db.query(UserSubscription).filter(
                 UserSubscription.id == getattr(payment, 'subscription_id', 0)
             ).first()
-            
+
             if subscription:
-                setattr(subscription, 'status', 'cancelled')
+                setattr(subscription, 'status', 'CANCELLED')
                 setattr(subscription, 'cancelled_at', datetime.utcnow())
         
         # Update verification fields
@@ -486,37 +487,37 @@ class SubscriptionService:
         today = datetime.utcnow().date()
         month_start = datetime.utcnow().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
         
-        # Count queries
+        # Count queries (using UPPERCASE status to match database)
         total_pending = db.query(func.count(SubscriptionPayment.id)).filter(
-            SubscriptionPayment.status == "pending"
+            SubscriptionPayment.status == "PENDING"
         ).scalar() or 0
-        
+
         total_completed_today = db.query(func.count(SubscriptionPayment.id)).filter(
-            SubscriptionPayment.status == "completed",
+            SubscriptionPayment.status == "COMPLETED",
             func.date(SubscriptionPayment.paid_at) == today
         ).scalar() or 0
-        
+
         total_completed_this_month = db.query(func.count(SubscriptionPayment.id)).filter(
-            SubscriptionPayment.status == "completed",
+            SubscriptionPayment.status == "COMPLETED",
             SubscriptionPayment.paid_at >= month_start
         ).scalar() or 0
-        
+
         total_failed = db.query(func.count(SubscriptionPayment.id)).filter(
-            SubscriptionPayment.status == "failed"
+            SubscriptionPayment.status == "FAILED"
         ).scalar() or 0
-        
-        # Amount queries
+
+        # Amount queries (using UPPERCASE status to match database)
         amount_pending = db.query(func.sum(SubscriptionPayment.amount)).filter(
-            SubscriptionPayment.status == "pending"
+            SubscriptionPayment.status == "PENDING"
         ).scalar() or Decimal('0')
-        
+
         amount_completed_today = db.query(func.sum(SubscriptionPayment.amount)).filter(
-            SubscriptionPayment.status == "completed",
+            SubscriptionPayment.status == "COMPLETED",
             func.date(SubscriptionPayment.paid_at) == today
         ).scalar() or Decimal('0')
-        
+
         amount_completed_this_month = db.query(func.sum(SubscriptionPayment.amount)).filter(
-            SubscriptionPayment.status == "completed",
+            SubscriptionPayment.status == "COMPLETED",
             SubscriptionPayment.paid_at >= month_start
         ).scalar() or Decimal('0')
         
