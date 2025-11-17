@@ -616,7 +616,13 @@ function PendingPaymentCard({
       if (response.success) {
         onPaymentSubmitted();
       } else {
-        setError(response.error || 'Failed to submit payment reference');
+        // Handle error - convert to string if it's an object
+        const errorMessage = typeof response.error === 'string'
+          ? response.error
+          : typeof response.error === 'object' && response.error !== null
+          ? JSON.stringify(response.error)
+          : 'Failed to submit payment reference';
+        setError(errorMessage);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to submit payment reference');
