@@ -288,10 +288,10 @@ export default function FraudDetectionPage() {
                 selectedKeys={severityFilter ? [severityFilter] : []}
                 onChange={(e) => setSeverityFilter(e.target.value)}
               >
-                <SelectItem key="" value="">All</SelectItem>
-                <SelectItem key="high" value="high">High</SelectItem>
-                <SelectItem key="medium" value="medium">Medium</SelectItem>
-                <SelectItem key="low" value="low">Low</SelectItem>
+                <SelectItem key="">All</SelectItem>
+                <SelectItem key="high">High</SelectItem>
+                <SelectItem key="medium">Medium</SelectItem>
+                <SelectItem key="low">Low</SelectItem>
               </Select>
               {severityFilter && (
                 <Button
@@ -486,9 +486,9 @@ export default function FraudDetectionPage() {
                       value: "text-white",
                     }}
                   >
-                    <SelectItem key="low" value="low">Low</SelectItem>
-                    <SelectItem key="medium" value="medium">Medium</SelectItem>
-                    <SelectItem key="high" value="high">High</SelectItem>
+                    <SelectItem key="low">Low</SelectItem>
+                    <SelectItem key="medium">Medium</SelectItem>
+                    <SelectItem key="high">High</SelectItem>
                   </Select>
 
                   <Textarea

@@ -5,7 +5,7 @@ Path: car_marketplace_ph/app/models/user.py
 FIXED: Removed columns that don't exist in database schema
 ===========================================
 """
-from sqlalchemy import Column, Integer, String, Boolean, DECIMAL, Text, TIMESTAMP, Date, ForeignKey, Enum as SQLEnum
+from sqlalchemy import Column, Integer, String, Boolean, DECIMAL, Text, TIMESTAMP, Date, ForeignKey, Enum as SQLEnum, Index
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from typing import cast, Optional
@@ -109,7 +109,8 @@ class User(Base):
     business_verified = Column(Boolean, default=False)
     verification_level = Column(
         SQLEnum("NONE", "EMAIL", "PHONE", "IDENTITY", "BUSINESS", name="verification_level", native_enum=False),
-        default="NONE"
+        default="NONE",
+        index=True
     )
     verified_at = Column(TIMESTAMP)
 
@@ -180,7 +181,12 @@ class User(Base):
     created_at = Column(TIMESTAMP, default=datetime.now, nullable=False, index=True)
     updated_at = Column(TIMESTAMP, default=datetime.now, onupdate=datetime.now)
     deleted_at = Column(TIMESTAMP)
-    
+
+    # Table-level constraints and indexes
+    __table_args__ = (
+        Index('idx_location', 'city_id', 'province_id', 'region_id'),
+    )
+
     # Relationships
     city = relationship("PhCity", foreign_keys=[city_id])
     province = relationship("PhProvince", foreign_keys=[province_id])

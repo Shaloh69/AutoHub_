@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, DECIMAL, Text, TIMESTAMP, Date, ForeignKey, Enum
+from sqlalchemy import Column, Integer, String, Boolean, DECIMAL, Text, TIMESTAMP, Date, ForeignKey, Enum, Index
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from app.database import Base
@@ -9,9 +9,9 @@ class FuelType(str, enum.Enum):
     """Fuel type enum - UPPERCASE to match SQL schema"""
     GASOLINE = "GASOLINE"
     DIESEL = "DIESEL"
-    HYBRID = "HYBRID"
     ELECTRIC = "ELECTRIC"
-    # Note: CNG, LPG, PLUGIN_HYBRID not in SQL schema, removed for alignment
+    HYBRID = "HYBRID"
+    PLUG_IN_HYBRID = "PLUG_IN_HYBRID"
 
 
 class TransmissionType(str, enum.Enum):
@@ -322,7 +322,13 @@ class Car(Base):
     expires_at = Column(TIMESTAMP, index=True)
     sold_at = Column(TIMESTAMP)
     deleted_at = Column(TIMESTAMP)
-    
+
+    # Table-level constraints and indexes
+    __table_args__ = (
+        Index('idx_location', 'city_id', 'province_id', 'region_id'),
+        Index('idx_fulltext', 'title', 'description', 'search_keywords', mysql_prefix='FULLTEXT'),
+    )
+
     # Relationships
     seller = relationship("User", foreign_keys=[seller_id], back_populates="cars")
     brand_rel = relationship("Brand")

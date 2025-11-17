@@ -173,13 +173,13 @@ export default function RegisterPage() {
                 onChange={(e) => setFormData(prev => ({ ...prev, role: e.target.value }))}
                 isRequired
               >
-                <SelectItem key="buyer" value="buyer">
+                <SelectItem key="buyer">
                   Buy a car
                 </SelectItem>
-                <SelectItem key="seller" value="seller">
+                <SelectItem key="seller">
                   Sell my car
                 </SelectItem>
-                <SelectItem key="dealer" value="dealer">
+                <SelectItem key="dealer">
                   Register as a dealer
                 </SelectItem>
               </Select>
@@ -238,7 +238,7 @@ export default function RegisterPage() {
                 onChange={(e) => setFormData(prev => ({ ...prev, city_id: parseInt(e.target.value) }))}
               >
                 {cities.slice(0, 100).map(city => (
-                  <SelectItem key={city.id} value={String(city.id)}>
+                  <SelectItem key={city.id}>
                     {city.name}
                   </SelectItem>
                 ))}

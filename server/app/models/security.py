@@ -1,16 +1,25 @@
-from sqlalchemy import Column, Integer, String, Text, TIMESTAMP, ForeignKey, JSON, Boolean
+from sqlalchemy import Column, Integer, String, Text, TIMESTAMP, ForeignKey, JSON, Boolean, Enum
 from datetime import datetime
 from app.database import Base
+import enum
+
+
+class FraudSeverity(str, enum.Enum):
+    """Fraud severity enum - UPPERCASE to match SQL schema"""
+    LOW = "LOW"
+    MEDIUM = "MEDIUM"
+    HIGH = "HIGH"
+    CRITICAL = "CRITICAL"
 
 
 class FraudIndicator(Base):
     __tablename__ = "fraud_indicators"
-    
+
     id = Column(Integer, primary_key=True, autoincrement=True)
-    user_id = Column(Integer, ForeignKey("users.id"), index=True)
-    car_id = Column(Integer, ForeignKey("cars.id"), index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    car_id = Column(Integer, ForeignKey("cars.id", ondelete="CASCADE"), index=True)
     indicator_type = Column(String(100), nullable=False)
-    severity = Column(String(20))
+    severity = Column(Enum(FraudSeverity), default=FraudSeverity.LOW, index=True)
     description = Column(Text)
     detected_at = Column(TIMESTAMP, default=datetime.utcnow)
 

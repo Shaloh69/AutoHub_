@@ -202,7 +202,7 @@ export default function SearchCarsPage() {
                   onChange={(e) => setFilters(prev => ({ ...prev, brand_id: e.target.value ? parseInt(e.target.value) : undefined }))}
                 >
                   {brands.map(brand => (
-                    <SelectItem key={brand.id} value={String(brand.id)}>
+                    <SelectItem key={brand.id}>
                       {brand.name}
                     </SelectItem>
                   ))}
@@ -256,10 +256,10 @@ export default function SearchCarsPage() {
                   selectedKeys={filters.fuel_type ? [filters.fuel_type] : []}
                   onChange={(e) => setFilters(prev => ({ ...prev, fuel_type: e.target.value as any }))}
                 >
-                  <SelectItem key="GASOLINE" value="GASOLINE">Gasoline</SelectItem>
-                  <SelectItem key="DIESEL" value="DIESEL">Diesel</SelectItem>
-                  <SelectItem key="ELECTRIC" value="ELECTRIC">Electric</SelectItem>
-                  <SelectItem key="HYBRID" value="HYBRID">Hybrid</SelectItem>
+                  <SelectItem key="GASOLINE">Gasoline</SelectItem>
+                  <SelectItem key="DIESEL">Diesel</SelectItem>
+                  <SelectItem key="ELECTRIC">Electric</SelectItem>
+                  <SelectItem key="HYBRID">Hybrid</SelectItem>
                 </Select>
 
                 {/* Transmission */}
@@ -269,10 +269,10 @@ export default function SearchCarsPage() {
                   selectedKeys={filters.transmission ? [filters.transmission] : []}
                   onChange={(e) => setFilters(prev => ({ ...prev, transmission: e.target.value as any }))}
                 >
-                  <SelectItem key="MANUAL" value="MANUAL">Manual</SelectItem>
-                  <SelectItem key="AUTOMATIC" value="AUTOMATIC">Automatic</SelectItem>
-                  <SelectItem key="CVT" value="CVT">CVT</SelectItem>
-                  <SelectItem key="DCT" value="DCT">DCT</SelectItem>
+                  <SelectItem key="MANUAL">Manual</SelectItem>
+                  <SelectItem key="AUTOMATIC">Automatic</SelectItem>
+                  <SelectItem key="CVT">CVT</SelectItem>
+                  <SelectItem key="DCT">DCT</SelectItem>
                 </Select>
 
                 {/* Condition */}
@@ -282,12 +282,12 @@ export default function SearchCarsPage() {
                   selectedKeys={filters.car_condition ? [filters.car_condition] : []}
                   onChange={(e) => setFilters(prev => ({ ...prev, car_condition: e.target.value as any }))}
                 >
-                  <SelectItem key="BRAND_NEW" value="BRAND_NEW">Brand New</SelectItem>
-                  <SelectItem key="LIKE_NEW" value="LIKE_NEW">Like New</SelectItem>
-                  <SelectItem key="EXCELLENT" value="EXCELLENT">Excellent</SelectItem>
-                  <SelectItem key="GOOD" value="GOOD">Good</SelectItem>
-                  <SelectItem key="FAIR" value="FAIR">Fair</SelectItem>
-                  <SelectItem key="POOR" value="POOR">Poor</SelectItem>
+                  <SelectItem key="BRAND_NEW">Brand New</SelectItem>
+                  <SelectItem key="LIKE_NEW">Like New</SelectItem>
+                  <SelectItem key="EXCELLENT">Excellent</SelectItem>
+                  <SelectItem key="GOOD">Good</SelectItem>
+                  <SelectItem key="FAIR">Fair</SelectItem>
+                  <SelectItem key="POOR">Poor</SelectItem>
                 </Select>
 
                 {/* Options */}
@@ -344,12 +344,12 @@ export default function SearchCarsPage() {
                 className="max-w-xs ml-auto"
                 size="sm"
               >
-                <SelectItem key="-created_at" value="-created_at">Newest First</SelectItem>
-                <SelectItem key="price" value="price">Price: Low to High</SelectItem>
-                <SelectItem key="-price" value="-price">Price: High to Low</SelectItem>
-                <SelectItem key="year" value="year">Year: Old to New</SelectItem>
-                <SelectItem key="-year" value="-year">Year: New to Old</SelectItem>
-                <SelectItem key="mileage" value="mileage">Mileage: Low to High</SelectItem>
+                <SelectItem key="-created_at">Newest First</SelectItem>
+                <SelectItem key="price">Price: Low to High</SelectItem>
+                <SelectItem key="-price">Price: High to Low</SelectItem>
+                <SelectItem key="year">Year: Old to New</SelectItem>
+                <SelectItem key="-year">Year: New to Old</SelectItem>
+                <SelectItem key="mileage">Mileage: Low to High</SelectItem>
               </Select>
             </div>
 
