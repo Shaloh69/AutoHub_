@@ -465,6 +465,14 @@ class ApiService {
     return this.request('/subscriptions/qr-code');
   }
 
+  async getPaymentHistory(): Promise<ApiResponse<any[]>> {
+    return this.request<any[]>('/subscriptions/payments');
+  }
+
+  async getPaymentDetails(paymentId: number): Promise<ApiResponse<any>> {
+    return this.request(`/subscriptions/payment/${paymentId}`);
+  }
+
   // ==================== FAVORITES ====================
   
   async getFavorites(): Promise<ApiResponse<Car[]>> {

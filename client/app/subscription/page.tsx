@@ -14,6 +14,18 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import PaymentQRModal from '@/components/PaymentQRModal';
 
+interface PaymentHistory {
+  id: number;
+  amount: number;
+  currency_id: number;
+  payment_method: string;
+  status: string;
+  reference_number: string | null;
+  submitted_at: string | null;
+  admin_verified_at: string | null;
+  created_at: string;
+}
+
 export default function SubscriptionPage() {
   const { user, isAuthenticated } = useAuth();
   const router = useRouter();
@@ -31,6 +43,8 @@ export default function SubscriptionPage() {
     qrCodeUrl: string;
     instructions: string;
   } | null>(null);
+  const [paymentHistory, setPaymentHistory] = useState<PaymentHistory[]>([]);
+  const [pendingPayments, setPendingPayments] = useState<PaymentHistory[]>([]);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -45,10 +59,11 @@ export default function SubscriptionPage() {
       setLoading(true);
       setError(null);
 
-      const [plansResponse, currentSubResponse, limitsResponse] = await Promise.all([
+      const [plansResponse, currentSubResponse, limitsResponse, paymentsResponse] = await Promise.all([
         apiService.getSubscriptionPlans(),
         apiService.getCurrentSubscription(),
-        apiService.getUserLimits()
+        apiService.getUserLimits(),
+        apiService.getPaymentHistory()
       ]);
 
       if (plansResponse.success && plansResponse.data) {
@@ -61,6 +76,15 @@ export default function SubscriptionPage() {
 
       if (limitsResponse.success && limitsResponse.data) {
         setUserLimits(limitsResponse.data);
+      }
+
+      if (paymentsResponse.success && paymentsResponse.data) {
+        setPaymentHistory(paymentsResponse.data);
+        // Filter pending payments that haven't been verified
+        const pending = paymentsResponse.data.filter(
+          (p: PaymentHistory) => p.status === 'PENDING' && !p.admin_verified_at
+        );
+        setPendingPayments(pending);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch subscription data');
@@ -184,7 +208,7 @@ export default function SubscriptionPage() {
 
       {/* Current Subscription Status */}
       {currentSubscription && (
-        <Card className="border border-autohub-accent2-300 bg-gradient-to-br from-autohub-accent2-50 to-autohub-neutral-50 dark:from-autohub-accent2-950 dark:to-autohub-secondary-900">
+        <Card className="border-2 border-autohub-accent2-500 bg-gradient-to-br from-autohub-accent2-50 to-autohub-neutral-50 dark:from-autohub-accent2-950 dark:to-autohub-secondary-900 shadow-lg">
           <CardHeader>
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 bg-autohub-accent2-500 rounded-xl flex items-center justify-center">
@@ -210,11 +234,11 @@ export default function SubscriptionPage() {
                 <div className="flex flex-wrap gap-4 text-sm">
                   <div className="flex items-center gap-2">
                     <span className="text-autohub-accent1-600">Status:</span>
-                    <Chip 
+                    <Chip
                       size="sm"
                       className={`${
-                        currentSubscription.status === 'ACTIVE' 
-                          ? 'bg-green-500 text-white' 
+                        currentSubscription.status === 'ACTIVE'
+                          ? 'bg-green-500 text-white'
                           : 'bg-amber-500 text-white'
                       }`}
                     >
@@ -260,6 +284,22 @@ export default function SubscriptionPage() {
         </Card>
       )}
 
+      {/* Pending Payments Section */}
+      {pendingPayments.length > 0 && (
+        <div className="space-y-4">
+          <h2 className="text-2xl font-bold text-autohub-secondary-900 dark:text-autohub-neutral-50">
+            Pending Payments
+          </h2>
+          {pendingPayments.map((payment) => (
+            <PendingPaymentCard
+              key={payment.id}
+              payment={payment}
+              onPaymentSubmitted={fetchSubscriptionData}
+            />
+          ))}
+        </div>
+      )}
+
       {/* Subscription Plans */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         {plans
@@ -270,12 +310,14 @@ export default function SubscriptionPage() {
               currentSubscription.plan &&
               (currentSubscription.plan?.price ?? 0) < plan.price &&
               !isCurrent;
-            
+
             return (
               <Card
                 key={plan.id}
                 className={`relative overflow-hidden transition-all duration-300 hover:-translate-y-2 hover:shadow-autohub ${
-                  plan.is_popular
+                  isCurrent
+                    ? 'border-4 border-autohub-accent2-500 shadow-gold ring-2 ring-autohub-accent2-300'
+                    : plan.is_popular
                     ? 'border-2 border-autohub-accent2-500 shadow-gold'
                     : 'border border-autohub-accent1-200 hover:border-autohub-primary-500/50'
                 }`}
@@ -518,5 +560,178 @@ export default function SubscriptionPage() {
         />
       )}
     </div>
+  );
+}
+
+// Pending Payment Card Component
+function PendingPaymentCard({
+  payment,
+  onPaymentSubmitted
+}: {
+  payment: PaymentHistory;
+  onPaymentSubmitted: () => void;
+}) {
+  const [referenceNumber, setReferenceNumber] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
+  const [instructions, setInstructions] = useState<string>('');
+  const [loadingQR, setLoadingQR] = useState(false);
+
+  useEffect(() => {
+    // Fetch QR code settings when component mounts
+    const fetchQRCode = async () => {
+      try {
+        setLoadingQR(true);
+        const response = await apiService.getPaymentQRCode();
+        if (response.success && response.data) {
+          setQrCodeUrl(response.data.qr_code_url);
+          setInstructions(response.data.instructions);
+        }
+      } catch (err) {
+        console.error('Failed to load QR code:', err);
+      } finally {
+        setLoadingQR(false);
+      }
+    };
+
+    fetchQRCode();
+  }, []);
+
+  const handleSubmit = async () => {
+    if (!referenceNumber.trim()) {
+      setError('Please enter the reference number');
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      setError(null);
+
+      const response = await apiService.submitPaymentReference({
+        payment_id: payment.id,
+        reference_number: referenceNumber.trim()
+      });
+
+      if (response.success) {
+        onPaymentSubmitted();
+      } else {
+        setError(response.error || 'Failed to submit payment reference');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to submit payment reference');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const hasSubmittedReference = !!payment.reference_number;
+
+  return (
+    <Card className="border-2 border-amber-500 bg-amber-50 dark:bg-amber-950">
+      <CardBody className="space-y-4">
+        <div className="flex items-start justify-between">
+          <div>
+            <h3 className="text-xl font-bold text-autohub-secondary-900 dark:text-autohub-neutral-50">
+              Payment Pending Verification
+            </h3>
+            <p className="text-sm text-autohub-accent1-600">
+              Amount: ₱{payment.amount} • Created: {new Date(payment.created_at).toLocaleDateString()}
+            </p>
+          </div>
+          <Chip color="warning" size="sm">
+            {hasSubmittedReference ? 'Under Review' : 'Awaiting Payment'}
+          </Chip>
+        </div>
+
+        {error && (
+          <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded">
+            <p className="font-medium">{error}</p>
+          </div>
+        )}
+
+        {hasSubmittedReference ? (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <h4 className="font-semibold text-autohub-secondary-900 mb-2">
+              Payment Reference Submitted
+            </h4>
+            <p className="text-sm text-autohub-accent1-700">
+              Reference Number: <span className="font-bold">{payment.reference_number}</span>
+            </p>
+            <p className="text-sm text-autohub-accent1-700 mt-2">
+              Submitted: {payment.submitted_at ? new Date(payment.submitted_at).toLocaleString() : 'N/A'}
+            </p>
+            <p className="text-sm text-autohub-accent1-700 mt-3">
+              Your payment is being verified by our admin team. You'll be notified once approved.
+            </p>
+          </div>
+        ) : (
+          <>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <h4 className="font-semibold text-autohub-secondary-900 mb-2">
+                Payment Instructions:
+              </h4>
+              <p className="text-sm text-autohub-accent1-700 whitespace-pre-line">
+                {instructions || 'Please scan the QR code and enter the reference number from your payment confirmation.'}
+              </p>
+            </div>
+
+            {loadingQR ? (
+              <div className="flex justify-center py-8">
+                <Spinner size="lg" />
+              </div>
+            ) : qrCodeUrl ? (
+              <div className="flex flex-col items-center space-y-4">
+                <div className="bg-white p-4 sm:p-6 rounded-lg shadow-lg border-2 border-autohub-primary-200 w-full max-w-md mx-auto">
+                  <div className="relative w-full aspect-square">
+                    <img
+                      src={qrCodeUrl}
+                      alt="GCash Payment QR Code"
+                      className="w-full h-full object-contain rounded-lg"
+                    />
+                  </div>
+                </div>
+                <p className="text-sm text-autohub-accent1-600 text-center px-4">
+                  Scan this QR code with your GCash app to make payment
+                </p>
+              </div>
+            ) : (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <p className="text-sm text-red-700">
+                  QR code not available. Please contact support.
+                </p>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-autohub-secondary-900 dark:text-autohub-neutral-50">
+                Enter Payment Reference Number
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="e.g., REF123456789"
+                  value={referenceNumber}
+                  onChange={(e) => setReferenceNumber(e.target.value)}
+                  disabled={submitting}
+                  className="flex-1 px-4 py-2 border border-autohub-accent1-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-autohub-primary-500"
+                />
+                <Button
+                  className="bg-autohub-primary-500 text-white"
+                  onPress={handleSubmit}
+                  isLoading={submitting}
+                  isDisabled={!referenceNumber.trim()}
+                >
+                  Submit
+                </Button>
+              </div>
+              <p className="text-xs text-autohub-accent1-600">
+                After completing payment via GCash, enter the reference number from your payment confirmation
+              </p>
+            </div>
+          </>
+        )}
+      </CardBody>
+    </Card>
   );
 }
