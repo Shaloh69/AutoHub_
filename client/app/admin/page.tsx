@@ -581,51 +581,231 @@ export default function AdminDashboardPage() {
           <Tab key="analytics" title="Analytics">
             <Card>
               <CardHeader>
-                <h2 className="text-2xl font-bold">Platform Analytics</h2>
+                <h2 className="text-2xl font-bold">Platform Analytics & Insights</h2>
               </CardHeader>
               <CardBody>
                 {stats && (
                   <div className="space-y-6">
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-                          New Users Today
-                        </p>
-                        <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                          {stats.new_users_today || 0}
-                        </p>
-                      </div>
+                    {/* Today's Metrics */}
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-4">
+                        Today's Performance
+                      </h3>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="p-4 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                          <p className="text-sm text-blue-700 dark:text-blue-400 mb-1 font-medium">
+                            New Users Today
+                          </p>
+                          <p className="text-3xl font-black text-blue-600 dark:text-blue-400">
+                            {stats.new_users_today || 0}
+                          </p>
+                          <p className="text-xs text-blue-600 dark:text-blue-500 mt-1">
+                            +{((stats.new_users_today || 0) / Math.max((stats.total_users || 1), 1) * 100).toFixed(1)}% growth
+                          </p>
+                        </div>
 
-                      <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-                          Cars Sold Today
-                        </p>
-                        <p className="text-2xl font-bold text-green-600 dark:text-green-400">
-                          {stats.new_cars_today || 0}
-                        </p>
-                      </div>
+                        <div className="p-4 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-lg border border-green-200 dark:border-green-800">
+                          <p className="text-sm text-green-700 dark:text-green-400 mb-1 font-medium">
+                            New Listings Today
+                          </p>
+                          <p className="text-3xl font-black text-green-600 dark:text-green-400">
+                            {stats.new_cars_today || 0}
+                          </p>
+                          <p className="text-xs text-green-600 dark:text-green-500 mt-1">
+                            Active engagement
+                          </p>
+                        </div>
 
-                      <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-                          Revenue Today
-                        </p>
-                        <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">
-                          ₱0
-                        </p>
-                      </div>
+                        <div className="p-4 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 rounded-lg border border-purple-200 dark:border-purple-800">
+                          <p className="text-sm text-purple-700 dark:text-purple-400 mb-1 font-medium">
+                            Revenue Today
+                          </p>
+                          <p className="text-3xl font-black text-purple-600 dark:text-purple-400">
+                            ₱0
+                          </p>
+                          <p className="text-xs text-purple-600 dark:text-purple-500 mt-1">
+                            From subscriptions
+                          </p>
+                        </div>
 
-                      <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-                          Pending Reviews
-                        </p>
-                        <p className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
-                          {stats.pending_approval_cars || 0}
-                        </p>
+                        <div className="p-4 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20 rounded-lg border border-orange-200 dark:border-orange-800">
+                          <p className="text-sm text-orange-700 dark:text-orange-400 mb-1 font-medium">
+                            Pending Actions
+                          </p>
+                          <p className="text-3xl font-black text-orange-600 dark:text-orange-400">
+                            {(stats.pending_approval_cars || 0) + pendingPaymentsCount + pendingReviewsCount}
+                          </p>
+                          <p className="text-xs text-orange-600 dark:text-orange-500 mt-1">
+                            Requires attention
+                          </p>
+                        </div>
                       </div>
                     </div>
 
-                    <div className="text-center py-8 text-gray-500">
-                      More detailed analytics coming soon...
+                    {/* Platform Health */}
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-4">
+                        Platform Health
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <Card className="bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-cyan-900/20 dark:to-blue-900/20 border border-cyan-200 dark:border-cyan-800">
+                          <CardBody>
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="text-sm text-cyan-700 dark:text-cyan-400 mb-1">
+                                  Active Sellers
+                                </p>
+                                <p className="text-2xl font-bold text-cyan-600 dark:text-cyan-400">
+                                  {users.filter(u => u.role === 'SELLER' || u.role === 'DEALER').length}
+                                </p>
+                                <p className="text-xs text-cyan-600 dark:text-cyan-500 mt-1">
+                                  Total seller accounts
+                                </p>
+                              </div>
+                              <Users className="text-cyan-500" size={40} opacity={0.3} />
+                            </div>
+                          </CardBody>
+                        </Card>
+
+                        <Card className="bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-900/20 dark:to-green-900/20 border border-emerald-200 dark:border-emerald-800">
+                          <CardBody>
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="text-sm text-emerald-700 dark:text-emerald-400 mb-1">
+                                  Conversion Rate
+                                </p>
+                                <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+                                  {stats.active_cars > 0 ? ((stats.active_cars / (stats.total_users || 1)) * 100).toFixed(1) : 0}%
+                                </p>
+                                <p className="text-xs text-emerald-600 dark:text-emerald-500 mt-1">
+                                  Users to listings
+                                </p>
+                              </div>
+                              <TrendingUp className="text-emerald-500" size={40} opacity={0.3} />
+                            </div>
+                          </CardBody>
+                        </Card>
+
+                        <Card className="bg-gradient-to-br from-violet-50 to-purple-50 dark:from-violet-900/20 dark:to-purple-900/20 border border-violet-200 dark:border-violet-800">
+                          <CardBody>
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="text-sm text-violet-700 dark:text-violet-400 mb-1">
+                                  Avg. Listing Value
+                                </p>
+                                <p className="text-2xl font-bold text-violet-600 dark:text-violet-400">
+                                  ₱0
+                                </p>
+                                <p className="text-xs text-violet-600 dark:text-violet-500 mt-1">
+                                  Platform average
+                                </p>
+                              </div>
+                              <DollarSign className="text-violet-500" size={40} opacity={0.3} />
+                            </div>
+                          </CardBody>
+                        </Card>
+                      </div>
+                    </div>
+
+                    {/* Subscription Overview */}
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-4">
+                        Subscription Overview
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <Card className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+                          <CardBody className="text-center py-6">
+                            <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Free Plan</p>
+                            <p className="text-3xl font-bold text-gray-700 dark:text-gray-300">0</p>
+                            <p className="text-xs text-gray-500 mt-1">Active users</p>
+                          </CardBody>
+                        </Card>
+                        <Card className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+                          <CardBody className="text-center py-6">
+                            <p className="text-sm text-blue-600 dark:text-blue-400 mb-2">Basic Plan</p>
+                            <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">0</p>
+                            <p className="text-xs text-blue-500 mt-1">₱299/month</p>
+                          </CardBody>
+                        </Card>
+                        <Card className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800">
+                          <CardBody className="text-center py-6">
+                            <p className="text-sm text-purple-600 dark:text-purple-400 mb-2">Premium Plan</p>
+                            <p className="text-3xl font-bold text-purple-600 dark:text-purple-400">0</p>
+                            <p className="text-xs text-purple-500 mt-1">₱799/month</p>
+                          </CardBody>
+                        </Card>
+                        <Card className="bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 border-2 border-yellow-400 dark:border-yellow-600">
+                          <CardBody className="text-center py-6">
+                            <p className="text-sm text-orange-600 dark:text-orange-400 mb-2 font-bold">Pro Plan</p>
+                            <p className="text-3xl font-bold text-orange-600 dark:text-orange-400">0</p>
+                            <p className="text-xs text-orange-500 mt-1">₱1,499/month</p>
+                          </CardBody>
+                        </Card>
+                      </div>
+                    </div>
+
+                    {/* Recent Activity Summary */}
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-4">
+                        Platform Activity Summary
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <Card className="border border-gray-200 dark:border-gray-700">
+                          <CardBody>
+                            <h4 className="font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                              User Activity
+                            </h4>
+                            <div className="space-y-2 text-sm">
+                              <div className="flex justify-between">
+                                <span className="text-gray-600 dark:text-gray-400">Verified Users:</span>
+                                <span className="font-semibold text-gray-900 dark:text-white">
+                                  {users.filter(u => u.email_verified).length}
+                                </span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-600 dark:text-gray-400">Banned Users:</span>
+                                <span className="font-semibold text-red-600 dark:text-red-400">
+                                  {users.filter(u => u.is_banned).length}
+                                </span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-600 dark:text-gray-400">Total Sellers:</span>
+                                <span className="font-semibold text-gray-900 dark:text-white">
+                                  {users.filter(u => u.role === 'SELLER' || u.role === 'DEALER').length}
+                                </span>
+                              </div>
+                            </div>
+                          </CardBody>
+                        </Card>
+
+                        <Card className="border border-gray-200 dark:border-gray-700">
+                          <CardBody>
+                            <h4 className="font-semibold text-gray-700 dark:text-gray-300 mb-3">
+                              Listing Activity
+                            </h4>
+                            <div className="space-y-2 text-sm">
+                              <div className="flex justify-between">
+                                <span className="text-gray-600 dark:text-gray-400">Active Listings:</span>
+                                <span className="font-semibold text-green-600 dark:text-green-400">
+                                  {stats.active_cars || 0}
+                                </span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-600 dark:text-gray-400">Pending Approval:</span>
+                                <span className="font-semibold text-yellow-600 dark:text-yellow-400">
+                                  {stats.pending_approval_cars || 0}
+                                </span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-gray-600 dark:text-gray-400">Total Revenue:</span>
+                                <span className="font-semibold text-gray-900 dark:text-white">
+                                  ₱0
+                                </span>
+                              </div>
+                            </div>
+                          </CardBody>
+                        </Card>
+                      </div>
                     </div>
                   </div>
                 )}
