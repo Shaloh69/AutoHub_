@@ -22,7 +22,7 @@ import {Badge} from "@heroui/badge";
 import {
   Car, Heart, User, LogOut, Settings, Bell,
   Plus, LayoutDashboard, MessageCircle, Package,
-  Shield, Menu
+  Shield, Menu, Crown
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiService } from '@/services/api';
@@ -121,6 +121,7 @@ export default function Navigation() {
 
   const sellerMenuItems = [
     { label: 'Dashboard', href: '/seller/dashboard', icon: <LayoutDashboard size={18} /> },
+    { label: 'Subscription', href: '/subscription', icon: <Crown size={18} /> },
     { label: 'Create Listing', href: '/seller/new', icon: <Plus size={18} /> },
     { label: 'Inquiries', href: '/seller/inquiries', icon: <MessageCircle size={18} /> },
     { label: 'Transactions', href: '/seller/transactions', icon: <Package size={18} /> },
@@ -182,19 +183,34 @@ export default function Navigation() {
         </NavbarItem>
 
         {isSeller && (
-          <NavbarItem>
-            <Link
-              href="/seller/dashboard"
-              className={`text-sm font-semibold transition-all flex items-center gap-1.5 ${
-                pathname.startsWith('/seller')
-                  ? `${theme.accent} underline underline-offset-4`
-                  : `text-gray-200 ${theme.accentHover}`
-              }`}
-            >
-              <LayoutDashboard size={16} />
-              Dashboard
-            </Link>
-          </NavbarItem>
+          <>
+            <NavbarItem>
+              <Link
+                href="/seller/dashboard"
+                className={`text-sm font-semibold transition-all flex items-center gap-1.5 ${
+                  pathname.startsWith('/seller')
+                    ? `${theme.accent} underline underline-offset-4`
+                    : `text-gray-200 ${theme.accentHover}`
+                }`}
+              >
+                <LayoutDashboard size={16} />
+                Dashboard
+              </Link>
+            </NavbarItem>
+            <NavbarItem>
+              <Link
+                href="/subscription"
+                className={`text-sm font-semibold transition-all flex items-center gap-1.5 ${
+                  pathname === '/subscription'
+                    ? `${theme.accent} underline underline-offset-4`
+                    : `text-gray-200 ${theme.accentHover}`
+                }`}
+              >
+                <Crown size={16} />
+                Subscription
+              </Link>
+            </NavbarItem>
+          </>
         )}
 
         {isAdmin && (
@@ -294,6 +310,15 @@ export default function Navigation() {
                         href="/seller/dashboard"
                       >
                         Seller Dashboard
+                      </DropdownItem>
+                      <DropdownItem
+                        key="subscription"
+                        startContent={<Crown size={18} />}
+                        as={Link}
+                        href="/subscription"
+                        className="text-orange-600 dark:text-orange-400"
+                      >
+                        Manage Subscription
                       </DropdownItem>
                       <DropdownItem
                         key="create"

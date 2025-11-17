@@ -13,10 +13,10 @@ import { Spinner } from '@heroui/spinner';
 import { Tabs, Tab } from '@heroui/tabs';
 import {
   Plus, Car, Eye, MessageCircle, Heart, TrendingUp,
-  DollarSign, Clock, CheckCircle, XCircle
+  DollarSign, Clock, CheckCircle, XCircle, Crown, ArrowRight
 } from 'lucide-react';
 import { apiService, getImageUrl } from '@/services/api';
-import { Car as CarType, Analytics } from '@/types';
+import { Car as CarType, Analytics, Subscription } from '@/types';
 import { useRequireSeller } from '@/contexts/AuthContext';
 
 export default function SellerDashboardPage() {
@@ -25,6 +25,7 @@ export default function SellerDashboardPage() {
 
   const [cars, setCars] = useState<CarType[]>([]);
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
+  const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedTab, setSelectedTab] = useState('all');
 
@@ -37,9 +38,10 @@ export default function SellerDashboardPage() {
   const loadDashboardData = async () => {
     try {
       setLoading(true);
-      const [carsResponse, analyticsResponse] = await Promise.all([
+      const [carsResponse, analyticsResponse, subscriptionResponse] = await Promise.all([
         apiService.getUserListings(),
         apiService.getDashboard(),
+        apiService.getCurrentSubscription(),
       ]);
 
       if (carsResponse.success && carsResponse.data) {
@@ -48,6 +50,10 @@ export default function SellerDashboardPage() {
 
       if (analyticsResponse.success && analyticsResponse.data) {
         setAnalytics(analyticsResponse.data);
+      }
+
+      if (subscriptionResponse.success && subscriptionResponse.data) {
+        setSubscription(subscriptionResponse.data);
       }
     } catch (error) {
       console.error('Error loading dashboard data:', error);
@@ -157,6 +163,64 @@ export default function SellerDashboardPage() {
                     onPress={() => router.push('/profile/verification')}
                   >
                     Verify Now
+                  </Button>
+                </div>
+              </div>
+            </CardBody>
+          </Card>
+        )}
+
+        {/* Subscription Status Card */}
+        {subscription && (
+          <Card className="mb-6 bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 border-2 border-orange-200 dark:border-orange-800">
+            <CardBody>
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div className="flex items-start gap-3">
+                  <div className="p-3 bg-orange-100 dark:bg-orange-900/50 rounded-full">
+                    <Crown className="text-orange-600 dark:text-orange-400" size={24} />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-orange-900 dark:text-orange-100 mb-1 flex items-center gap-2">
+                      {subscription.plan?.name || 'Free'} Plan
+                      {subscription.status === 'ACTIVE' && (
+                        <Chip size="sm" color="success" variant="flat">Active</Chip>
+                      )}
+                    </h3>
+                    <p className="text-sm text-orange-800 dark:text-orange-200 mb-2">
+                      {subscription.plan?.description || 'Basic features included'}
+                    </p>
+                    {subscription.plan && analytics && (
+                      <div className="flex flex-wrap gap-3 text-sm">
+                        <span className="text-orange-700 dark:text-orange-300">
+                          <strong>{analytics.active_listings}</strong> / {subscription.plan.max_listings} listings used
+                        </span>
+                        {subscription.plan.max_featured_listings > 0 && (
+                          <span className="text-orange-700 dark:text-orange-300">
+                            • {subscription.plan.max_featured_listings} featured listings
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  {subscription.plan?.slug !== 'premium' && subscription.plan?.slug !== 'professional' && (
+                    <Button
+                      color="warning"
+                      variant="solid"
+                      endContent={<ArrowRight size={18} />}
+                      onPress={() => router.push('/subscription')}
+                      className="font-semibold"
+                    >
+                      Upgrade Plan
+                    </Button>
+                  )}
+                  <Button
+                    variant="flat"
+                    onPress={() => router.push('/subscription')}
+                    className="font-medium"
+                  >
+                    Manage Subscription
                   </Button>
                 </div>
               </div>
