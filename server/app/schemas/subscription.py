@@ -20,29 +20,27 @@ class SubscriptionPlanResponse(BaseModel):
     """Subscription plan response - Complete with all fields"""
     id: int
     name: str
-    plan_type: str
-    monthly_price: Decimal
-    yearly_price: Optional[Decimal] = None
-    currency: str
-    
+    slug: str
+    price: Decimal  # Fixed: was monthly_price/yearly_price
+    currency_id: int  # Fixed: was currency string
+    billing_cycle: str  # Added: MONTHLY, QUARTERLY, YEARLY, LIFETIME
+
     # Limits
     max_listings: int  # Fixed: was max_active_listings
     max_featured_listings: int
     max_photos_per_listing: int  # Fixed: was max_images_per_listing
-    storage_mb: int
-    boost_credits_monthly: int
-    
+
     # Features
-    priority_ranking: int
-    advanced_analytics: bool
-    homepage_featured: bool
-    verified_badge: bool
+    can_add_video: bool
+    can_add_virtual_tour: bool
     priority_support: bool
-    
+    advanced_analytics: bool
+    featured_badge: bool
+
     # Status
     is_active: bool
     is_popular: bool
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -77,16 +75,12 @@ class SubscriptionUsageResponse(BaseModel):
     active_listings: int
     featured_listings: int
     premium_listings: int
-    boost_credits_used: int
-    storage_used_mb: int
-    
+
     # Limits
     max_listings: int  # Fixed: was max_active_listings
     max_featured_listings: int
     max_photos_per_listing: int  # Fixed: was max_images_per_listing
-    boost_credits_monthly: int
-    storage_mb: int
-    
+
     # Period
     period_start: datetime
     period_end: datetime

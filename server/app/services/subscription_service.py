@@ -31,7 +31,7 @@ class SubscriptionService:
         """Get all active subscription plans"""
         return db.query(SubscriptionPlan).filter(
             SubscriptionPlan.is_active == True  # noqa: E712
-        ).order_by(SubscriptionPlan.monthly_price).all()
+        ).order_by(SubscriptionPlan.price).all()
     
     @staticmethod
     def get_user_subscription(db: Session, user_id: int) -> Optional[UserSubscription]:
@@ -186,17 +186,27 @@ class SubscriptionService:
         if existing:
             raise ValueError("User already has an active or pending subscription")
         
-        # Calculate price
-        if billing_cycle == "yearly":
-            yearly_price_value = getattr(plan, 'yearly_price', None)
-            if yearly_price_value is not None:
-                amount = Decimal(str(yearly_price_value))
+        # Calculate price - Fixed: Use 'price' attribute and check billing_cycle from plan
+        price_value = getattr(plan, 'price', 0)
+        plan_billing_cycle = getattr(plan, 'billing_cycle', 'MONTHLY')
+
+        # The price is stored based on the plan's billing cycle
+        # If plan is monthly and user wants yearly, multiply by 10 (discount)
+        # If plan is yearly and user wants yearly, use the price as is
+        if billing_cycle == "yearly" or billing_cycle == "YEARLY":
+            if plan_billing_cycle == "MONTHLY":
+                # User wants yearly but plan is priced monthly - give 10x with 2 months free
+                amount = Decimal(str(price_value)) * Decimal('10')
             else:
-                monthly_price_value = getattr(plan, 'monthly_price', 0)
-                amount = Decimal(str(monthly_price_value)) * Decimal('10')
+                # Plan is already priced yearly
+                amount = Decimal(str(price_value))
         else:
-            monthly_price_value = getattr(plan, 'monthly_price', 0)
-            amount = Decimal(str(monthly_price_value))
+            # User wants monthly
+            if plan_billing_cycle == "MONTHLY":
+                amount = Decimal(str(price_value))
+            else:
+                # Plan is yearly but user wants monthly - divide by 12
+                amount = Decimal(str(price_value)) / Decimal('12')
         
         # Apply promo code
         discount_applied = Decimal('0')
