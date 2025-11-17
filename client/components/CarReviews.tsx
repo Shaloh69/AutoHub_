@@ -227,7 +227,7 @@ export default function CarReviews({ carId, sellerId }: CarReviewsProps) {
       </div>
 
       {/* Rating Summary */}
-      <Card className="bg-dark-900 border border-dark-700">
+      <Card className="bg-black/40 backdrop-blur-md border border-dark-700">
         <CardBody className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {/* Left: Average Rating */}
@@ -282,7 +282,7 @@ export default function CarReviews({ carId, sellerId }: CarReviewsProps) {
         <Button
           size="sm"
           variant={filter === null ? 'solid' : 'flat'}
-          className={filter === null ? 'bg-primary-600' : 'bg-dark-800'}
+          className={filter === null ? 'bg-primary-600' : 'bg-black/40 backdrop-blur-sm'}
           onPress={() => setFilter(null)}
         >
           All
@@ -292,7 +292,7 @@ export default function CarReviews({ carId, sellerId }: CarReviewsProps) {
             key={rating}
             size="sm"
             variant={filter === rating ? 'solid' : 'flat'}
-            className={filter === rating ? 'bg-primary-600' : 'bg-dark-800'}
+            className={filter === rating ? 'bg-primary-600' : 'bg-black/40 backdrop-blur-sm'}
             onPress={() => setFilter(rating)}
           >
             {rating}+ Stars
@@ -306,7 +306,7 @@ export default function CarReviews({ carId, sellerId }: CarReviewsProps) {
           <Spinner color="primary" />
         </div>
       ) : reviews.length === 0 ? (
-        <Card className="bg-dark-900 border border-dark-700">
+        <Card className="bg-black/40 backdrop-blur-md border border-dark-700">
           <CardBody className="text-center py-12">
             <MessageCircle className="mx-auto text-gray-600 mb-4" size={48} />
             <p className="text-gray-400">No reviews yet</p>
@@ -316,7 +316,7 @@ export default function CarReviews({ carId, sellerId }: CarReviewsProps) {
       ) : (
         <div className="space-y-4">
           {reviews.map((review) => (
-            <Card key={review.id} className="bg-dark-900 border border-dark-700">
+            <Card key={review.id} className="bg-black/40 backdrop-blur-md border border-dark-700">
               <CardBody className="p-6">
                 {/* Review Header */}
                 <div className="flex justify-between items-start mb-4">
@@ -399,7 +399,7 @@ export default function CarReviews({ carId, sellerId }: CarReviewsProps) {
                   <Button
                     size="sm"
                     variant="flat"
-                    className="bg-dark-800"
+                    className="bg-black/40 backdrop-blur-sm"
                     startContent={<ThumbsUp size={14} />}
                     onPress={() => handleMarkHelpful(review.id)}
                   >
@@ -418,7 +418,7 @@ export default function CarReviews({ carId, sellerId }: CarReviewsProps) {
         onOpenChange={onOpenChange}
         size="2xl"
         classNames={{
-          base: "bg-dark-900 border border-dark-700",
+          base: "bg-black/80 backdrop-blur-xl border border-dark-700",
           header: "border-b border-dark-700",
           body: "py-6",
           footer: "border-t border-dark-700",
@@ -447,8 +447,8 @@ export default function CarReviews({ carId, sellerId }: CarReviewsProps) {
                     onChange={(e) => setTitle(e.target.value)}
                     maxLength={255}
                     classNames={{
-                      input: "bg-dark-800 text-white",
-                      inputWrapper: "bg-dark-800 border-dark-600",
+                      input: "bg-black/40 text-white",
+                      inputWrapper: "bg-black/40 backdrop-blur-sm border-dark-600",
                     }}
                   />
 
@@ -462,8 +462,8 @@ export default function CarReviews({ carId, sellerId }: CarReviewsProps) {
                     maxLength={2000}
                     isRequired
                     classNames={{
-                      input: "bg-dark-800 text-white",
-                      inputWrapper: "bg-dark-800 border-dark-600",
+                      input: "bg-black/40 text-white",
+                      inputWrapper: "bg-black/40 backdrop-blur-sm border-dark-600",
                     }}
                   />
 
@@ -476,8 +476,8 @@ export default function CarReviews({ carId, sellerId }: CarReviewsProps) {
                     minRows={2}
                     maxLength={1000}
                     classNames={{
-                      input: "bg-dark-800 text-white",
-                      inputWrapper: "bg-dark-800 border-dark-600",
+                      input: "bg-black/40 text-white",
+                      inputWrapper: "bg-black/40 backdrop-blur-sm border-dark-600",
                     }}
                   />
 
@@ -490,8 +490,8 @@ export default function CarReviews({ carId, sellerId }: CarReviewsProps) {
                     minRows={2}
                     maxLength={1000}
                     classNames={{
-                      input: "bg-dark-800 text-white",
-                      inputWrapper: "bg-dark-800 border-dark-600",
+                      input: "bg-black/40 text-white",
+                      inputWrapper: "bg-black/40 backdrop-blur-sm border-dark-600",
                     }}
                   />
 
@@ -511,7 +511,7 @@ export default function CarReviews({ carId, sellerId }: CarReviewsProps) {
                 </div>
               </ModalBody>
               <ModalFooter>
-                <Button variant="flat" onPress={onClose} className="bg-dark-700">
+                <Button variant="flat" onPress={onClose} className="bg-black/40 backdrop-blur-sm">
                   Cancel
                 </Button>
                 <Button

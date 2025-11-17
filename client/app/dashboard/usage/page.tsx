@@ -87,7 +87,7 @@ export default function SubscriptionUsagePage() {
     return (
       <div className="min-h-screen bg-transparent py-8 px-4">
         <div className="max-w-4xl mx-auto">
-          <Card className="bg-dark-900 border border-dark-700">
+          <Card className="bg-black/40 backdrop-blur-md border border-dark-700">
             <CardBody className="p-12 text-center">
               <AlertCircle className="mx-auto text-red-500 mb-4" size={64} />
               <h2 className="text-2xl font-bold text-white mb-2">Error Loading Usage Data</h2>
@@ -109,7 +109,7 @@ export default function SubscriptionUsagePage() {
     return (
       <div className="min-h-screen bg-transparent py-8 px-4">
         <div className="max-w-4xl mx-auto">
-          <Card className="bg-dark-900 border border-dark-700">
+          <Card className="bg-black/40 backdrop-blur-md border border-dark-700">
             <CardBody className="p-12 text-center">
               <Package className="mx-auto text-gray-500 mb-4" size={64} />
               <h2 className="text-2xl font-bold text-white mb-2">No Active Subscription</h2>
@@ -145,7 +145,7 @@ export default function SubscriptionUsagePage() {
         </div>
 
         {/* Active Listings */}
-        <Card className="bg-dark-900 border border-dark-700">
+        <Card className="bg-black/40 backdrop-blur-md border border-dark-700">
           <CardHeader className="border-b border-dark-700 pb-4">
             <div className="flex items-center gap-3">
               <div className="p-3 bg-blue-500/20 rounded-lg">
@@ -181,7 +181,7 @@ export default function SubscriptionUsagePage() {
         </Card>
 
         {/* Featured Listings */}
-        <Card className="bg-dark-900 border border-dark-700">
+        <Card className="bg-black/40 backdrop-blur-md border border-dark-700">
           <CardHeader className="border-b border-dark-700 pb-4">
             <div className="flex items-center gap-3">
               <div className="p-3 bg-yellow-500/20 rounded-lg">
@@ -217,7 +217,7 @@ export default function SubscriptionUsagePage() {
         </Card>
 
         {/* Premium Listings */}
-        <Card className="bg-dark-900 border border-dark-700">
+        <Card className="bg-black/40 backdrop-blur-md border border-dark-700">
           <CardHeader className="border-b border-dark-700 pb-4">
             <div className="flex items-center gap-3">
               <div className="p-3 bg-purple-500/20 rounded-lg">
@@ -255,7 +255,7 @@ export default function SubscriptionUsagePage() {
         {/* Other Features */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Images Per Listing */}
-          <Card className="bg-dark-900 border border-dark-700">
+          <Card className="bg-black/40 backdrop-blur-md border border-dark-700">
             <CardHeader className="border-b border-dark-700 pb-4">
               <div className="flex items-center gap-3">
                 <div className="p-3 bg-green-500/20 rounded-lg">
@@ -278,7 +278,7 @@ export default function SubscriptionUsagePage() {
           </Card>
 
           {/* Boost Credits */}
-          <Card className="bg-dark-900 border border-dark-700">
+          <Card className="bg-black/40 backdrop-blur-md border border-dark-700">
             <CardHeader className="border-b border-dark-700 pb-4">
               <div className="flex items-center gap-3">
                 <div className="p-3 bg-primary-500/20 rounded-lg">

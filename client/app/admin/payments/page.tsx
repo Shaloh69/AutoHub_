@@ -203,7 +203,7 @@ export default function AdminPaymentsPage() {
       {/* Statistics Cards */}
       {stats && (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card className="bg-dark-900 border border-dark-700">
+          <Card className="bg-black/40 backdrop-blur-md border border-dark-700">
             <CardBody className="p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -215,7 +215,7 @@ export default function AdminPaymentsPage() {
             </CardBody>
           </Card>
 
-          <Card className="bg-dark-900 border border-dark-700">
+          <Card className="bg-black/40 backdrop-blur-md border border-dark-700">
             <CardBody className="p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -227,7 +227,7 @@ export default function AdminPaymentsPage() {
             </CardBody>
           </Card>
 
-          <Card className="bg-dark-900 border border-dark-700">
+          <Card className="bg-black/40 backdrop-blur-md border border-dark-700">
             <CardBody className="p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -239,7 +239,7 @@ export default function AdminPaymentsPage() {
             </CardBody>
           </Card>
 
-          <Card className="bg-dark-900 border border-dark-700">
+          <Card className="bg-black/40 backdrop-blur-md border border-dark-700">
             <CardBody className="p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -259,7 +259,7 @@ export default function AdminPaymentsPage() {
       <Tabs aria-label="Payment Management" color="primary" variant="underlined">
         <Tab key="verifications" title="Payment Verifications">
           {/* Pending Payments Table */}
-          <Card className="bg-dark-900 border border-dark-700 mt-4">
+          <Card className="bg-black/40 backdrop-blur-md border border-dark-700 mt-4">
         <CardHeader className="border-b border-dark-700 p-6">
           <div className="flex items-center justify-between w-full">
             <div className="flex items-center gap-2">
@@ -291,7 +291,7 @@ export default function AdminPaymentsPage() {
               </TableHeader>
               <TableBody>
                 {payments.map((payment) => (
-                  <TableRow key={payment.id} className="border-b border-dark-800 hover:bg-dark-800 transition-colors">
+                  <TableRow key={payment.id} className="border-b border-dark-800 hover:bg-black/30 backdrop-blur-sm transition-colors">
                     <TableCell>
                       <div>
                         <p className="font-medium text-white">{payment.user_name}</p>
@@ -309,7 +309,7 @@ export default function AdminPaymentsPage() {
                       </span>
                     </TableCell>
                     <TableCell>
-                      <code className="bg-dark-800 px-2 py-1 rounded text-primary-500 font-mono text-sm">
+                      <code className="bg-black/30 backdrop-blur-sm px-2 py-1 rounded text-primary-500 font-mono text-sm">
                         {payment.reference_number}
                       </code>
                     </TableCell>
@@ -326,7 +326,7 @@ export default function AdminPaymentsPage() {
                       <div className="flex gap-2">
                         <Button
                           size="sm"
-                          className="bg-dark-800 border border-dark-700 text-white hover:border-primary-500"
+                          className="bg-black/30 backdrop-blur-sm border border-dark-700 text-white hover:border-primary-500"
                           startContent={<Eye size={16} />}
                           onPress={() => {
                             setSelectedPayment(payment);
@@ -397,7 +397,7 @@ export default function AdminPaymentsPage() {
               <ModalBody>
                 {selectedPayment && (
                   <div className="space-y-4">
-                    <div className="bg-dark-800 p-4 rounded-lg border border-dark-700">
+                    <div className="bg-black/30 backdrop-blur-sm p-4 rounded-lg border border-dark-700">
                       <h3 className="font-bold text-white mb-3">Payment Details</h3>
                       <div className="grid grid-cols-2 gap-3 text-sm">
                         <div>
@@ -459,7 +459,7 @@ export default function AdminPaymentsPage() {
                 <Button
                   variant="flat"
                   onPress={onClose}
-                  className="bg-dark-800 border border-dark-700 text-white"
+                  className="bg-black/30 backdrop-blur-sm border border-dark-700 text-white"
                 >
                   Cancel
                 </Button>
@@ -499,7 +499,7 @@ export default function AdminPaymentsPage() {
               <ModalBody>
                 {selectedPayment && (
                   <div className="space-y-4">
-                    <div className="bg-dark-800 p-4 rounded-lg border border-dark-700">
+                    <div className="bg-black/30 backdrop-blur-sm p-4 rounded-lg border border-dark-700">
                       <h3 className="font-bold text-white mb-3">Payment Details</h3>
                       <div className="grid grid-cols-2 gap-3 text-sm">
                         <div>
@@ -566,7 +566,7 @@ export default function AdminPaymentsPage() {
                 <Button
                   variant="flat"
                   onPress={onClose}
-                  className="bg-dark-800 border border-dark-700 text-white"
+                  className="bg-black/30 backdrop-blur-sm border border-dark-700 text-white"
                 >
                   Cancel
                 </Button>
@@ -607,7 +607,7 @@ export default function AdminPaymentsPage() {
                 {selectedPayment && (
                   <div className="space-y-6">
                     {/* User Information */}
-                    <div className="bg-dark-800 p-4 rounded-lg border border-dark-700">
+                    <div className="bg-black/30 backdrop-blur-sm p-4 rounded-lg border border-dark-700">
                       <h3 className="font-bold text-white mb-3 flex items-center gap-2">
                         <User size={18} className="text-primary-500" />
                         User Information
@@ -629,7 +629,7 @@ export default function AdminPaymentsPage() {
                     </div>
 
                     {/* Payment Information */}
-                    <div className="bg-dark-800 p-4 rounded-lg border border-dark-700">
+                    <div className="bg-black/30 backdrop-blur-sm p-4 rounded-lg border border-dark-700">
                       <h3 className="font-bold text-white mb-3 flex items-center gap-2">
                         <DollarSign size={18} className="text-primary-500" />
                         Payment Information
@@ -671,7 +671,7 @@ export default function AdminPaymentsPage() {
                     </div>
 
                     {/* Timeline */}
-                    <div className="bg-dark-800 p-4 rounded-lg border border-dark-700">
+                    <div className="bg-black/30 backdrop-blur-sm p-4 rounded-lg border border-dark-700">
                       <h3 className="font-bold text-white mb-3 flex items-center gap-2">
                         <Calendar size={18} className="text-primary-500" />
                         Timeline

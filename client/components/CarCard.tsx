@@ -67,10 +67,10 @@ export default function CarCard({ car, onFavoriteChange }: CarCardProps) {
     <Card
       isPressable
       onPress={() => router.push(`/cars/${car.id}`)}
-      className="group relative overflow-hidden bg-dark-900 border border-dark-700 hover:border-primary-600 transition-all duration-300 hover:shadow-red-glow"
+      className="group relative overflow-hidden bg-black/40 backdrop-blur-md border border-dark-700 hover:border-primary-600 transition-all duration-300 hover:shadow-red-glow"
     >
       {/* Image Section */}
-      <div className="relative h-56 overflow-hidden bg-dark-800">
+      <div className="relative h-56 overflow-hidden bg-black/50">
         <Image
           src={mainImage}
           alt={car.title}
@@ -139,7 +139,7 @@ export default function CarCard({ car, onFavoriteChange }: CarCardProps) {
         )} */}
       </div>
 
-      <CardBody className="p-5 bg-dark-900 border-t border-dark-800">
+      <CardBody className="p-5 bg-black/40 backdrop-blur-sm border-t border-dark-800/50">
         {/* Title */}
         <h3 className="text-lg font-bold mb-2 line-clamp-1 text-white group-hover:text-primary-500 transition-colors">
           {car.title}
@@ -191,7 +191,7 @@ export default function CarCard({ car, onFavoriteChange }: CarCardProps) {
         )}
       </CardBody>
 
-      <CardFooter className="p-4 pt-0 bg-dark-900">
+      <CardFooter className="p-4 pt-0 bg-black/40 backdrop-blur-sm">
         <Button
           fullWidth
           className="bg-gradient-red-dark text-white font-bold hover:shadow-red-glow transition-all"

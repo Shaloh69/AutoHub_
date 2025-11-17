@@ -53,9 +53,9 @@ export default function HomePage() {
   };
 
   return (
-    <div className="w-full bg-black">
+    <div className="w-full bg-transparent">
       {/* Hero Section - Red & Black */}
-      <section className="relative hero-red-black py-24 lg:py-32 overflow-hidden">
+      <section className="relative hero-red-black py-24 lg:py-32 overflow-hidden bg-transparent">
         {/* Animated Background Pattern */}
         <div className="absolute inset-0 bg-pattern-grid opacity-30"></div>
 
@@ -92,7 +92,7 @@ export default function HomePage() {
 
             {/* Search Bar */}
             <div className="max-w-2xl mx-auto animate-slide-up" style={{animationDelay: '0.4s'}}>
-              <div className="flex gap-3 p-2 bg-dark-800/50 backdrop-blur-xl rounded-2xl border border-primary-900/30 shadow-red-glow">
+              <div className="flex gap-3 p-2 bg-black/30 backdrop-blur-xl rounded-2xl border border-primary-900/30 shadow-red-glow">
                 <Input
                   size="lg"
                   placeholder="Search by brand, model, or location..."
@@ -102,7 +102,7 @@ export default function HomePage() {
                   onKeyPress={handleKeyPress}
                   classNames={{
                     input: "text-white text-lg",
-                    inputWrapper: "bg-dark-700 border-dark-600 hover:border-primary-600 focus-within:border-primary-500 shadow-lg",
+                    inputWrapper: "bg-black/40 backdrop-blur-sm border-dark-600 hover:border-primary-600 focus-within:border-primary-500 shadow-lg",
                   }}
                 />
                 <Button
@@ -138,7 +138,7 @@ export default function HomePage() {
       </section>
 
       {/* Stats Section */}
-      <section className="py-16 bg-dark-900 border-y border-primary-900/20">
+      <section className="py-16 bg-black/20 backdrop-blur-sm border-y border-primary-900/20">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
             {[
@@ -149,7 +149,7 @@ export default function HomePage() {
             ].map((stat, index) => (
               <div
                 key={index}
-                className="group p-6 rounded-xl bg-dark-800/50 border border-dark-700 hover:border-primary-600 transition-all hover:shadow-red-glow"
+                className="group p-6 rounded-xl bg-black/30 backdrop-blur-md border border-dark-700 hover:border-primary-600 transition-all hover:shadow-red-glow"
               >
                 <div className="text-4xl mb-2">{stat.icon}</div>
                 <h3 className="text-4xl md:text-5xl font-black text-gradient-red mb-2">
@@ -164,11 +164,11 @@ export default function HomePage() {
 
       {/* Featured Cars Section */}
       {loading ? (
-        <section className="py-20 bg-black">
+        <section className="py-20 bg-transparent">
           <LoadingSpinner label="Loading featured cars..." />
         </section>
       ) : featuredCars.length > 0 && (
-        <section className="py-20 bg-black">
+        <section className="py-20 bg-transparent">
           <div className="container mx-auto px-4">
             <div className="text-center mb-12">
               <Chip
@@ -206,7 +206,7 @@ export default function HomePage() {
       )}
 
       {/* Features Section */}
-      <section className="py-20 bg-dark-900 border-t border-primary-900/20">
+      <section className="py-20 bg-black/20 backdrop-blur-sm border-t border-primary-900/20">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-6xl font-black text-white mb-4">
@@ -235,7 +235,7 @@ export default function HomePage() {
             ].map((feature, index) => (
               <div
                 key={index}
-                className="group p-8 rounded-2xl bg-dark-800/50 border border-dark-700 hover:border-primary-600 transition-all card-hover-lift"
+                className="group p-8 rounded-2xl bg-black/30 backdrop-blur-md border border-dark-700 hover:border-primary-600 transition-all card-hover-lift"
               >
                 <div className="text-6xl mb-4">{feature.icon}</div>
                 <h3 className="text-2xl font-bold text-white mb-3">{feature.title}</h3>

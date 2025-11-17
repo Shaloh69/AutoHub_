@@ -191,49 +191,49 @@ export default function AdminReviewsPage() {
         {/* Statistics Cards */}
         {stats && (
           <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-7 gap-4">
-            <Card className="bg-dark-900 border border-dark-700">
+            <Card className="bg-black/40 backdrop-blur-md border border-dark-700">
               <CardBody className="p-4">
                 <p className="text-xs text-gray-400">Total Reviews</p>
                 <p className="text-2xl font-bold text-white">{stats.total}</p>
               </CardBody>
             </Card>
 
-            <Card className="bg-dark-900 border border-dark-700">
+            <Card className="bg-black/40 backdrop-blur-md border border-dark-700">
               <CardBody className="p-4">
                 <p className="text-xs text-yellow-500">Pending</p>
                 <p className="text-2xl font-bold text-yellow-500">{stats.pending}</p>
               </CardBody>
             </Card>
 
-            <Card className="bg-dark-900 border border-dark-700">
+            <Card className="bg-black/40 backdrop-blur-md border border-dark-700">
               <CardBody className="p-4">
                 <p className="text-xs text-green-500">Approved</p>
                 <p className="text-2xl font-bold text-green-500">{stats.approved}</p>
               </CardBody>
             </Card>
 
-            <Card className="bg-dark-900 border border-dark-700">
+            <Card className="bg-black/40 backdrop-blur-md border border-dark-700">
               <CardBody className="p-4">
                 <p className="text-xs text-red-500">Rejected</p>
                 <p className="text-2xl font-bold text-red-500">{stats.rejected}</p>
               </CardBody>
             </Card>
 
-            <Card className="bg-dark-900 border border-dark-700">
+            <Card className="bg-black/40 backdrop-blur-md border border-dark-700">
               <CardBody className="p-4">
                 <p className="text-xs text-gray-500">Hidden</p>
                 <p className="text-2xl font-bold text-gray-400">{stats.hidden}</p>
               </CardBody>
             </Card>
 
-            <Card className="bg-dark-900 border border-dark-700">
+            <Card className="bg-black/40 backdrop-blur-md border border-dark-700">
               <CardBody className="p-4">
                 <p className="text-xs text-blue-500">Verified</p>
                 <p className="text-2xl font-bold text-blue-500">{stats.verified_purchases}</p>
               </CardBody>
             </Card>
 
-            <Card className="bg-dark-900 border border-dark-700">
+            <Card className="bg-black/40 backdrop-blur-md border border-dark-700">
               <CardBody className="p-4">
                 <p className="text-xs text-gray-400">Avg Rating</p>
                 <div className="flex items-center gap-2">
@@ -246,7 +246,7 @@ export default function AdminReviewsPage() {
         )}
 
         {/* Filter */}
-        <Card className="bg-dark-900 border border-dark-700">
+        <Card className="bg-black/40 backdrop-blur-md border border-dark-700">
           <CardBody className="p-4">
             <div className="flex gap-4 items-center">
               <span className="text-sm text-gray-400">Filter by status:</span>
@@ -270,7 +270,7 @@ export default function AdminReviewsPage() {
                 <Button
                   size="sm"
                   variant="flat"
-                  className="bg-dark-700"
+                  className="bg-black/20 backdrop-blur-sm"
                   onPress={() => setStatusFilter('')}
                 >
                   Clear Filter
@@ -281,7 +281,7 @@ export default function AdminReviewsPage() {
         </Card>
 
         {/* Reviews Table */}
-        <Card className="bg-dark-900 border border-dark-700">
+        <Card className="bg-black/40 backdrop-blur-md border border-dark-700">
           <CardHeader className="border-b border-dark-700 p-6">
             <h2 className="text-xl font-semibold text-white">
               Reviews {statusFilter && `- ${statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1)}`}
@@ -319,9 +319,9 @@ export default function AdminReviewsPage() {
                 </TableHeader>
                 <TableBody>
                   {reviews.map((review) => (
-                    <TableRow key={review.id} className="border-b border-dark-700 hover:bg-dark-800">
+                    <TableRow key={review.id} className="border-b border-dark-700 hover:bg-black/30 backdrop-blur-sm">
                       <TableCell>
-                        <code className="bg-dark-800 px-2 py-1 rounded text-xs">
+                        <code className="bg-black/30 backdrop-blur-sm px-2 py-1 rounded text-xs">
                           #{review.id}
                         </code>
                       </TableCell>
@@ -383,7 +383,7 @@ export default function AdminReviewsPage() {
                             <Button
                               size="sm"
                               variant="flat"
-                              className="bg-dark-700"
+                              className="bg-black/20 backdrop-blur-sm"
                               startContent={<EyeOff size={14} />}
                               onPress={() => openModerationModal(review, 'hidden')}
                             >
@@ -425,7 +425,7 @@ export default function AdminReviewsPage() {
               <ModalBody>
                 {selectedReview && (
                   <div className="space-y-4">
-                    <Card className="bg-dark-800 border border-dark-700">
+                    <Card className="bg-black/30 backdrop-blur-sm border border-dark-700">
                       <CardBody className="p-4 space-y-2">
                         <div className="flex justify-between">
                           <span className="text-gray-400">Review ID:</span>
@@ -467,7 +467,7 @@ export default function AdminReviewsPage() {
                 )}
               </ModalBody>
               <ModalFooter>
-                <Button variant="flat" onPress={onClose} className="bg-dark-700">
+                <Button variant="flat" onPress={onClose} className="bg-black/20 backdrop-blur-sm">
                   Cancel
                 </Button>
                 <Button

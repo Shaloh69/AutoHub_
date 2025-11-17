@@ -39,7 +39,7 @@ export default function Navigation() {
   const getRoleTheme = () => {
     if (isAdmin) {
       return {
-        navbar: 'bg-gradient-to-r from-purple-900 via-purple-800 to-indigo-900 border-b-2 border-purple-600',
+        navbar: 'bg-gradient-to-r from-purple-900/60 via-purple-800/60 to-indigo-900/60 backdrop-blur-lg border-b-2 border-purple-600',
         navbarShadow: 'shadow-lg shadow-purple-500/20',
         accent: 'text-purple-400',
         accentHover: 'hover:text-purple-300',
@@ -55,7 +55,7 @@ export default function Navigation() {
       };
     } else if (isSeller) {
       return {
-        navbar: 'bg-gradient-to-r from-orange-900 via-red-900 to-red-800 border-b-2 border-orange-600',
+        navbar: 'bg-gradient-to-r from-orange-900/60 via-red-900/60 to-red-800/60 backdrop-blur-lg border-b-2 border-orange-600',
         navbarShadow: 'shadow-lg shadow-orange-500/20',
         accent: 'text-orange-400',
         accentHover: 'hover:text-orange-300',
@@ -71,7 +71,7 @@ export default function Navigation() {
       };
     } else {
       return {
-        navbar: 'bg-gradient-to-r from-gray-900 via-black to-gray-900 border-b-2 border-gray-800',
+        navbar: 'bg-gradient-to-r from-gray-900/60 via-black/60 to-gray-900/60 backdrop-blur-lg border-b-2 border-gray-800',
         navbarShadow: 'shadow-lg shadow-red-500/10',
         accent: 'text-red-500',
         accentHover: 'hover:text-red-400',
@@ -387,7 +387,7 @@ export default function Navigation() {
       </NavbarContent>
 
       {/* Mobile Menu */}
-      <NavbarMenu className="bg-dark-900 border-r border-dark-700">
+      <NavbarMenu className="bg-black/40 backdrop-blur-md border-r border-dark-700">
         {menuItems.map((item, index) => {
           if (item.requireAuth && !isAuthenticated) return null;
           if (!item.public && !isAuthenticated) return null;
@@ -434,7 +434,7 @@ export default function Navigation() {
                 as={Link}
                 href="/auth/login"
                 variant="flat"
-                className="w-full bg-dark-800 border border-dark-700 hover:border-primary-600 text-white font-medium"
+                className="w-full bg-black/30 backdrop-blur-sm border border-dark-700 hover:border-primary-600 text-white font-medium"
                 onClick={() => setIsMenuOpen(false)}
               >
                 Login

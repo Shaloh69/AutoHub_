@@ -223,7 +223,7 @@ export default function FraudDetectionPage() {
         {/* Statistics Cards */}
         {stats && (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Card className="bg-dark-900 border border-dark-700">
+            <Card className="bg-black/40 backdrop-blur-md border border-dark-700">
               <CardBody className="flex flex-row items-center justify-between p-6">
                 <div>
                   <p className="text-sm text-gray-400">Total Indicators</p>
@@ -235,7 +235,7 @@ export default function FraudDetectionPage() {
               </CardBody>
             </Card>
 
-            <Card className="bg-dark-900 border border-dark-700">
+            <Card className="bg-black/40 backdrop-blur-md border border-dark-700">
               <CardBody className="flex flex-row items-center justify-between p-6">
                 <div>
                   <p className="text-sm text-gray-400">High Severity</p>
@@ -247,7 +247,7 @@ export default function FraudDetectionPage() {
               </CardBody>
             </Card>
 
-            <Card className="bg-dark-900 border border-dark-700">
+            <Card className="bg-black/40 backdrop-blur-md border border-dark-700">
               <CardBody className="flex flex-row items-center justify-between p-6">
                 <div>
                   <p className="text-sm text-gray-400">Medium Severity</p>
@@ -259,7 +259,7 @@ export default function FraudDetectionPage() {
               </CardBody>
             </Card>
 
-            <Card className="bg-dark-900 border border-dark-700">
+            <Card className="bg-black/40 backdrop-blur-md border border-dark-700">
               <CardBody className="flex flex-row items-center justify-between p-6">
                 <div>
                   <p className="text-sm text-gray-400">Low Severity</p>
@@ -274,7 +274,7 @@ export default function FraudDetectionPage() {
         )}
 
         {/* Filters */}
-        <Card className="bg-dark-900 border border-dark-700">
+        <Card className="bg-black/40 backdrop-blur-md border border-dark-700">
           <CardBody className="p-4">
             <div className="flex gap-4 items-center">
               <span className="text-sm text-gray-400">Filter by severity:</span>
@@ -297,7 +297,7 @@ export default function FraudDetectionPage() {
                 <Button
                   size="sm"
                   variant="flat"
-                  className="bg-dark-700"
+                  className="bg-black/20 backdrop-blur-sm"
                   onPress={() => setSeverityFilter('')}
                 >
                   Clear Filter
@@ -308,7 +308,7 @@ export default function FraudDetectionPage() {
         </Card>
 
         {/* Fraud Indicators Table */}
-        <Card className="bg-dark-900 border border-dark-700">
+        <Card className="bg-black/40 backdrop-blur-md border border-dark-700">
           <CardHeader className="border-b border-dark-700 p-6">
             <h2 className="text-xl font-semibold text-white">Fraud Indicators</h2>
           </CardHeader>
@@ -344,9 +344,9 @@ export default function FraudDetectionPage() {
                 </TableHeader>
                 <TableBody>
                   {indicators.map((indicator) => (
-                    <TableRow key={indicator.id} className="border-b border-dark-700 hover:bg-dark-800">
+                    <TableRow key={indicator.id} className="border-b border-dark-700 hover:bg-black/30 backdrop-blur-sm">
                       <TableCell>
-                        <code className="bg-dark-800 px-2 py-1 rounded text-xs">
+                        <code className="bg-black/30 backdrop-blur-sm px-2 py-1 rounded text-xs">
                           #{indicator.id}
                         </code>
                       </TableCell>
@@ -506,7 +506,7 @@ export default function FraudDetectionPage() {
                 </div>
               </ModalBody>
               <ModalFooter>
-                <Button variant="flat" onPress={onClose} className="bg-dark-700">
+                <Button variant="flat" onPress={onClose} className="bg-black/20 backdrop-blur-sm">
                   Cancel
                 </Button>
                 <Button
@@ -545,7 +545,7 @@ export default function FraudDetectionPage() {
               <ModalBody>
                 {selectedIndicator && (
                   <div className="space-y-4">
-                    <Card className="bg-dark-800 border border-dark-700">
+                    <Card className="bg-black/30 backdrop-blur-sm border border-dark-700">
                       <CardBody className="p-4 space-y-2">
                         <div className="flex justify-between">
                           <span className="text-gray-400">ID:</span>
@@ -595,7 +595,7 @@ export default function FraudDetectionPage() {
                 )}
               </ModalBody>
               <ModalFooter>
-                <Button variant="flat" onPress={onClose} className="bg-dark-700">
+                <Button variant="flat" onPress={onClose} className="bg-black/20 backdrop-blur-sm">
                   Cancel
                 </Button>
                 <Button
@@ -637,7 +637,7 @@ export default function FraudDetectionPage() {
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <p className="text-sm text-gray-400 mb-1">Indicator ID</p>
-                        <code className="bg-dark-800 px-3 py-2 rounded block">
+                        <code className="bg-black/30 backdrop-blur-sm px-3 py-2 rounded block">
                           #{selectedIndicator.id}
                         </code>
                       </div>
@@ -651,7 +651,7 @@ export default function FraudDetectionPage() {
 
                     <div>
                       <p className="text-sm text-gray-400 mb-1">Type</p>
-                      <p className="text-white bg-dark-800 px-3 py-2 rounded">
+                      <p className="text-white bg-black/30 backdrop-blur-sm px-3 py-2 rounded">
                         {selectedIndicator.indicator_type}
                       </p>
                     </div>
@@ -659,13 +659,13 @@ export default function FraudDetectionPage() {
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <p className="text-sm text-gray-400 mb-1">User ID</p>
-                        <p className="text-white bg-dark-800 px-3 py-2 rounded">
+                        <p className="text-white bg-black/30 backdrop-blur-sm px-3 py-2 rounded">
                           {selectedIndicator.user_id ? `#${selectedIndicator.user_id}` : 'N/A'}
                         </p>
                       </div>
                       <div>
                         <p className="text-sm text-gray-400 mb-1">Car ID</p>
-                        <p className="text-white bg-dark-800 px-3 py-2 rounded">
+                        <p className="text-white bg-black/30 backdrop-blur-sm px-3 py-2 rounded">
                           {selectedIndicator.car_id ? `#${selectedIndicator.car_id}` : 'N/A'}
                         </p>
                       </div>
@@ -673,14 +673,14 @@ export default function FraudDetectionPage() {
 
                     <div>
                       <p className="text-sm text-gray-400 mb-1">Description</p>
-                      <div className="text-white bg-dark-800 px-3 py-2 rounded min-h-[100px]">
+                      <div className="text-white bg-black/30 backdrop-blur-sm px-3 py-2 rounded min-h-[100px]">
                         {selectedIndicator.description}
                       </div>
                     </div>
 
                     <div>
                       <p className="text-sm text-gray-400 mb-1">Detected At</p>
-                      <div className="flex items-center gap-2 text-white bg-dark-800 px-3 py-2 rounded">
+                      <div className="flex items-center gap-2 text-white bg-black/30 backdrop-blur-sm px-3 py-2 rounded">
                         <Calendar size={16} className="text-gray-500" />
                         {formatDate(selectedIndicator.detected_at)}
                       </div>
@@ -689,7 +689,7 @@ export default function FraudDetectionPage() {
                 )}
               </ModalBody>
               <ModalFooter>
-                <Button variant="flat" onPress={onClose} className="bg-dark-700">
+                <Button variant="flat" onPress={onClose} className="bg-black/20 backdrop-blur-sm">
                   Close
                 </Button>
                 <Button
