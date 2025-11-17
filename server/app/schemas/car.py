@@ -89,6 +89,10 @@ class CarCreate(BaseModel):
     # Features
     feature_ids: List[int] = []
 
+    # Media (Premium Features)
+    video_url: Optional[str] = Field(None, max_length=500)  # Requires can_add_video
+    virtual_tour_url: Optional[str] = Field(None, max_length=500)  # Requires can_add_virtual_tour
+
     # SEO (optional, auto-generated if not provided)
     seo_slug: Optional[str] = Field(None, max_length=255)
     meta_title: Optional[str] = Field(None, max_length=255)
@@ -188,6 +192,10 @@ class CarUpdate(BaseModel):
 
     # Features
     feature_ids: Optional[List[int]] = None
+
+    # Media (Premium Features)
+    video_url: Optional[str] = Field(None, max_length=500)  # Requires can_add_video
+    virtual_tour_url: Optional[str] = Field(None, max_length=500)  # Requires can_add_virtual_tour
 
     # Status
     status: Optional[str] = Field(None, pattern="^(DRAFT|PENDING|ACTIVE|SOLD|RESERVED|INACTIVE|REJECTED|EXPIRED)$")

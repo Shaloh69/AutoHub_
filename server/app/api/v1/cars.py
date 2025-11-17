@@ -40,6 +40,35 @@ async def create_car(
         car_dict = car_data.model_dump()
         normalized_data = normalize_car_data(car_dict)
 
+        # Check premium feature permissions
+        if car_data.video_url or car_data.virtual_tour_url:
+            from app.services.subscription_service import SubscriptionService
+            subscription = SubscriptionService.get_user_subscription(db, user_id)
+
+            if subscription:
+                plan = getattr(subscription, 'plan', None)
+                if plan:
+                    # Check video permission
+                    if car_data.video_url and not getattr(plan, 'can_add_video', False):
+                        raise HTTPException(
+                            status_code=status.HTTP_403_FORBIDDEN,
+                            detail="Video upload is not available in your current plan. Please upgrade to Premium or higher."
+                        )
+
+                    # Check virtual tour permission
+                    if car_data.virtual_tour_url and not getattr(plan, 'can_add_virtual_tour', False):
+                        raise HTTPException(
+                            status_code=status.HTTP_403_FORBIDDEN,
+                            detail="Virtual tour is not available in your current plan. Please upgrade to Premium or higher."
+                        )
+            else:
+                # No subscription - block premium features
+                if car_data.video_url or car_data.virtual_tour_url:
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail="Premium features require an active subscription. Please subscribe to a plan."
+                    )
+
         car = CarService.create_car(db, user_id, normalized_data)
         # FIX: Use getattr for car.id
         car_id = int(getattr(car, 'id', 0))
