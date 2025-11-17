@@ -120,7 +120,7 @@ async def get_payment_history(
         {
             "id": int(getattr(p, 'id', 0)),
             "amount": float(getattr(p, 'amount', 0)),
-            "currency": str(getattr(p, 'currency', 'PHP')),
+            "currency_id": int(getattr(p, 'currency_id', 1)),
             "payment_method": str(getattr(p, 'payment_method', '')),
             "status": str(getattr(p, 'status', '')),
             "reference_number": str(getattr(p, 'reference_number', '') or ''),
@@ -164,12 +164,14 @@ async def upgrade_subscription(
             "message": "Subscription upgrade initiated. Please complete payment.",
             "subscription": UserSubscriptionResponse.model_validate(subscription),
             "payment": {
-                "id": int(getattr(payment, 'id', 0)),
+                "payment_id": int(getattr(payment, 'id', 0)),
+                "subscription_id": int(getattr(subscription, 'id', 0)),
                 "amount": float(getattr(payment, 'amount', 0)),
-                "currency": str(getattr(payment, 'currency', 'PHP')),
+                "currency": 'PHP',
                 "status": str(getattr(payment, 'status', 'pending')),
-                "qr_code_image_url": qr_settings["qr_code_image_url"],
-                "payment_instructions": qr_settings["payment_instructions"]
+                "qr_code_url": qr_settings["qr_code_image_url"],
+                "instructions": qr_settings["payment_instructions"],
+                "created_at": getattr(payment, 'created_at', datetime.utcnow())
             }
         }
     except ValueError as e:
@@ -226,9 +228,9 @@ async def subscribe_to_plan(
                 payment_id=int(getattr(payment, 'id', 0)),
                 subscription_id=int(getattr(subscription, 'id', 0)),
                 amount=Decimal(str(getattr(payment, 'amount', 0))),
-                currency=str(getattr(payment, 'currency', 'PHP')),
-                qr_code_image_url=qr_settings["qr_code_image_url"],
-                payment_instructions=qr_settings["payment_instructions"],
+                currency='PHP',
+                qr_code_url=qr_settings["qr_code_image_url"],
+                instructions=qr_settings["payment_instructions"],
                 status=str(getattr(payment, 'status', 'pending')),
                 created_at=getattr(payment, 'created_at', datetime.utcnow())
             )
@@ -238,9 +240,9 @@ async def subscribe_to_plan(
                 payment_id=int(getattr(payment, 'id', 0)),
                 subscription_id=int(getattr(subscription, 'id', 0)),
                 amount=Decimal(str(getattr(payment, 'amount', 0))),
-                currency=str(getattr(payment, 'currency', 'PHP')),
-                qr_code_image_url="",
-                payment_instructions="Payment completed",
+                currency='PHP',
+                qr_code_url="",
+                instructions="Payment completed",
                 status=str(getattr(payment, 'status', 'completed')),
                 created_at=getattr(payment, 'created_at', datetime.utcnow())
             )

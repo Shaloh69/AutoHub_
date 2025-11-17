@@ -17,32 +17,34 @@ from decimal import Decimal
 # ========================================
 
 class SubscriptionPlanResponse(BaseModel):
-    """Subscription plan response - Complete with all fields"""
+    """Subscription plan response - Aligned with actual DB schema"""
     id: int
     name: str
-    plan_type: str
-    monthly_price: Decimal
-    yearly_price: Optional[Decimal] = None
-    currency: str
-    
-    # Limits
-    max_listings: int  # Fixed: was max_active_listings
-    max_featured_listings: int
-    max_photos_per_listing: int  # Fixed: was max_images_per_listing
-    storage_mb: int
-    boost_credits_monthly: int
-    
-    # Features
-    priority_ranking: int
-    advanced_analytics: bool
-    homepage_featured: bool
-    verified_badge: bool
-    priority_support: bool
-    
-    # Status
-    is_active: bool
-    is_popular: bool
-    
+    slug: str
+    description: Optional[str] = None
+
+    # Pricing (from DB schema)
+    price: Decimal
+    currency_id: int = 1
+    billing_cycle: str = "MONTHLY"
+
+    # Limits (from DB schema)
+    max_listings: int = 5
+    max_photos_per_listing: int = 10
+    max_featured_listings: int = 0
+
+    # Features (from DB schema)
+    can_add_video: bool = False
+    can_add_virtual_tour: bool = False
+    priority_support: bool = False
+    advanced_analytics: bool = False
+    featured_badge: bool = False
+
+    # Status (from DB schema)
+    is_popular: bool = False
+    display_order: int = 0
+    is_active: bool = True
+
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -55,41 +57,41 @@ class SubscriptionCreate(BaseModel):
 
 
 class UserSubscriptionResponse(BaseModel):
-    """User subscription response - Complete with all fields"""
+    """User subscription response - Aligned with DB schema"""
     id: int
     user_id: int
     plan_id: int
     status: str
     billing_cycle: str
-    current_period_start: datetime
-    current_period_end: datetime
+    current_period_start: Optional[datetime] = None  # Can be NULL in DB
+    current_period_end: Optional[datetime] = None    # Can be NULL in DB
     next_billing_date: Optional[datetime] = None
     auto_renew: bool = True
     subscribed_at: datetime
     cancelled_at: Optional[datetime] = None
-    
+
+    # Include plan details for convenience
+    plan: Optional["SubscriptionPlanResponse"] = None
+
     model_config = ConfigDict(from_attributes=True)
 
 
 class SubscriptionUsageResponse(BaseModel):
-    """Subscription usage response - Complete"""
-    # Current usage
-    active_listings: int
-    featured_listings: int
-    premium_listings: int
-    boost_credits_used: int
-    storage_used_mb: int
-    
-    # Limits
-    max_listings: int  # Fixed: was max_active_listings
-    max_featured_listings: int
-    max_photos_per_listing: int  # Fixed: was max_images_per_listing
-    boost_credits_monthly: int
-    storage_mb: int
-    
-    # Period
-    period_start: datetime
-    period_end: datetime
+    """Subscription usage response - Aligned with DB schema"""
+    id: int
+    user_id: int
+    subscription_id: int
+
+    # Usage Tracking (from DB)
+    current_listings: int = 0
+    current_featured: int = 0
+    total_listings_created: int = 0
+
+    # Timestamps
+    reset_at: Optional[datetime] = None
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class PromoCodeValidation(BaseModel):
@@ -107,18 +109,19 @@ class PromoCodeResponse(BaseModel):
 
 
 class SubscriptionPaymentResponse(BaseModel):
-    """Subscription payment response - Complete"""
+    """Subscription payment response - Aligned with DB schema"""
     id: int
     subscription_id: int
     user_id: int
+    plan_id: int
     amount: Decimal
-    currency: str
+    currency_id: int = 1
     payment_method: Optional[str] = None
+    transaction_id: Optional[str] = None
     status: str
-    provider: Optional[str] = None
-    provider_transaction_id: Optional[str] = None
+    paid_at: Optional[datetime] = None
     created_at: datetime
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 
@@ -131,13 +134,13 @@ class QRCodePaymentResponse(BaseModel):
     payment_id: int
     subscription_id: int
     amount: Decimal
-    currency: str
-    qr_code_image_url: str
-    payment_instructions: str
+    currency: str = "PHP"  # Display currency for frontend
+    qr_code_url: str       # Renamed for clarity
+    instructions: str       # Renamed for clarity
     status: str = "pending"
     created_at: datetime
-    
-    model_config = ConfigDict(from_attributes=True)
+
+    model_config = ConfigDict(from_attributes=False)  # Manual construction
 
 
 class ReferenceNumberSubmit(BaseModel):
@@ -173,36 +176,36 @@ class ReferenceNumberSubmitResponse(BaseModel):
 
 
 class SubscriptionPaymentDetailedResponse(BaseModel):
-    """Detailed payment response with all fields"""
+    """Detailed payment response with all fields - Aligned with DB schema"""
     id: int
     subscription_id: int
     user_id: int
     plan_id: int
     amount: Decimal
-    currency: str
+    currency_id: int = 1
     payment_method: Optional[str] = None
+    transaction_id: Optional[str] = None
     status: str
-    
+
     # QR Code Payment Fields
     reference_number: Optional[str] = None
     qr_code_shown: bool = False
     submitted_at: Optional[datetime] = None
-    
+
     # Admin Verification
     admin_verified_by: Optional[int] = None
     admin_verified_at: Optional[datetime] = None
     admin_notes: Optional[str] = None
     rejection_reason: Optional[str] = None
-    
+
+    # Billing Period
+    billing_period_start: Optional[datetime] = None
+    billing_period_end: Optional[datetime] = None
+
     # Timestamps
     created_at: datetime
     paid_at: Optional[datetime] = None
-    
-    # Related data
-    user_email: Optional[str] = None
-    user_name: Optional[str] = None
-    plan_name: Optional[str] = None
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 
