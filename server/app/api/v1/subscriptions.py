@@ -6,7 +6,7 @@ ADDED: QR code payment endpoints, reference number submission
 PRESERVED: All original endpoints
 ===========================================
 """
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 from typing import List, Dict, Optional
 from decimal import Decimal
@@ -135,18 +135,19 @@ async def get_payment_history(
 @router.post("/upgrade")
 async def upgrade_subscription(
     plan_id: int,
+    request: Request,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Upgrade to a higher plan"""
     user_id = int(getattr(current_user, 'id', 0))
-    
+
     # Cancel current subscription
     try:
         SubscriptionService.cancel_subscription(db, user_id)
     except:
         pass
-    
+
     # Subscribe to new plan
     try:
         subscription, payment = SubscriptionService.subscribe(
@@ -156,9 +157,10 @@ async def upgrade_subscription(
             billing_cycle="monthly",
             payment_method="qr_code"
         )
-        
-        # Get QR code settings
-        qr_settings = SubscriptionService.get_qr_code_settings(db)
+
+        # Get QR code settings with request base URL
+        base_url = f"{request.url.scheme}://{request.url.netloc}"
+        qr_settings = SubscriptionService.get_qr_code_settings(db, request_base_url=base_url)
         
         return {
             "message": "Subscription upgrade initiated. Please complete payment.",
@@ -185,17 +187,18 @@ async def upgrade_subscription(
 @router.post("/subscribe", response_model=QRCodePaymentResponse, status_code=status.HTTP_201_CREATED)
 async def subscribe_to_plan(
     subscription_data: SubscriptionCreate,
+    request: Request,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
     Subscribe to a plan with QR code payment
-    
+
     UPDATED: Now returns QR code image and payment instructions for QR code payments
     """
     try:
         user_id = int(getattr(current_user, 'id', 0))
-        
+
         # Create subscription and payment
         subscription, payment = SubscriptionService.subscribe(
             db,
@@ -205,10 +208,11 @@ async def subscribe_to_plan(
             payment_method=subscription_data.payment_method,
             promo_code=subscription_data.promo_code
         )
-        
+
         # For QR code payments, return QR code information
         if subscription_data.payment_method == "qr_code":
-            qr_settings = SubscriptionService.get_qr_code_settings(db)
+            base_url = f"{request.url.scheme}://{request.url.netloc}"
+            qr_settings = SubscriptionService.get_qr_code_settings(db, request_base_url=base_url)
             
             # Send notification to user
             try:
@@ -404,14 +408,16 @@ async def get_payment_details(
 
 
 @router.get("/qr-code", response_model=Dict)
-async def get_qr_code_settings(db: Session = Depends(get_db)):
+async def get_qr_code_settings(request: Request, db: Session = Depends(get_db)):
     """
     Get QR code payment settings (GCash QR code image and instructions)
 
     Returns the GCash QR code image URL and payment instructions configured by admin
     """
     try:
-        qr_settings = SubscriptionService.get_qr_code_settings(db)
+        # Extract base URL from request
+        base_url = f"{request.url.scheme}://{request.url.netloc}"
+        qr_settings = SubscriptionService.get_qr_code_settings(db, request_base_url=base_url)
 
         return {
             "success": True,
