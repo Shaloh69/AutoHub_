@@ -19,18 +19,20 @@ export default function NotificationsPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (isAuthenticated) {
-      fetchNotifications();
+    if (!isAuthenticated) {
+      router.push('/auth/login');
+      return;
     }
-  }, [isAuthenticated]);
+    fetchNotifications();
+  }, [isAuthenticated, router]);
 
   const fetchNotifications = async () => {
     try {
       setLoading(true);
       setError(null);
-      
+
       const response = await apiService.getNotifications();
-      
+
       if (response.success && response.data) {
         setNotifications(response.data);
       }
@@ -83,9 +85,12 @@ export default function NotificationsPage() {
     }
   };
 
-  if (!isAuthenticated) {
-    router.push('/auth/login');
-    return null;
+  if (!isAuthenticated || loading) {
+    return (
+      <div className="flex justify-center items-center min-h-[400px]">
+        <Spinner size="lg" />
+      </div>
+    );
   }
 
   const unreadNotifications = notifications.filter(n => !n.isRead);

@@ -35,10 +35,12 @@ export default function DashboardPage() {
   const { isOpen: isDeleteOpen, onOpen: onDeleteOpen, onOpenChange: onDeleteOpenChange } = useDisclosure();
 
   useEffect(() => {
-    if (isAuthenticated) {
-      fetchMyListings();
+    if (!isAuthenticated) {
+      router.push('/auth/login');
+      return;
     }
-  }, [isAuthenticated]);
+    fetchMyListings();
+  }, [isAuthenticated, router]);
 
   const fetchMyListings = async () => {
     try {
@@ -86,9 +88,12 @@ export default function DashboardPage() {
     onDeleteOpen();
   };
 
-  if (!isAuthenticated) {
-    router.push('/auth/login');
-    return null;
+  if (!isAuthenticated || loading) {
+    return (
+      <div className="flex justify-center items-center min-h-[400px]">
+        <Spinner size="lg" color="primary" />
+      </div>
+    );
   }
 
   const activeListings = myListings.filter(car => car.status === 'ACTIVE').length;

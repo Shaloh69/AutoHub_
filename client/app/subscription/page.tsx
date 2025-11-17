@@ -33,16 +33,18 @@ export default function SubscriptionPage() {
   } | null>(null);
 
   useEffect(() => {
-    if (isAuthenticated) {
-      fetchSubscriptionData();
+    if (!isAuthenticated) {
+      router.push('/auth/login');
+      return;
     }
-  }, [isAuthenticated]);
+    fetchSubscriptionData();
+  }, [isAuthenticated, router]);
 
   const fetchSubscriptionData = async () => {
     try {
       setLoading(true);
       setError(null);
-      
+
       const [plansResponse, currentSubResponse, limitsResponse] = await Promise.all([
         apiService.getSubscriptionPlans(),
         apiService.getCurrentSubscription(),
@@ -147,12 +149,7 @@ export default function SubscriptionPage() {
     }
   };
 
-  if (!isAuthenticated) {
-    router.push('/auth/login');
-    return null;
-  }
-
-  if (loading) {
+  if (!isAuthenticated || loading) {
     return (
       <div className="flex justify-center items-center min-h-[400px]">
         <Spinner size="lg" color="primary" />
