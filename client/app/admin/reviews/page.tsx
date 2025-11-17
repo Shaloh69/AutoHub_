@@ -1,21 +1,23 @@
 // ==========================================
-// app/admin/reviews/page.tsx - Review Moderation Dashboard
+// app/admin/reviews/page.tsx - Review Moderation Dashboard (Redesigned)
 // ==========================================
 
 'use client';
 
-import { useState, useEffect } from 'react';
-import {Card, CardHeader, CardBody} from "@heroui/card";
-import {Button} from "@heroui/button";
-import {Chip} from "@heroui/chip";
-import {Spinner} from "@heroui/spinner";
-import {Table, TableHeader, TableColumn, TableBody, TableRow, TableCell} from "@heroui/table";
-import {Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure} from "@heroui/modal";
-import {Textarea} from "@heroui/input";
-import {Select, SelectItem} from "@heroui/select";
+import React, { useState, useEffect } from 'react';
+import AdminLayout from '@/components/admin/AdminLayout';
+import { Card, CardHeader, CardBody } from "@heroui/card";
+import { Button } from "@heroui/button";
+import { Chip } from "@heroui/chip";
+import { Spinner } from "@heroui/spinner";
+import { Input } from "@heroui/input";
+import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from "@heroui/table";
+import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure } from "@heroui/modal";
+import { Textarea } from "@heroui/input";
+import { Tabs, Tab } from "@heroui/tabs";
 import {
-  Star, Check, X, EyeOff, Eye, BadgeCheck, MessageCircle,
-  TrendingUp, AlertCircle
+  Star, Check, X, EyeOff, MessageCircle, BadgeCheck,
+  TrendingUp, Filter, Search
 } from 'lucide-react';
 import { apiService } from '@/services/api';
 import { useRequireAdmin } from '@/contexts/AuthContext';
@@ -53,9 +55,9 @@ export default function AdminReviewsPage() {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [stats, setStats] = useState<ReviewStats | null>(null);
-  const [statusFilter, setStatusFilter] = useState<string>('pending');
+  const [statusFilter, setStatusFilter] = useState<string>('PENDING');
   const [adminNotes, setAdminNotes] = useState('');
-  const [moderationAction, setModerationAction] = useState<'approved' | 'rejected' | 'hidden' | 'pending'>('approved');
+  const [moderationAction, setModerationAction] = useState<'APPROVED' | 'REJECTED' | 'HIDDEN' | 'PENDING'>('APPROVED');
 
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
 
@@ -95,7 +97,7 @@ export default function AdminReviewsPage() {
     }
   };
 
-  const openModerationModal = (review: Review, action: 'approved' | 'rejected' | 'hidden') => {
+  const openModerationModal = (review: Review, action: 'APPROVED' | 'REJECTED' | 'HIDDEN') => {
     setSelectedReview(review);
     setModerationAction(action);
     setAdminNotes('');
@@ -107,8 +109,9 @@ export default function AdminReviewsPage() {
 
     try {
       setActionLoading(true);
+      // FIX: Convert to uppercase to match backend enum values
       const response = await apiService.moderateReview(selectedReview.id, {
-        status: moderationAction,
+        status: moderationAction.toUpperCase(),
         admin_notes: adminNotes.trim() || undefined,
       });
 
@@ -122,7 +125,7 @@ export default function AdminReviewsPage() {
         await loadStatistics();
         onOpenChange();
 
-        alert(`Review ${moderationAction} successfully`);
+        alert(`Review ${moderationAction.toLowerCase()} successfully`);
       } else {
         alert(response.error || 'Failed to moderate review');
       }
@@ -135,11 +138,12 @@ export default function AdminReviewsPage() {
   };
 
   const getStatusColor = (status: string): "success" | "warning" | "danger" | "default" => {
-    switch (status) {
-      case 'approved': return 'success';
-      case 'pending': return 'warning';
-      case 'rejected': return 'danger';
-      case 'hidden': return 'default';
+    const upperStatus = status?.toUpperCase();
+    switch (upperStatus) {
+      case 'APPROVED': return 'success';
+      case 'PENDING': return 'warning';
+      case 'REJECTED': return 'danger';
+      case 'HIDDEN': return 'default';
       default: return 'default';
     }
   };
@@ -150,8 +154,8 @@ export default function AdminReviewsPage() {
         {[1, 2, 3, 4, 5].map((star) => (
           <Star
             key={star}
-            size={14}
-            className={star <= rating ? 'fill-yellow-500 text-yellow-500' : 'text-gray-400'}
+            size={16}
+            className={star <= rating ? 'fill-yellow-500 text-yellow-500' : 'text-gray-600'}
           />
         ))}
       </div>
@@ -177,178 +181,239 @@ export default function AdminReviewsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-transparent py-8 px-4">
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
-        <div>
-          <h1 className="text-3xl font-bold text-white flex items-center gap-3">
-            <MessageCircle className="text-blue-500" size={32} />
-            Review Moderation Dashboard
-          </h1>
-          <p className="text-gray-400 mt-1">Manage and moderate customer reviews</p>
-        </div>
-
+    <AdminLayout>
+      <div className="space-y-6">
         {/* Statistics Cards */}
         {stats && (
-          <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-7 gap-4">
-            <Card className="bg-black/40 backdrop-blur-md border border-dark-700">
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+            <Card className="bg-gradient-to-br from-blue-600/20 to-blue-800/20 backdrop-blur-md border border-blue-500/30">
               <CardBody className="p-4">
-                <p className="text-xs text-gray-400">Total Reviews</p>
-                <p className="text-2xl font-bold text-white">{stats.total}</p>
-              </CardBody>
-            </Card>
-
-            <Card className="bg-black/40 backdrop-blur-md border border-dark-700">
-              <CardBody className="p-4">
-                <p className="text-xs text-yellow-500">Pending</p>
-                <p className="text-2xl font-bold text-yellow-500">{stats.pending}</p>
-              </CardBody>
-            </Card>
-
-            <Card className="bg-black/40 backdrop-blur-md border border-dark-700">
-              <CardBody className="p-4">
-                <p className="text-xs text-green-500">Approved</p>
-                <p className="text-2xl font-bold text-green-500">{stats.approved}</p>
-              </CardBody>
-            </Card>
-
-            <Card className="bg-black/40 backdrop-blur-md border border-dark-700">
-              <CardBody className="p-4">
-                <p className="text-xs text-red-500">Rejected</p>
-                <p className="text-2xl font-bold text-red-500">{stats.rejected}</p>
-              </CardBody>
-            </Card>
-
-            <Card className="bg-black/40 backdrop-blur-md border border-dark-700">
-              <CardBody className="p-4">
-                <p className="text-xs text-gray-500">Hidden</p>
-                <p className="text-2xl font-bold text-gray-400">{stats.hidden}</p>
-              </CardBody>
-            </Card>
-
-            <Card className="bg-black/40 backdrop-blur-md border border-dark-700">
-              <CardBody className="p-4">
-                <p className="text-xs text-blue-500">Verified</p>
-                <p className="text-2xl font-bold text-blue-500">{stats.verified_purchases}</p>
-              </CardBody>
-            </Card>
-
-            <Card className="bg-black/40 backdrop-blur-md border border-dark-700">
-              <CardBody className="p-4">
-                <p className="text-xs text-gray-400">Avg Rating</p>
-                <div className="flex items-center gap-2">
-                  <p className="text-2xl font-bold text-white">{stats.average_rating.toFixed(1)}</p>
-                  <Star size={16} className="fill-yellow-500 text-yellow-500" />
+                <div className="flex items-center gap-2 mb-2">
+                  <MessageCircle size={18} className="text-blue-400" />
+                  <p className="text-xs text-blue-300 font-medium">Total</p>
                 </div>
+                <p className="text-3xl font-bold text-white">{stats.total}</p>
+              </CardBody>
+            </Card>
+
+            <Card className="bg-gradient-to-br from-yellow-600/20 to-yellow-800/20 backdrop-blur-md border border-yellow-500/30">
+              <CardBody className="p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <TrendingUp size={18} className="text-yellow-400" />
+                  <p className="text-xs text-yellow-300 font-medium">Pending</p>
+                </div>
+                <p className="text-3xl font-bold text-white">{stats.pending}</p>
+              </CardBody>
+            </Card>
+
+            <Card className="bg-gradient-to-br from-green-600/20 to-green-800/20 backdrop-blur-md border border-green-500/30">
+              <CardBody className="p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Check size={18} className="text-green-400" />
+                  <p className="text-xs text-green-300 font-medium">Approved</p>
+                </div>
+                <p className="text-3xl font-bold text-white">{stats.approved}</p>
+              </CardBody>
+            </Card>
+
+            <Card className="bg-gradient-to-br from-red-600/20 to-red-800/20 backdrop-blur-md border border-red-500/30">
+              <CardBody className="p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <X size={18} className="text-red-400" />
+                  <p className="text-xs text-red-300 font-medium">Rejected</p>
+                </div>
+                <p className="text-3xl font-bold text-white">{stats.rejected}</p>
+              </CardBody>
+            </Card>
+
+            <Card className="bg-gradient-to-br from-gray-600/20 to-gray-800/20 backdrop-blur-md border border-gray-500/30">
+              <CardBody className="p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <EyeOff size={18} className="text-gray-400" />
+                  <p className="text-xs text-gray-300 font-medium">Hidden</p>
+                </div>
+                <p className="text-3xl font-bold text-white">{stats.hidden}</p>
+              </CardBody>
+            </Card>
+
+            <Card className="bg-gradient-to-br from-purple-600/20 to-purple-800/20 backdrop-blur-md border border-purple-500/30">
+              <CardBody className="p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <BadgeCheck size={18} className="text-purple-400" />
+                  <p className="text-xs text-purple-300 font-medium">Verified</p>
+                </div>
+                <p className="text-3xl font-bold text-white">{stats.verified_purchases}</p>
+              </CardBody>
+            </Card>
+
+            <Card className="bg-gradient-to-br from-orange-600/20 to-orange-800/20 backdrop-blur-md border border-orange-500/30">
+              <CardBody className="p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Star size={18} className="fill-orange-400 text-orange-400" />
+                  <p className="text-xs text-orange-300 font-medium">Avg Rating</p>
+                </div>
+                <p className="text-3xl font-bold text-white">{stats.average_rating.toFixed(1)}</p>
               </CardBody>
             </Card>
           </div>
         )}
 
-        {/* Filter */}
-        <Card className="bg-black/40 backdrop-blur-md border border-dark-700">
-          <CardBody className="p-4">
-            <div className="flex gap-4 items-center">
-              <span className="text-sm text-gray-400">Filter by status:</span>
-              <Select
-                placeholder="Select status"
-                className="max-w-xs"
-                classNames={{
-                  trigger: "bg-dark-800 border-dark-600",
-                  value: "text-white",
-                }}
-                selectedKeys={statusFilter ? [statusFilter] : []}
-                onChange={(e) => setStatusFilter(e.target.value)}
-              >
-                <SelectItem key="">All</SelectItem>
-                <SelectItem key="pending">Pending</SelectItem>
-                <SelectItem key="approved">Approved</SelectItem>
-                <SelectItem key="rejected">Rejected</SelectItem>
-                <SelectItem key="hidden">Hidden</SelectItem>
-              </Select>
-              {statusFilter && (
-                <Button
-                  size="sm"
-                  variant="flat"
-                  className="bg-black/20 backdrop-blur-sm"
-                  onPress={() => setStatusFilter('')}
-                >
-                  Clear Filter
-                </Button>
-              )}
-            </div>
+        {/* Tabs Filter */}
+        <Card className="bg-black/40 backdrop-blur-xl border border-gray-700">
+          <CardBody className="p-2">
+            <Tabs
+              selectedKey={statusFilter}
+              onSelectionChange={(key) => setStatusFilter(key as string)}
+              variant="underlined"
+              classNames={{
+                tabList: "gap-6",
+                cursor: "bg-red-500",
+                tab: "px-4 py-3",
+                tabContent: "group-data-[selected=true]:text-white"
+              }}
+            >
+              <Tab
+                key=""
+                title={
+                  <div className="flex items-center gap-2">
+                    <MessageCircle size={16} />
+                    <span>All Reviews</span>
+                    {stats && <Chip size="sm" variant="flat">{stats.total}</Chip>}
+                  </div>
+                }
+              />
+              <Tab
+                key="PENDING"
+                title={
+                  <div className="flex items-center gap-2">
+                    <TrendingUp size={16} />
+                    <span>Pending</span>
+                    {stats && <Chip size="sm" color="warning" variant="flat">{stats.pending}</Chip>}
+                  </div>
+                }
+              />
+              <Tab
+                key="APPROVED"
+                title={
+                  <div className="flex items-center gap-2">
+                    <Check size={16} />
+                    <span>Approved</span>
+                    {stats && <Chip size="sm" color="success" variant="flat">{stats.approved}</Chip>}
+                  </div>
+                }
+              />
+              <Tab
+                key="REJECTED"
+                title={
+                  <div className="flex items-center gap-2">
+                    <X size={16} />
+                    <span>Rejected</span>
+                    {stats && <Chip size="sm" color="danger" variant="flat">{stats.rejected}</Chip>}
+                  </div>
+                }
+              />
+              <Tab
+                key="HIDDEN"
+                title={
+                  <div className="flex items-center gap-2">
+                    <EyeOff size={16} />
+                    <span>Hidden</span>
+                    {stats && <Chip size="sm" variant="flat">{stats.hidden}</Chip>}
+                  </div>
+                }
+              />
+            </Tabs>
           </CardBody>
         </Card>
 
         {/* Reviews Table */}
-        <Card className="bg-black/40 backdrop-blur-md border border-dark-700">
-          <CardHeader className="border-b border-dark-700 p-6">
-            <h2 className="text-xl font-semibold text-white">
-              Reviews {statusFilter && `- ${statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1)}`}
-            </h2>
+        <Card className="bg-black/40 backdrop-blur-xl border border-gray-700">
+          <CardHeader className="border-b border-gray-700 p-6 flex justify-between items-center">
+            <div>
+              <h2 className="text-xl font-semibold text-white">
+                {statusFilter ? statusFilter.charAt(0) + statusFilter.slice(1).toLowerCase() : 'All'} Reviews
+              </h2>
+              <p className="text-sm text-gray-400 mt-1">{reviews.length} reviews found</p>
+            </div>
           </CardHeader>
           <CardBody className="p-0">
             {loading ? (
-              <div className="flex justify-center items-center p-12">
+              <div className="flex justify-center items-center p-16">
                 <Spinner size="lg" color="primary" />
               </div>
             ) : reviews.length === 0 ? (
-              <div className="text-center p-12">
-                <MessageCircle className="mx-auto text-gray-600 mb-4" size={48} />
-                <p className="text-gray-400">No reviews found</p>
+              <div className="text-center p-16">
+                <div className="w-20 h-20 rounded-full bg-gray-800/50 flex items-center justify-center mx-auto mb-4">
+                  <MessageCircle className="text-gray-600" size={40} />
+                </div>
+                <p className="text-gray-400 text-lg font-medium">No reviews found</p>
                 <p className="text-sm text-gray-500 mt-2">
-                  {statusFilter ? 'Try adjusting your filters' : 'No reviews in the system yet'}
+                  {statusFilter ? 'Try selecting a different filter' : 'No reviews in the system yet'}
                 </p>
               </div>
             ) : (
               <Table
                 removeWrapper
                 classNames={{
-                  th: "bg-dark-800 text-gray-300 font-semibold",
-                  td: "text-gray-200",
+                  th: "bg-black/20 text-gray-300 font-semibold text-xs uppercase",
+                  td: "text-gray-200 py-4",
                 }}
               >
                 <TableHeader>
-                  <TableColumn>ID</TableColumn>
-                  <TableColumn>RATING</TableColumn>
+                  <TableColumn width={80}>ID</TableColumn>
+                  <TableColumn width={140}>RATING</TableColumn>
                   <TableColumn>COMMENT</TableColumn>
-                  <TableColumn>BUYER</TableColumn>
-                  <TableColumn>STATUS</TableColumn>
-                  <TableColumn>DATE</TableColumn>
-                  <TableColumn>ACTIONS</TableColumn>
+                  <TableColumn width={100}>BUYER</TableColumn>
+                  <TableColumn width={100}>STATUS</TableColumn>
+                  <TableColumn width={140}>DATE</TableColumn>
+                  <TableColumn width={280}>ACTIONS</TableColumn>
                 </TableHeader>
                 <TableBody>
                   {reviews.map((review) => (
-                    <TableRow key={review.id} className="border-b border-dark-700 hover:bg-black/30 backdrop-blur-sm">
+                    <TableRow
+                      key={review.id}
+                      className="border-b border-gray-800 hover:bg-white/5 transition-colors"
+                    >
                       <TableCell>
-                        <code className="bg-black/30 backdrop-blur-sm px-2 py-1 rounded text-xs">
+                        <code className="bg-gray-800/50 px-2 py-1 rounded text-xs text-gray-300">
                           #{review.id}
                         </code>
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-2">
+                        <div className="space-y-1">
                           {renderStars(review.rating)}
-                          <span className="text-sm font-semibold">{review.rating.toFixed(1)}</span>
+                          <p className="text-sm font-semibold text-white">{review.rating.toFixed(1)}/5.0</p>
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="max-w-md">
+                        <div className="max-w-lg space-y-2">
                           {review.title && (
-                            <p className="font-semibold text-sm mb-1">{review.title}</p>
+                            <p className="font-semibold text-white text-sm">{review.title}</p>
                           )}
                           <p className="text-sm text-gray-400 line-clamp-2">{review.comment}</p>
                           {review.verified_purchase && (
-                            <Chip size="sm" color="success" variant="flat" startContent={<BadgeCheck size={12} />} className="mt-1">
-                              Verified
+                            <Chip
+                              size="sm"
+                              color="success"
+                              variant="flat"
+                              startContent={<BadgeCheck size={14} />}
+                              className="mt-1"
+                            >
+                              Verified Purchase
                             </Chip>
                           )}
                         </div>
                       </TableCell>
                       <TableCell>
-                        <span className="text-sm">Buyer #{review.buyer_id}</span>
+                        <span className="text-sm text-gray-400">#{review.buyer_id}</span>
                       </TableCell>
                       <TableCell>
-                        <Chip color={getStatusColor(review.status)} variant="flat" size="sm">
+                        <Chip
+                          color={getStatusColor(review.status)}
+                          variant="flat"
+                          size="sm"
+                          className="font-medium"
+                        >
                           {review.status.toUpperCase()}
                         </Chip>
                       </TableCell>
@@ -359,33 +424,34 @@ export default function AdminReviewsPage() {
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-2">
-                          {review.status !== 'approved' && (
+                          {review.status?.toUpperCase() !== 'APPROVED' && (
                             <Button
                               size="sm"
-                              className="bg-green-600 hover:bg-green-700"
+                              color="success"
+                              variant="flat"
                               startContent={<Check size={14} />}
-                              onPress={() => openModerationModal(review, 'approved')}
+                              onPress={() => openModerationModal(review, 'APPROVED')}
                             >
                               Approve
                             </Button>
                           )}
-                          {review.status !== 'rejected' && (
+                          {review.status?.toUpperCase() !== 'REJECTED' && (
                             <Button
                               size="sm"
-                              className="bg-red-600 hover:bg-red-700"
+                              color="danger"
+                              variant="flat"
                               startContent={<X size={14} />}
-                              onPress={() => openModerationModal(review, 'rejected')}
+                              onPress={() => openModerationModal(review, 'REJECTED')}
                             >
                               Reject
                             </Button>
                           )}
-                          {review.status !== 'hidden' && (
+                          {review.status?.toUpperCase() !== 'HIDDEN' && (
                             <Button
                               size="sm"
                               variant="flat"
-                              className="bg-black/20 backdrop-blur-sm"
                               startContent={<EyeOff size={14} />}
-                              onPress={() => openModerationModal(review, 'hidden')}
+                              onPress={() => openModerationModal(review, 'HIDDEN')}
                             >
                               Hide
                             </Button>
@@ -407,85 +473,118 @@ export default function AdminReviewsPage() {
         onOpenChange={onOpenChange}
         size="2xl"
         classNames={{
-          base: "bg-dark-900 border border-dark-700",
-          header: "border-b border-dark-700",
+          base: "bg-gray-900 border border-gray-700",
+          header: "border-b border-gray-700",
           body: "py-6",
-          footer: "border-t border-dark-700",
+          footer: "border-t border-gray-700",
         }}
       >
         <ModalContent>
           {(onClose) => (
             <>
-              <ModalHeader className="text-white flex items-center gap-2">
-                {moderationAction === 'approved' && <Check className="text-green-500" size={20} />}
-                {moderationAction === 'rejected' && <X className="text-red-500" size={20} />}
-                {moderationAction === 'hidden' && <EyeOff className="text-gray-500" size={20} />}
-                {moderationAction.charAt(0).toUpperCase() + moderationAction.slice(1)} Review
+              <ModalHeader className="text-white flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                  moderationAction === 'APPROVED' ? 'bg-green-600/20 border border-green-500/30' :
+                  moderationAction === 'REJECTED' ? 'bg-red-600/20 border border-red-500/30' :
+                  'bg-gray-600/20 border border-gray-500/30'
+                }`}>
+                  {moderationAction === 'APPROVED' && <Check className="text-green-500" size={20} />}
+                  {moderationAction === 'REJECTED' && <X className="text-red-500" size={20} />}
+                  {moderationAction === 'HIDDEN' && <EyeOff className="text-gray-500" size={20} />}
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold">
+                    {moderationAction.charAt(0) + moderationAction.slice(1).toLowerCase()} Review
+                  </h3>
+                  <p className="text-sm text-gray-400 font-normal">Review #{selectedReview?.id}</p>
+                </div>
               </ModalHeader>
               <ModalBody>
                 {selectedReview && (
                   <div className="space-y-4">
-                    <Card className="bg-black/30 backdrop-blur-sm border border-dark-700">
-                      <CardBody className="p-4 space-y-2">
-                        <div className="flex justify-between">
-                          <span className="text-gray-400">Review ID:</span>
-                          <span className="text-white">#{selectedReview.id}</span>
-                        </div>
-                        <div className="flex justify-between">
+                    <Card className="bg-black/40 backdrop-blur-md border border-gray-700">
+                      <CardBody className="p-6 space-y-4">
+                        <div className="flex items-center justify-between">
                           <span className="text-gray-400">Rating:</span>
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-3">
                             {renderStars(selectedReview.rating)}
-                            <span>{selectedReview.rating.toFixed(1)}</span>
+                            <span className="text-white font-bold text-lg">{selectedReview.rating.toFixed(1)}</span>
                           </div>
                         </div>
+
                         {selectedReview.title && (
-                          <div className="pt-2 border-t border-dark-600">
-                            <p className="text-sm text-gray-400 mb-1">Title:</p>
-                            <p className="text-white font-semibold">{selectedReview.title}</p>
+                          <div className="pt-3 border-t border-gray-700">
+                            <p className="text-sm text-gray-400 mb-2">Title:</p>
+                            <p className="text-white font-semibold text-lg">{selectedReview.title}</p>
                           </div>
                         )}
-                        <div className="pt-2 border-t border-dark-600">
-                          <p className="text-sm text-gray-400 mb-1">Comment:</p>
-                          <p className="text-white">{selectedReview.comment}</p>
+
+                        <div className="pt-3 border-t border-gray-700">
+                          <p className="text-sm text-gray-400 mb-2">Comment:</p>
+                          <p className="text-white leading-relaxed">{selectedReview.comment}</p>
+                        </div>
+
+                        <div className="pt-3 border-t border-gray-700 flex items-center justify-between">
+                          <span className="text-gray-400">Verified Purchase:</span>
+                          {selectedReview.verified_purchase ? (
+                            <Chip size="sm" color="success" variant="flat" startContent={<BadgeCheck size={14} />}>
+                              Verified
+                            </Chip>
+                          ) : (
+                            <Chip size="sm" variant="flat">Not Verified</Chip>
+                          )}
                         </div>
                       </CardBody>
                     </Card>
 
                     <Textarea
-                      label="Admin Notes (optional)"
+                      label="Admin Notes (Optional)"
+                      labelPlacement="outside"
                       placeholder="Add notes about this moderation decision..."
                       value={adminNotes}
                       onChange={(e) => setAdminNotes(e.target.value)}
-                      minRows={3}
+                      minRows={4}
                       maxLength={500}
                       classNames={{
-                        input: "bg-dark-800 text-white",
-                        inputWrapper: "bg-dark-800 border-dark-600",
+                        input: "bg-gray-800 text-white",
+                        inputWrapper: "bg-gray-800 border-gray-700",
+                        label: "text-gray-300 font-medium"
                       }}
                     />
+                    <p className="text-xs text-gray-500">{adminNotes.length}/500 characters</p>
                   </div>
                 )}
               </ModalBody>
               <ModalFooter>
-                <Button variant="flat" onPress={onClose} className="bg-black/20 backdrop-blur-sm">
+                <Button
+                  variant="flat"
+                  onPress={onClose}
+                  className="font-medium"
+                >
                   Cancel
                 </Button>
                 <Button
-                  className={
-                    moderationAction === 'approved' ? 'bg-green-600 hover:bg-green-700' :
-                    moderationAction === 'rejected' ? 'bg-red-600 hover:bg-red-700' :
-                    'bg-gray-600 hover:bg-gray-700'
+                  color={
+                    moderationAction === 'APPROVED' ? 'success' :
+                    moderationAction === 'REJECTED' ? 'danger' :
+                    'default'
                   }
                   onPress={handleModerateReview}
                   isLoading={actionLoading}
+                  className="font-medium"
+                  startContent={
+                    moderationAction === 'APPROVED' ? <Check size={16} /> :
+                    moderationAction === 'REJECTED' ? <X size={16} /> :
+                    <EyeOff size={16} />
+                  }
                 >
-                  {moderationAction.charAt(0).toUpperCase() + moderationAction.slice(1)} Review
+                  Confirm {moderationAction.charAt(0) + moderationAction.slice(1).toLowerCase()}
                 </Button>
               </ModalFooter>
             </>
           )}
         </ModalContent>
       </Modal>
-    </div>
+    </AdminLayout>
   );
 }

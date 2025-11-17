@@ -1,11 +1,12 @@
 // ==========================================
-// app/admin/page.tsx - Complete Admin Dashboard
+// app/admin/page.tsx - Redesigned Admin Dashboard
 // ==========================================
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import AdminLayout from '@/components/admin/AdminLayout';
 import { Card, CardHeader, CardBody } from '@heroui/card';
 import { Button } from '@heroui/button';
 import { Chip } from '@heroui/chip';
@@ -16,11 +17,13 @@ import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure
 import { Textarea } from '@heroui/input';
 import {
   Users, Car, DollarSign, TrendingUp, CheckCircle,
-  XCircle, AlertCircle, Shield, Eye, CreditCard, MessageSquare
+  XCircle, AlertCircle, Shield, Eye, CreditCard, MessageSquare,
+  Activity, BarChart3, ArrowUpRight, UserCheck
 } from 'lucide-react';
 import { apiService, getImageUrl } from '@/services/api';
 import { Car as CarType, User as UserType, DashboardStats } from '@/types';
 import { useRequireAdmin } from '@/contexts/AuthContext';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
 export default function AdminDashboardPage() {
   const { user, loading: authLoading } = useRequireAdmin();
@@ -68,7 +71,6 @@ export default function AdminDashboardPage() {
       }
 
       if (usersResponse.success && usersResponse.data) {
-        // API returns PaginatedResponse, extract items array
         setUsers(usersResponse.data.items || []);
       }
 
@@ -183,803 +185,690 @@ export default function AdminDashboardPage() {
     }).format(price);
   };
 
-  if (authLoading || loading) {
+  if (authLoading) {
+    return <LoadingSpinner />;
+  }
+
+  if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        <Spinner size="lg" color="primary" />
-      </div>
+      <AdminLayout>
+        <div className="flex justify-center items-center min-h-[60vh]">
+          <Spinner size="lg" color="primary" />
+        </div>
+      </AdminLayout>
     );
   }
 
   if (error) {
     return (
-      <div className="flex flex-col justify-center items-center min-h-screen">
-        <AlertCircle size={64} className="text-red-500 mb-4" />
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-          Error Loading Dashboard
-        </h2>
-        <p className="text-gray-600 dark:text-gray-400 mb-4">{error}</p>
-        <Button color="primary" onPress={loadAdminData}>
-          Try Again
-        </Button>
-      </div>
+      <AdminLayout>
+        <div className="flex flex-col justify-center items-center min-h-[60vh]">
+          <div className="w-20 h-20 rounded-full bg-red-600/20 border border-red-500/30 flex items-center justify-center mb-4">
+            <AlertCircle size={40} className="text-red-500" />
+          </div>
+          <h2 className="text-2xl font-bold text-white mb-2">
+            Error Loading Dashboard
+          </h2>
+          <p className="text-gray-400 mb-4">{error}</p>
+          <Button color="primary" onPress={loadAdminData}>
+            Try Again
+          </Button>
+        </div>
+      </AdminLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 px-4">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="inline-flex items-center gap-2 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-4 py-2 rounded-full text-sm font-medium mb-4">
-            <Shield size={16} />
-            <span>Administrative Dashboard</span>
-          </div>
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
-            AutoHub
-            <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent ml-3">
-              Admin Panel
-            </span>
-          </h1>
-          <p className="text-xl text-gray-600 dark:text-gray-400">
-            Manage platform operations, users, and listings
-          </p>
-        </div>
-
-        {/* Stats Cards */}
+    <AdminLayout>
+      <div className="space-y-6">
+        {/* Key Metrics - Gradient Cards */}
         {stats && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <Card className="border-l-4 border-blue-500">
-              <CardBody>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-                      Total Users
-                    </p>
-                    <p className="text-3xl font-bold text-gray-900 dark:text-white">
-                      {stats.total_users || 0}
-                    </p>
-                    <p className="text-xs text-green-600 dark:text-green-400 mt-1">
-                      +{stats.new_users_today || 0} today
-                    </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Card className="bg-gradient-to-br from-blue-600/20 to-blue-800/20 backdrop-blur-md border border-blue-500/30">
+              <CardBody className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-12 h-12 rounded-xl bg-blue-500/20 flex items-center justify-center">
+                    <Users className="text-blue-400" size={24} />
                   </div>
-                  <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-full">
-                    <Users className="text-blue-600 dark:text-blue-400" size={24} />
+                  <div className="flex items-center gap-1 text-blue-400">
+                    <ArrowUpRight size={16} />
+                    <span className="text-xs font-medium">+{stats.new_users_today || 0}</span>
                   </div>
+                </div>
+                <div>
+                  <p className="text-sm text-blue-300 font-medium mb-1">Total Users</p>
+                  <p className="text-4xl font-bold text-white">{stats.total_users || 0}</p>
+                  <p className="text-xs text-blue-400 mt-2">
+                    {stats.new_users_today || 0} new today
+                  </p>
                 </div>
               </CardBody>
             </Card>
 
-            <Card className="border-l-4 border-green-500">
-              <CardBody>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-                      Active Listings
-                    </p>
-                    <p className="text-3xl font-bold text-gray-900 dark:text-white">
-                      {stats.active_cars || 0}
-                    </p>
+            <Card className="bg-gradient-to-br from-green-600/20 to-green-800/20 backdrop-blur-md border border-green-500/30">
+              <CardBody className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-12 h-12 rounded-xl bg-green-500/20 flex items-center justify-center">
+                    <Car className="text-green-400" size={24} />
                   </div>
-                  <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-full">
-                    <Car className="text-green-600 dark:text-green-400" size={24} />
-                  </div>
+                  <Activity className="text-green-400" size={20} />
+                </div>
+                <div>
+                  <p className="text-sm text-green-300 font-medium mb-1">Active Listings</p>
+                  <p className="text-4xl font-bold text-white">{stats.active_cars || 0}</p>
+                  <p className="text-xs text-green-400 mt-2">
+                    {stats.new_cars_today || 0} new today
+                  </p>
                 </div>
               </CardBody>
             </Card>
 
-            <Card className="border-l-4 border-yellow-500">
-              <CardBody>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-                      Pending Approvals
-                    </p>
-                    <p className="text-3xl font-bold text-gray-900 dark:text-white">
-                      {stats.pending_approval_cars || 0}
-                    </p>
+            <Card className="bg-gradient-to-br from-yellow-600/20 to-yellow-800/20 backdrop-blur-md border border-yellow-500/30">
+              <CardBody className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-12 h-12 rounded-xl bg-yellow-500/20 flex items-center justify-center">
+                    <AlertCircle className="text-yellow-400" size={24} />
                   </div>
-                  <div className="p-3 bg-yellow-100 dark:bg-yellow-900/30 rounded-full">
-                    <AlertCircle className="text-yellow-600 dark:text-yellow-400" size={24} />
-                  </div>
+                  <Chip size="sm" color="warning" variant="flat">
+                    Action Needed
+                  </Chip>
+                </div>
+                <div>
+                  <p className="text-sm text-yellow-300 font-medium mb-1">Pending Approvals</p>
+                  <p className="text-4xl font-bold text-white">{stats.pending_approval_cars || 0}</p>
+                  <p className="text-xs text-yellow-400 mt-2">
+                    Awaiting review
+                  </p>
                 </div>
               </CardBody>
             </Card>
 
-            <Card className="border-l-4 border-purple-500">
-              <CardBody>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-                      Total Revenue
-                    </p>
-                    <p className="text-3xl font-bold text-gray-900 dark:text-white">
-                      ₱0
-                    </p>
-                    <p className="text-xs text-green-600 dark:text-green-400 mt-1">
-                      ₱0 today
-                    </p>
+            <Card className="bg-gradient-to-br from-purple-600/20 to-purple-800/20 backdrop-blur-md border border-purple-500/30">
+              <CardBody className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-12 h-12 rounded-xl bg-purple-500/20 flex items-center justify-center">
+                    <DollarSign className="text-purple-400" size={24} />
                   </div>
-                  <div className="p-3 bg-purple-100 dark:bg-purple-900/30 rounded-full">
-                    <DollarSign className="text-purple-600 dark:text-purple-400" size={24} />
-                  </div>
+                  <TrendingUp className="text-purple-400" size={20} />
+                </div>
+                <div>
+                  <p className="text-sm text-purple-300 font-medium mb-1">Total Revenue</p>
+                  <p className="text-4xl font-bold text-white">₱0</p>
+                  <p className="text-xs text-purple-400 mt-2">
+                    From subscriptions
+                  </p>
                 </div>
               </CardBody>
             </Card>
-
-            <Link href="/admin/payments" className="block">
-              <Card className="border-l-4 border-red-500 hover:shadow-lg transition-shadow cursor-pointer">
-                <CardBody>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-                        Pending Payments
-                      </p>
-                      <p className="text-3xl font-bold text-gray-900 dark:text-white">
-                        {pendingPaymentsCount}
-                      </p>
-                      <p className="text-xs text-red-600 dark:text-red-400 mt-1">
-                        Needs verification
-                      </p>
-                    </div>
-                    <div className="p-3 bg-red-100 dark:bg-red-900/30 rounded-full">
-                      <CreditCard className="text-red-600 dark:text-red-400" size={24} />
-                    </div>
-                  </div>
-                </CardBody>
-              </Card>
-            </Link>
-
-            <Link href="/admin/fraud-detection" className="block">
-              <Card className="border-l-4 border-orange-500 hover:shadow-lg transition-shadow cursor-pointer">
-                <CardBody>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-                        Fraud Indicators
-                      </p>
-                      <p className="text-3xl font-bold text-gray-900 dark:text-white">
-                        {fraudIndicatorCount}
-                      </p>
-                      <p className="text-xs text-orange-600 dark:text-orange-400 mt-1">
-                        Requires attention
-                      </p>
-                    </div>
-                    <div className="p-3 bg-orange-100 dark:bg-orange-900/30 rounded-full">
-                      <Shield className="text-orange-600 dark:text-orange-400" size={24} />
-                    </div>
-                  </div>
-                </CardBody>
-              </Card>
-            </Link>
-
-            <Link href="/admin/reviews" className="block">
-              <Card className="border-l-4 border-indigo-500 hover:shadow-lg transition-shadow cursor-pointer">
-                <CardBody>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-                        Pending Reviews
-                      </p>
-                      <p className="text-3xl font-bold text-gray-900 dark:text-white">
-                        {pendingReviewsCount}
-                      </p>
-                      <p className="text-xs text-indigo-600 dark:text-indigo-400 mt-1">
-                        Needs moderation
-                      </p>
-                    </div>
-                    <div className="p-3 bg-indigo-100 dark:bg-indigo-900/30 rounded-full">
-                      <MessageSquare className="text-indigo-600 dark:text-indigo-400" size={24} />
-                    </div>
-                  </div>
-                </CardBody>
-              </Card>
-            </Link>
           </div>
         )}
 
-        {/* Main Content */}
-        <Tabs aria-label="Admin sections" className="mb-6">
-          <Tab key="pending" title={`Pending Approvals (${pendingCars.length})`}>
-            <Card>
-              <CardHeader>
-                <h2 className="text-2xl font-bold">Pending Car Listings</h2>
-              </CardHeader>
-              <CardBody>
-                {pendingCars.length === 0 ? (
-                  <div className="text-center py-12">
-                    <CheckCircle className="mx-auto text-green-500 mb-4" size={64} />
-                    <h3 className="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                      All caught up!
-                    </h3>
-                    <p className="text-gray-600 dark:text-gray-400">
-                      No pending listings to review
-                    </p>
+        {/* Action Items - Quick Access Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Link href="/admin/payments" className="block group">
+            <Card className="bg-gradient-to-br from-red-600/20 to-red-800/20 backdrop-blur-md border border-red-500/30 hover:border-red-400/50 transition-all">
+              <CardBody className="p-6">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="w-10 h-10 rounded-lg bg-red-500/20 flex items-center justify-center">
+                    <CreditCard className="text-red-400" size={20} />
                   </div>
-                ) : (
-                  <div className="space-y-4">
-                    {pendingCars.map(car => (
-                      <Card key={car.id} className="bg-yellow-50 dark:bg-yellow-900/10">
-                        <CardBody>
-                          <div className="flex flex-col md:flex-row gap-4">
-                            {/* Image */}
-                            <div className="w-full md:w-48 h-32 bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden flex-shrink-0">
-                              {car.images?.[0] ? (
-                                <img
-                                  src={getImageUrl(car.images[0].image_url)}
-                                  alt={car.title}
-                                  className="w-full h-full object-cover"
-                                />
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center">
-                                  <Car className="text-gray-400" size={48} />
-                                </div>
-                              )}
-                            </div>
+                  <ArrowUpRight className="text-red-400 opacity-0 group-hover:opacity-100 transition-opacity" size={18} />
+                </div>
+                <p className="text-sm text-red-300 font-medium mb-2">Pending Payments</p>
+                <p className="text-3xl font-bold text-white mb-1">{pendingPaymentsCount}</p>
+                <p className="text-xs text-red-400">Needs verification</p>
+              </CardBody>
+            </Card>
+          </Link>
 
-                            {/* Content */}
-                            <div className="flex-1">
-                              <div className="flex items-start justify-between mb-2">
+          <Link href="/admin/fraud-detection" className="block group">
+            <Card className="bg-gradient-to-br from-orange-600/20 to-orange-800/20 backdrop-blur-md border border-orange-500/30 hover:border-orange-400/50 transition-all">
+              <CardBody className="p-6">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="w-10 h-10 rounded-lg bg-orange-500/20 flex items-center justify-center">
+                    <Shield className="text-orange-400" size={20} />
+                  </div>
+                  <ArrowUpRight className="text-orange-400 opacity-0 group-hover:opacity-100 transition-opacity" size={18} />
+                </div>
+                <p className="text-sm text-orange-300 font-medium mb-2">Fraud Indicators</p>
+                <p className="text-3xl font-bold text-white mb-1">{fraudIndicatorCount}</p>
+                <p className="text-xs text-orange-400">Requires attention</p>
+              </CardBody>
+            </Card>
+          </Link>
+
+          <Link href="/admin/reviews" className="block group">
+            <Card className="bg-gradient-to-br from-indigo-600/20 to-indigo-800/20 backdrop-blur-md border border-indigo-500/30 hover:border-indigo-400/50 transition-all">
+              <CardBody className="p-6">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="w-10 h-10 rounded-lg bg-indigo-500/20 flex items-center justify-center">
+                    <MessageSquare className="text-indigo-400" size={20} />
+                  </div>
+                  <ArrowUpRight className="text-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity" size={18} />
+                </div>
+                <p className="text-sm text-indigo-300 font-medium mb-2">Pending Reviews</p>
+                <p className="text-3xl font-bold text-white mb-1">{pendingReviewsCount}</p>
+                <p className="text-xs text-indigo-400">Needs moderation</p>
+              </CardBody>
+            </Card>
+          </Link>
+        </div>
+
+        {/* Main Content Tabs */}
+        <Card className="bg-black/40 backdrop-blur-xl border border-gray-700">
+          <CardBody className="p-2">
+            <Tabs
+              aria-label="Admin sections"
+              variant="underlined"
+              classNames={{
+                tabList: "gap-6 w-full",
+                cursor: "bg-red-500",
+                tab: "px-4 py-3",
+                tabContent: "group-data-[selected=true]:text-white"
+              }}
+            >
+              <Tab
+                key="pending"
+                title={
+                  <div className="flex items-center gap-2">
+                    <AlertCircle size={16} />
+                    <span>Pending Approvals</span>
+                    <Chip size="sm" color="warning" variant="flat">{pendingCars.length}</Chip>
+                  </div>
+                }
+              >
+                <div className="p-6">
+                  <div className="mb-6">
+                    <h2 className="text-2xl font-bold text-white mb-2">Pending Car Listings</h2>
+                    <p className="text-sm text-gray-400">Review and approve new car listings</p>
+                  </div>
+
+                  {pendingCars.length === 0 ? (
+                    <div className="text-center py-16">
+                      <div className="w-20 h-20 rounded-full bg-green-600/20 border border-green-500/30 flex items-center justify-center mx-auto mb-4">
+                        <CheckCircle className="text-green-500" size={40} />
+                      </div>
+                      <h3 className="text-xl font-semibold text-white mb-2">
+                        All caught up!
+                      </h3>
+                      <p className="text-gray-400">
+                        No pending listings to review
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {pendingCars.map(car => (
+                        <Card key={car.id} className="bg-gradient-to-br from-yellow-600/10 to-yellow-800/10 backdrop-blur-md border border-yellow-500/20">
+                          <CardBody className="p-6">
+                            <div className="flex flex-col md:flex-row gap-6">
+                              {/* Image */}
+                              <div className="w-full md:w-56 h-40 bg-black/20 rounded-xl overflow-hidden flex-shrink-0">
+                                {car.images?.[0] ? (
+                                  <img
+                                    src={getImageUrl(car.images[0].image_url)}
+                                    alt={car.title}
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center">
+                                    <Car className="text-gray-600" size={48} />
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Content */}
+                              <div className="flex-1 space-y-4">
+                                <div className="flex items-start justify-between">
+                                  <div className="space-y-1">
+                                    <h3 className="text-xl font-bold text-white">
+                                      {car.title}
+                                    </h3>
+                                    <p className="text-sm text-gray-400">
+                                      {car.brand?.name || 'Unknown Brand'} {car.model?.name || ''} • {car.year || 'N/A'}
+                                    </p>
+                                    {car.seller && (
+                                      <p className="text-sm text-gray-400 flex items-center gap-2">
+                                        <UserCheck size={14} />
+                                        Seller: {car.seller.first_name} {car.seller.last_name}
+                                      </p>
+                                    )}
+                                  </div>
+                                  <Chip color="warning" variant="flat" className="font-medium">
+                                    Pending Review
+                                  </Chip>
+                                </div>
+
+                                <div className="flex flex-wrap items-center gap-4 text-sm text-gray-300">
+                                  <div className="flex items-center gap-2">
+                                    <DollarSign size={16} className="text-green-400" />
+                                    <span className="font-semibold text-white">{formatPrice(car.price || 0)}</span>
+                                  </div>
+                                  <div className="w-px h-4 bg-gray-700" />
+                                  <div className="flex items-center gap-2">
+                                    <Activity size={16} className="text-blue-400" />
+                                    <span>{(car.mileage || 0).toLocaleString()} km</span>
+                                  </div>
+                                  <div className="w-px h-4 bg-gray-700" />
+                                  <span className="capitalize">{car.fuel_type || 'N/A'}</span>
+                                </div>
+
+                                <div className="flex flex-wrap gap-3 pt-2">
+                                  <Button
+                                    size="sm"
+                                    color="success"
+                                    onPress={() => handleApproveCar(car.id)}
+                                    isLoading={actionLoading}
+                                    startContent={<CheckCircle size={16} />}
+                                    className="font-medium"
+                                  >
+                                    Approve Listing
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    color="danger"
+                                    variant="flat"
+                                    onPress={() => openRejectModal(car)}
+                                    isLoading={actionLoading}
+                                    startContent={<XCircle size={16} />}
+                                    className="font-medium"
+                                  >
+                                    Reject
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="flat"
+                                    as="a"
+                                    href={`/cars/${car.id}`}
+                                    target="_blank"
+                                    startContent={<Eye size={16} />}
+                                    className="font-medium"
+                                  >
+                                    View Details
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                          </CardBody>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </Tab>
+
+              <Tab
+                key="users"
+                title={
+                  <div className="flex items-center gap-2">
+                    <Users size={16} />
+                    <span>Users</span>
+                    <Chip size="sm" variant="flat">{users.length}</Chip>
+                  </div>
+                }
+              >
+                <div className="p-6">
+                  <div className="mb-6">
+                    <h2 className="text-2xl font-bold text-white mb-2">User Management</h2>
+                    <p className="text-sm text-gray-400">Manage platform users and permissions</p>
+                  </div>
+
+                  <Card className="bg-black/20 backdrop-blur-md border border-gray-700">
+                    <CardBody className="p-0">
+                      <Table
+                        removeWrapper
+                        classNames={{
+                          th: "bg-black/20 text-gray-300 font-semibold text-xs uppercase",
+                          td: "text-gray-200 py-4",
+                        }}
+                      >
+                        <TableHeader>
+                          <TableColumn>USER</TableColumn>
+                          <TableColumn>EMAIL</TableColumn>
+                          <TableColumn>ROLE</TableColumn>
+                          <TableColumn>STATUS</TableColumn>
+                          <TableColumn>LISTINGS</TableColumn>
+                          <TableColumn>ACTIONS</TableColumn>
+                        </TableHeader>
+                        <TableBody>
+                          {users.map(user => (
+                            <TableRow
+                              key={user.id}
+                              className="border-b border-gray-800 hover:bg-white/5 transition-colors"
+                            >
+                              <TableCell>
                                 <div>
-                                  <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-                                    {car.title}
-                                  </h3>
-                                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                                    {car.brand?.name || 'Unknown Brand'} {car.model?.name || ''} • {car.year || 'N/A'}
+                                  <p className="font-semibold text-white">
+                                    {user.first_name} {user.last_name}
                                   </p>
-                                  {car.seller && (
-                                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                                      Seller: {car.seller.first_name} {car.seller.last_name}
+                                  {user.business_name && (
+                                    <p className="text-xs text-gray-500">
+                                      {user.business_name}
                                     </p>
                                   )}
                                 </div>
-                                <Chip color="warning" variant="flat">
-                                  Pending
+                              </TableCell>
+                              <TableCell>
+                                <span className="text-sm text-gray-400">{user.email}</span>
+                              </TableCell>
+                              <TableCell>
+                                <Chip size="sm" variant="flat" className="capitalize font-medium">
+                                  {user.role?.toLowerCase() || 'N/A'}
                                 </Chip>
-                              </div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex flex-wrap gap-1">
+                                  {user.is_banned ? (
+                                    <Chip size="sm" color="danger" variant="flat">
+                                      Banned
+                                    </Chip>
+                                  ) : user.is_active ? (
+                                    <Chip size="sm" color="success" variant="flat">
+                                      Active
+                                    </Chip>
+                                  ) : (
+                                    <Chip size="sm" color="default" variant="flat">
+                                      Inactive
+                                    </Chip>
+                                  )}
+                                  {user.email_verified && (
+                                    <Chip size="sm" color="primary" variant="flat">
+                                      Verified
+                                    </Chip>
+                                  )}
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <span className="font-semibold text-white">{user.total_listings || 0}</span>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex gap-2">
+                                  {user.is_banned ? (
+                                    <Button
+                                      size="sm"
+                                      color="success"
+                                      variant="flat"
+                                      onPress={() => handleUnbanUser(user.id)}
+                                      className="font-medium"
+                                    >
+                                      Unban
+                                    </Button>
+                                  ) : (
+                                    <Button
+                                      size="sm"
+                                      color="danger"
+                                      variant="flat"
+                                      onPress={() => handleBanUser(user.id, '')}
+                                      className="font-medium"
+                                    >
+                                      Ban User
+                                    </Button>
+                                  )}
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </CardBody>
+                  </Card>
+                </div>
+              </Tab>
 
-                              <div className="flex items-center gap-4 mb-3 text-sm text-gray-600 dark:text-gray-400">
-                                <span>{formatPrice(car.price || 0)}</span>
-                                <span>•</span>
-                                <span>{(car.mileage || 0).toLocaleString()} km</span>
-                                <span>•</span>
-                                <span className="capitalize">{car.fuel_type || 'N/A'}</span>
-                              </div>
-
-                              <div className="flex flex-wrap gap-2">
-                                <Button
-                                  size="sm"
-                                  color="success"
-                                  onPress={() => handleApproveCar(car.id)}
-                                  isLoading={actionLoading}
-                                  startContent={<CheckCircle size={16} />}
-                                >
-                                  Approve
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  color="danger"
-                                  variant="flat"
-                                  onPress={() => openRejectModal(car)}
-                                  isLoading={actionLoading}
-                                  startContent={<XCircle size={16} />}
-                                >
-                                  Reject
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="flat"
-                                  as="a"
-                                  href={`/cars/${car.id}`}
-                                  target="_blank"
-                                  startContent={<Eye size={16} />}
-                                >
-                                  View Details
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
-                        </CardBody>
-                      </Card>
-                    ))}
+              <Tab
+                key="analytics"
+                title={
+                  <div className="flex items-center gap-2">
+                    <BarChart3 size={16} />
+                    <span>Analytics</span>
                   </div>
-                )}
-              </CardBody>
-            </Card>
-          </Tab>
+                }
+              >
+                <div className="p-6 space-y-6">
+                  <div className="mb-6">
+                    <h2 className="text-2xl font-bold text-white mb-2">Platform Analytics</h2>
+                    <p className="text-sm text-gray-400">Insights and performance metrics</p>
+                  </div>
 
-          <Tab key="users" title={`Users (${users.length})`}>
-            <Card>
-              <CardHeader>
-                <h2 className="text-2xl font-bold">User Management</h2>
-              </CardHeader>
-              <CardBody className="p-0">
-                <Table aria-label="Users table">
-                  <TableHeader>
-                    <TableColumn>USER</TableColumn>
-                    <TableColumn>EMAIL</TableColumn>
-                    <TableColumn>ROLE</TableColumn>
-                    <TableColumn>STATUS</TableColumn>
-                    <TableColumn>LISTINGS</TableColumn>
-                    <TableColumn>ACTIONS</TableColumn>
-                  </TableHeader>
-                  <TableBody>
-                    {users.map(user => (
-                      <TableRow key={user.id}>
-                        <TableCell>
-                          <div>
-                            <p className="font-semibold">
-                              {user.first_name} {user.last_name}
-                            </p>
-                            {user.business_name && (
-                              <p className="text-xs text-gray-500">
-                                {user.business_name}
+                  {stats && (
+                    <>
+                      {/* Today's Performance */}
+                      <div>
+                        <h3 className="text-lg font-semibold text-white mb-4">Today's Performance</h3>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                          <Card className="bg-gradient-to-br from-blue-600/20 to-blue-800/20 backdrop-blur-md border border-blue-500/30">
+                            <CardBody className="p-6 text-center">
+                              <p className="text-sm text-blue-300 font-medium mb-2">New Users</p>
+                              <p className="text-4xl font-bold text-white mb-1">{stats.new_users_today || 0}</p>
+                              <p className="text-xs text-blue-400">
+                                +{((stats.new_users_today || 0) / Math.max((stats.total_users || 1), 1) * 100).toFixed(1)}% growth
                               </p>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>{user.email}</TableCell>
-                        <TableCell>
-                          <Chip size="sm" variant="flat" className="capitalize">
-                            {user.role}
-                          </Chip>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex flex-wrap gap-1">
-                            {user.is_banned ? (
-                              <Chip size="sm" color="danger">
-                                Banned
-                              </Chip>
-                            ) : user.is_active ? (
-                              <Chip size="sm" color="success">
-                                Active
-                              </Chip>
-                            ) : (
-                              <Chip size="sm" color="default">
-                                Inactive
-                              </Chip>
-                            )}
-                            {user.email_verified && (
-                              <Chip size="sm" color="primary" variant="flat">
-                                Verified
-                              </Chip>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>{user.total_listings || 0}</TableCell>
-                        <TableCell>
-                          <div className="flex gap-2">
-                            {user.is_banned ? (
-                              <Button
-                                size="sm"
-                                color="success"
-                                variant="flat"
-                                onPress={() => handleUnbanUser(user.id)}
-                              >
-                                Unban
-                              </Button>
-                            ) : (
-                              <Button
-                                size="sm"
-                                color="danger"
-                                variant="flat"
-                                onPress={() => handleBanUser(user.id, '')}
-                              >
-                                Ban
-                              </Button>
-                            )}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardBody>
-            </Card>
-          </Tab>
+                            </CardBody>
+                          </Card>
 
-          <Tab key="analytics" title="Analytics">
-            <Card>
-              <CardHeader>
-                <h2 className="text-2xl font-bold">Platform Analytics & Insights</h2>
-              </CardHeader>
-              <CardBody>
-                {stats && (
-                  <div className="space-y-6">
-                    {/* Today's Metrics */}
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-4">
-                        Today's Performance
-                      </h3>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div className="p-4 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                          <p className="text-sm text-blue-700 dark:text-blue-400 mb-1 font-medium">
-                            New Users Today
-                          </p>
-                          <p className="text-3xl font-black text-blue-600 dark:text-blue-400">
-                            {stats.new_users_today || 0}
-                          </p>
-                          <p className="text-xs text-blue-600 dark:text-blue-500 mt-1">
-                            +{((stats.new_users_today || 0) / Math.max((stats.total_users || 1), 1) * 100).toFixed(1)}% growth
-                          </p>
-                        </div>
+                          <Card className="bg-gradient-to-br from-green-600/20 to-green-800/20 backdrop-blur-md border border-green-500/30">
+                            <CardBody className="p-6 text-center">
+                              <p className="text-sm text-green-300 font-medium mb-2">New Listings</p>
+                              <p className="text-4xl font-bold text-white mb-1">{stats.new_cars_today || 0}</p>
+                              <p className="text-xs text-green-400">Active engagement</p>
+                            </CardBody>
+                          </Card>
 
-                        <div className="p-4 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-lg border border-green-200 dark:border-green-800">
-                          <p className="text-sm text-green-700 dark:text-green-400 mb-1 font-medium">
-                            New Listings Today
-                          </p>
-                          <p className="text-3xl font-black text-green-600 dark:text-green-400">
-                            {stats.new_cars_today || 0}
-                          </p>
-                          <p className="text-xs text-green-600 dark:text-green-500 mt-1">
-                            Active engagement
-                          </p>
-                        </div>
+                          <Card className="bg-gradient-to-br from-purple-600/20 to-purple-800/20 backdrop-blur-md border border-purple-500/30">
+                            <CardBody className="p-6 text-center">
+                              <p className="text-sm text-purple-300 font-medium mb-2">Revenue</p>
+                              <p className="text-4xl font-bold text-white mb-1">₱0</p>
+                              <p className="text-xs text-purple-400">From subscriptions</p>
+                            </CardBody>
+                          </Card>
 
-                        <div className="p-4 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 rounded-lg border border-purple-200 dark:border-purple-800">
-                          <p className="text-sm text-purple-700 dark:text-purple-400 mb-1 font-medium">
-                            Revenue Today
-                          </p>
-                          <p className="text-3xl font-black text-purple-600 dark:text-purple-400">
-                            ₱0
-                          </p>
-                          <p className="text-xs text-purple-600 dark:text-purple-500 mt-1">
-                            From subscriptions
-                          </p>
-                        </div>
-
-                        <div className="p-4 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20 rounded-lg border border-orange-200 dark:border-orange-800">
-                          <p className="text-sm text-orange-700 dark:text-orange-400 mb-1 font-medium">
-                            Pending Actions
-                          </p>
-                          <p className="text-3xl font-black text-orange-600 dark:text-orange-400">
-                            {(stats.pending_approval_cars || 0) + pendingPaymentsCount + pendingReviewsCount}
-                          </p>
-                          <p className="text-xs text-orange-600 dark:text-orange-500 mt-1">
-                            Requires attention
-                          </p>
+                          <Card className="bg-gradient-to-br from-orange-600/20 to-orange-800/20 backdrop-blur-md border border-orange-500/30">
+                            <CardBody className="p-6 text-center">
+                              <p className="text-sm text-orange-300 font-medium mb-2">Pending Actions</p>
+                              <p className="text-4xl font-bold text-white mb-1">
+                                {(stats.pending_approval_cars || 0) + pendingPaymentsCount + pendingReviewsCount}
+                              </p>
+                              <p className="text-xs text-orange-400">Requires attention</p>
+                            </CardBody>
+                          </Card>
                         </div>
                       </div>
-                    </div>
 
-                    {/* Platform Health */}
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-4">
-                        Platform Health
-                      </h3>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <Card className="bg-gradient-to-br from-cyan-50 to-blue-50 dark:from-cyan-900/20 dark:to-blue-900/20 border border-cyan-200 dark:border-cyan-800">
-                          <CardBody>
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <p className="text-sm text-cyan-700 dark:text-cyan-400 mb-1">
-                                  Active Sellers
-                                </p>
-                                <p className="text-2xl font-bold text-cyan-600 dark:text-cyan-400">
-                                  {users.filter(u => u.role === 'SELLER' || u.role === 'DEALER').length}
-                                </p>
-                                <p className="text-xs text-cyan-600 dark:text-cyan-500 mt-1">
-                                  Total seller accounts
-                                </p>
+                      {/* Platform Health */}
+                      <div>
+                        <h3 className="text-lg font-semibold text-white mb-4">Platform Health</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <Card className="bg-gradient-to-br from-cyan-600/20 to-blue-600/20 backdrop-blur-md border border-cyan-500/30">
+                            <CardBody className="p-6">
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <p className="text-sm text-cyan-300 mb-2 font-medium">Active Sellers</p>
+                                  <p className="text-3xl font-bold text-white">
+                                    {users.filter(u => u.role?.toUpperCase() === 'SELLER' || u.role?.toUpperCase() === 'DEALER').length}
+                                  </p>
+                                  <p className="text-xs text-cyan-400 mt-2">Total seller accounts</p>
+                                </div>
+                                <Users className="text-cyan-400 opacity-30" size={48} />
                               </div>
-                              <Users className="text-cyan-500" size={40} opacity={0.3} />
-                            </div>
-                          </CardBody>
-                        </Card>
+                            </CardBody>
+                          </Card>
 
-                        <Card className="bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-900/20 dark:to-green-900/20 border border-emerald-200 dark:border-emerald-800">
-                          <CardBody>
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <p className="text-sm text-emerald-700 dark:text-emerald-400 mb-1">
-                                  Conversion Rate
-                                </p>
-                                <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
-                                  {stats.active_cars > 0 ? ((stats.active_cars / (stats.total_users || 1)) * 100).toFixed(1) : 0}%
-                                </p>
-                                <p className="text-xs text-emerald-600 dark:text-emerald-500 mt-1">
-                                  Users to listings
-                                </p>
+                          <Card className="bg-gradient-to-br from-emerald-600/20 to-green-600/20 backdrop-blur-md border border-emerald-500/30">
+                            <CardBody className="p-6">
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <p className="text-sm text-emerald-300 mb-2 font-medium">Conversion Rate</p>
+                                  <p className="text-3xl font-bold text-white">
+                                    {stats.active_cars > 0 ? ((stats.active_cars / (stats.total_users || 1)) * 100).toFixed(1) : 0}%
+                                  </p>
+                                  <p className="text-xs text-emerald-400 mt-2">Users to listings</p>
+                                </div>
+                                <TrendingUp className="text-emerald-400 opacity-30" size={48} />
                               </div>
-                              <TrendingUp className="text-emerald-500" size={40} opacity={0.3} />
-                            </div>
-                          </CardBody>
-                        </Card>
+                            </CardBody>
+                          </Card>
 
-                        <Card className="bg-gradient-to-br from-violet-50 to-purple-50 dark:from-violet-900/20 dark:to-purple-900/20 border border-violet-200 dark:border-violet-800">
-                          <CardBody>
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <p className="text-sm text-violet-700 dark:text-violet-400 mb-1">
-                                  Avg. Listing Value
-                                </p>
-                                <p className="text-2xl font-bold text-violet-600 dark:text-violet-400">
-                                  ₱0
-                                </p>
-                                <p className="text-xs text-violet-600 dark:text-violet-500 mt-1">
-                                  Platform average
-                                </p>
+                          <Card className="bg-gradient-to-br from-violet-600/20 to-purple-600/20 backdrop-blur-md border border-violet-500/30">
+                            <CardBody className="p-6">
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <p className="text-sm text-violet-300 mb-2 font-medium">Avg. Listing Value</p>
+                                  <p className="text-3xl font-bold text-white">₱0</p>
+                                  <p className="text-xs text-violet-400 mt-2">Platform average</p>
+                                </div>
+                                <DollarSign className="text-violet-400 opacity-30" size={48} />
                               </div>
-                              <DollarSign className="text-violet-500" size={40} opacity={0.3} />
-                            </div>
-                          </CardBody>
-                        </Card>
+                            </CardBody>
+                          </Card>
+                        </div>
                       </div>
-                    </div>
 
-                    {/* Subscription Overview */}
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-4">
-                        Subscription Overview
-                      </h3>
-                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <Card className="bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
-                          <CardBody className="text-center py-6">
-                            <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Free Plan</p>
-                            <p className="text-3xl font-bold text-gray-700 dark:text-gray-300">0</p>
-                            <p className="text-xs text-gray-500 mt-1">Active users</p>
-                          </CardBody>
-                        </Card>
-                        <Card className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
-                          <CardBody className="text-center py-6">
-                            <p className="text-sm text-blue-600 dark:text-blue-400 mb-2">Basic Plan</p>
-                            <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">0</p>
-                            <p className="text-xs text-blue-500 mt-1">₱299/month</p>
-                          </CardBody>
-                        </Card>
-                        <Card className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800">
-                          <CardBody className="text-center py-6">
-                            <p className="text-sm text-purple-600 dark:text-purple-400 mb-2">Premium Plan</p>
-                            <p className="text-3xl font-bold text-purple-600 dark:text-purple-400">0</p>
-                            <p className="text-xs text-purple-500 mt-1">₱799/month</p>
-                          </CardBody>
-                        </Card>
-                        <Card className="bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 border-2 border-yellow-400 dark:border-yellow-600">
-                          <CardBody className="text-center py-6">
-                            <p className="text-sm text-orange-600 dark:text-orange-400 mb-2 font-bold">Pro Plan</p>
-                            <p className="text-3xl font-bold text-orange-600 dark:text-orange-400">0</p>
-                            <p className="text-xs text-orange-500 mt-1">₱1,499/month</p>
-                          </CardBody>
-                        </Card>
+                      {/* Platform Activity Summary */}
+                      <div>
+                        <h3 className="text-lg font-semibold text-white mb-4">Activity Summary</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <Card className="bg-black/40 backdrop-blur-md border border-gray-700">
+                            <CardBody className="p-6">
+                              <h4 className="font-semibold text-white mb-4 flex items-center gap-2">
+                                <Users size={18} className="text-blue-400" />
+                                User Activity
+                              </h4>
+                              <div className="space-y-3 text-sm">
+                                <div className="flex justify-between items-center py-2 border-b border-gray-800">
+                                  <span className="text-gray-400">Verified Users:</span>
+                                  <span className="font-semibold text-white">
+                                    {users.filter(u => u.email_verified).length}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between items-center py-2 border-b border-gray-800">
+                                  <span className="text-gray-400">Banned Users:</span>
+                                  <span className="font-semibold text-red-400">
+                                    {users.filter(u => u.is_banned).length}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between items-center py-2">
+                                  <span className="text-gray-400">Total Sellers:</span>
+                                  <span className="font-semibold text-white">
+                                    {users.filter(u => u.role?.toUpperCase() === 'SELLER' || u.role?.toUpperCase() === 'DEALER').length}
+                                  </span>
+                                </div>
+                              </div>
+                            </CardBody>
+                          </Card>
+
+                          <Card className="bg-black/40 backdrop-blur-md border border-gray-700">
+                            <CardBody className="p-6">
+                              <h4 className="font-semibold text-white mb-4 flex items-center gap-2">
+                                <Car size={18} className="text-green-400" />
+                                Listing Activity
+                              </h4>
+                              <div className="space-y-3 text-sm">
+                                <div className="flex justify-between items-center py-2 border-b border-gray-800">
+                                  <span className="text-gray-400">Active Listings:</span>
+                                  <span className="font-semibold text-green-400">
+                                    {stats.active_cars || 0}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between items-center py-2 border-b border-gray-800">
+                                  <span className="text-gray-400">Pending Approval:</span>
+                                  <span className="font-semibold text-yellow-400">
+                                    {stats.pending_approval_cars || 0}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between items-center py-2">
+                                  <span className="text-gray-400">Total Revenue:</span>
+                                  <span className="font-semibold text-white">₱0</span>
+                                </div>
+                              </div>
+                            </CardBody>
+                          </Card>
+                        </div>
                       </div>
-                    </div>
-
-                    {/* Recent Activity Summary */}
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-4">
-                        Platform Activity Summary
-                      </h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <Card className="border border-gray-200 dark:border-gray-700">
-                          <CardBody>
-                            <h4 className="font-semibold text-gray-700 dark:text-gray-300 mb-3">
-                              User Activity
-                            </h4>
-                            <div className="space-y-2 text-sm">
-                              <div className="flex justify-between">
-                                <span className="text-gray-600 dark:text-gray-400">Verified Users:</span>
-                                <span className="font-semibold text-gray-900 dark:text-white">
-                                  {users.filter(u => u.email_verified).length}
-                                </span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-gray-600 dark:text-gray-400">Banned Users:</span>
-                                <span className="font-semibold text-red-600 dark:text-red-400">
-                                  {users.filter(u => u.is_banned).length}
-                                </span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-gray-600 dark:text-gray-400">Total Sellers:</span>
-                                <span className="font-semibold text-gray-900 dark:text-white">
-                                  {users.filter(u => u.role === 'SELLER' || u.role === 'DEALER').length}
-                                </span>
-                              </div>
-                            </div>
-                          </CardBody>
-                        </Card>
-
-                        <Card className="border border-gray-200 dark:border-gray-700">
-                          <CardBody>
-                            <h4 className="font-semibold text-gray-700 dark:text-gray-300 mb-3">
-                              Listing Activity
-                            </h4>
-                            <div className="space-y-2 text-sm">
-                              <div className="flex justify-between">
-                                <span className="text-gray-600 dark:text-gray-400">Active Listings:</span>
-                                <span className="font-semibold text-green-600 dark:text-green-400">
-                                  {stats.active_cars || 0}
-                                </span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-gray-600 dark:text-gray-400">Pending Approval:</span>
-                                <span className="font-semibold text-yellow-600 dark:text-yellow-400">
-                                  {stats.pending_approval_cars || 0}
-                                </span>
-                              </div>
-                              <div className="flex justify-between">
-                                <span className="text-gray-600 dark:text-gray-400">Total Revenue:</span>
-                                <span className="font-semibold text-gray-900 dark:text-white">
-                                  ₱0
-                                </span>
-                              </div>
-                            </div>
-                          </CardBody>
-                        </Card>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </CardBody>
-            </Card>
-          </Tab>
-
-          <Tab key="payments" title={`Payments (${pendingPaymentsCount})`}>
-            <Card>
-              <CardHeader className="flex justify-between items-center">
-                <h2 className="text-2xl font-bold">Payment Verification</h2>
-                <Button
-                  as={Link}
-                  href="/admin/payments"
-                  color="primary"
-                  endContent={<CreditCard size={18} />}
-                >
-                  View Payment Dashboard
-                </Button>
-              </CardHeader>
-              <CardBody>
-                <div className="text-center py-12">
-                  <div className="p-4 bg-red-100 dark:bg-red-900/30 rounded-full inline-flex mb-4">
-                    <CreditCard className="text-red-600 dark:text-red-400" size={48} />
-                  </div>
-                  <h3 className="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                    Payment Verification Required
-                  </h3>
-                  <p className="text-gray-600 dark:text-gray-400 mb-4">
-                    {pendingPaymentsCount > 0
-                      ? `You have ${pendingPaymentsCount} pending payment${pendingPaymentsCount !== 1 ? 's' : ''} waiting for verification`
-                      : 'No pending payments at this time'
-                    }
-                  </p>
-                  <Button
-                    as={Link}
-                    href="/admin/payments"
-                    color="primary"
-                    size="lg"
-                    endContent={<CreditCard size={20} />}
-                  >
-                    Go to Payment Dashboard
-                  </Button>
+                    </>
+                  )}
                 </div>
-              </CardBody>
-            </Card>
-          </Tab>
-
-          <Tab key="fraud" title={`Fraud Detection (${fraudIndicatorCount})`}>
-            <Card>
-              <CardHeader className="flex justify-between items-center">
-                <h2 className="text-2xl font-bold">Fraud Detection</h2>
-                <Button
-                  as={Link}
-                  href="/admin/fraud-detection"
-                  color="warning"
-                  endContent={<Shield size={18} />}
-                >
-                  View Fraud Dashboard
-                </Button>
-              </CardHeader>
-              <CardBody>
-                <div className="text-center py-12">
-                  <div className="p-4 bg-orange-100 dark:bg-orange-900/30 rounded-full inline-flex mb-4">
-                    <Shield className="text-orange-600 dark:text-orange-400" size={48} />
-                  </div>
-                  <h3 className="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                    Fraud Monitoring
-                  </h3>
-                  <p className="text-gray-600 dark:text-gray-400 mb-4">
-                    {fraudIndicatorCount > 0
-                      ? `There ${fraudIndicatorCount === 1 ? 'is' : 'are'} ${fraudIndicatorCount} fraud indicator${fraudIndicatorCount !== 1 ? 's' : ''} requiring attention`
-                      : 'No fraud indicators detected - all systems normal'
-                    }
-                  </p>
-                  <Button
-                    as={Link}
-                    href="/admin/fraud-detection"
-                    color="warning"
-                    size="lg"
-                    endContent={<Shield size={20} />}
-                  >
-                    Go to Fraud Dashboard
-                  </Button>
-                </div>
-              </CardBody>
-            </Card>
-          </Tab>
-
-          <Tab key="reviews" title={`Reviews (${pendingReviewsCount})`}>
-            <Card>
-              <CardHeader className="flex justify-between items-center">
-                <h2 className="text-2xl font-bold">Review Moderation</h2>
-                <Button
-                  as={Link}
-                  href="/admin/reviews"
-                  color="secondary"
-                  endContent={<MessageSquare size={18} />}
-                >
-                  View Reviews Dashboard
-                </Button>
-              </CardHeader>
-              <CardBody>
-                <div className="text-center py-12">
-                  <div className="p-4 bg-indigo-100 dark:bg-indigo-900/30 rounded-full inline-flex mb-4">
-                    <MessageSquare className="text-indigo-600 dark:text-indigo-400" size={48} />
-                  </div>
-                  <h3 className="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                    Review Moderation
-                  </h3>
-                  <p className="text-gray-600 dark:text-gray-400 mb-4">
-                    {pendingReviewsCount > 0
-                      ? `You have ${pendingReviewsCount} pending review${pendingReviewsCount !== 1 ? 's' : ''} waiting for moderation`
-                      : 'No pending reviews at this time - all reviews have been moderated'
-                    }
-                  </p>
-                  <Button
-                    as={Link}
-                    href="/admin/reviews"
-                    color="secondary"
-                    size="lg"
-                    endContent={<MessageSquare size={20} />}
-                  >
-                    Go to Reviews Dashboard
-                  </Button>
-                </div>
-              </CardBody>
-            </Card>
-          </Tab>
-        </Tabs>
+              </Tab>
+            </Tabs>
+          </CardBody>
+        </Card>
       </div>
 
       {/* Reject Car Modal */}
-      <Modal isOpen={isRejectOpen} onOpenChange={onRejectOpenChange}>
+      <Modal
+        isOpen={isRejectOpen}
+        onOpenChange={onRejectOpenChange}
+        size="2xl"
+        classNames={{
+          base: "bg-gray-900 border border-gray-700",
+          header: "border-b border-gray-700",
+          body: "py-6",
+          footer: "border-t border-gray-700",
+        }}
+      >
         <ModalContent>
-          <ModalHeader>
-            <h3 className="text-xl font-bold">Reject Listing</h3>
-          </ModalHeader>
-          <ModalBody>
-            <p className="mb-4 text-gray-600 dark:text-gray-400">
-              Why are you rejecting the listing for{' '}
-              <strong className="text-gray-900 dark:text-white">
-                {selectedCar?.title}
-              </strong>
-              ?
-            </p>
-            <Textarea
-              label="Reason for Rejection"
-              placeholder="Enter the reason for rejection..."
-              value={rejectReason}
-              onChange={(e) => setRejectReason(e.target.value)}
-              minRows={4}
-              isRequired
-            />
-          </ModalBody>
-          <ModalFooter>
-            <Button
-              variant="flat"
-              onPress={() => onRejectOpenChange()}
-              isDisabled={actionLoading}
-            >
-              Cancel
-            </Button>
-            <Button
-              color="danger"
-              onPress={handleRejectCar}
-              isLoading={actionLoading}
-              isDisabled={!rejectReason.trim()}
-            >
-              Reject Listing
-            </Button>
-          </ModalFooter>
+          {(onClose) => (
+            <>
+              <ModalHeader className="text-white flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-red-600/20 border border-red-500/30 flex items-center justify-center">
+                  <XCircle className="text-red-500" size={20} />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold">Reject Listing</h3>
+                  <p className="text-sm text-gray-400 font-normal mt-1">
+                    {selectedCar?.title}
+                  </p>
+                </div>
+              </ModalHeader>
+              <ModalBody>
+                <Card className="bg-black/40 backdrop-blur-md border border-gray-700 mb-4">
+                  <CardBody className="p-4">
+                    <p className="text-sm text-gray-400">
+                      Please provide a detailed reason for rejecting this listing. This will help the seller understand what needs to be improved.
+                    </p>
+                  </CardBody>
+                </Card>
+
+                <Textarea
+                  label="Reason for Rejection"
+                  labelPlacement="outside"
+                  placeholder="Enter a detailed reason for rejection..."
+                  value={rejectReason}
+                  onChange={(e) => setRejectReason(e.target.value)}
+                  minRows={5}
+                  isRequired
+                  classNames={{
+                    input: "bg-gray-800 text-white",
+                    inputWrapper: "bg-gray-800 border-gray-700",
+                    label: "text-gray-300 font-medium"
+                  }}
+                />
+                <p className="text-xs text-gray-500 mt-2">
+                  This message will be sent to the seller
+                </p>
+              </ModalBody>
+              <ModalFooter>
+                <Button
+                  variant="flat"
+                  onPress={onClose}
+                  isDisabled={actionLoading}
+                  className="font-medium"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  color="danger"
+                  onPress={handleRejectCar}
+                  isLoading={actionLoading}
+                  isDisabled={!rejectReason.trim()}
+                  startContent={<XCircle size={16} />}
+                  className="font-medium"
+                >
+                  Reject Listing
+                </Button>
+              </ModalFooter>
+            </>
+          )}
         </ModalContent>
       </Modal>
-    </div>
+    </AdminLayout>
   );
 }
