@@ -125,16 +125,22 @@ export default function PaymentQRModal({
 
               {/* QR Code */}
               <div className="flex flex-col items-center space-y-4">
-                <div className="bg-white p-6 rounded-lg shadow-lg border-2 border-autohub-primary-200">
-                  <Image
-                    src={qrCodeUrl}
-                    alt="GCash Payment QR Code"
-                    width={300}
-                    height={300}
-                    className="rounded-lg"
-                  />
+                <div className="bg-white p-4 sm:p-6 rounded-lg shadow-lg border-2 border-autohub-primary-200 w-full max-w-md mx-auto">
+                  <div className="relative w-full aspect-square">
+                    <Image
+                      src={qrCodeUrl}
+                      alt="GCash Payment QR Code"
+                      width={400}
+                      height={400}
+                      className="w-full h-full object-contain rounded-lg"
+                      classNames={{
+                        wrapper: "w-full h-full",
+                        img: "w-full h-full object-contain"
+                      }}
+                    />
+                  </div>
                 </div>
-                <p className="text-sm text-autohub-accent1-600 text-center">
+                <p className="text-sm text-autohub-accent1-600 text-center px-4">
                   Scan this QR code with your GCash app to make payment
                 </p>
               </div>

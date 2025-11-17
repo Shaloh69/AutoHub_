@@ -192,11 +192,11 @@ export default function SellerDashboardPage() {
                     {subscription.plan && analytics && (
                       <div className="flex flex-wrap gap-3 text-sm">
                         <span className="text-orange-700 dark:text-orange-300">
-                          <strong>{analytics.active_listings}</strong> / {subscription.plan.max_listings} listings used
+                          <strong>{analytics.active_listings}</strong> / {subscription.plan?.max_listings ?? 0} listings used
                         </span>
-                        {subscription.plan.max_featured_listings > 0 && (
+                        {(subscription.plan?.max_featured_listings ?? 0) > 0 && (
                           <span className="text-orange-700 dark:text-orange-300">
-                            • {subscription.plan.max_featured_listings} featured listings
+                            • {subscription.plan?.max_featured_listings} featured listings
                           </span>
                         )}
                       </div>
@@ -229,7 +229,7 @@ export default function SellerDashboardPage() {
         )}
 
         {/* Subscription Promotion Banner - Only show if on free/basic plan */}
-        {subscription && (!subscription.plan || subscription.plan.slug === 'basic' || subscription.plan.slug === 'free') && (
+        {subscription && (!subscription.plan || subscription.plan?.slug === 'basic' || subscription.plan?.slug === 'free') && (
           <Card className="mb-6 bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 border-0 overflow-hidden relative">
             <div className="absolute inset-0 bg-black/20"></div>
             <CardBody className="relative z-10 p-6 md:p-8">

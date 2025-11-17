@@ -203,9 +203,9 @@ export default function SubscriptionPage() {
               <div className="space-y-4">
                 <div>
                   <h4 className="text-2xl font-bold text-autohub-primary-500">
-                    {currentSubscription.plan.name}
+                    {currentSubscription.plan?.name || 'Subscription Plan'}
                   </h4>
-                  <p className="text-autohub-accent1-600">{currentSubscription.plan.description}</p>
+                  <p className="text-autohub-accent1-600">{currentSubscription.plan?.description || ''}</p>
                 </div>
                 <div className="flex flex-wrap gap-4 text-sm">
                   <div className="flex items-center gap-2">
@@ -268,7 +268,7 @@ export default function SubscriptionPage() {
             const isCurrent = currentSubscription?.plan_id === plan.id;
             const canUpgrade = currentSubscription &&
               currentSubscription.plan &&
-              currentSubscription.plan.price < plan.price &&
+              (currentSubscription.plan?.price ?? 0) < plan.price &&
               !isCurrent;
             
             return (
@@ -413,7 +413,7 @@ export default function SubscriptionPage() {
                         disabled
                         size="lg"
                       >
-                        {currentSubscription.plan && currentSubscription.plan.price > plan.price ? 'Lower Tier' : 'Contact Support'}
+                        {currentSubscription.plan && (currentSubscription.plan?.price ?? 0) > plan.price ? 'Lower Tier' : 'Contact Support'}
                       </Button>
                     )}
                   </div>

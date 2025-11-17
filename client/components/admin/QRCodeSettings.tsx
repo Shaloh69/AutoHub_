@@ -209,14 +209,20 @@ export default function QRCodeSettings({ apiBaseUrl = process.env.NEXT_PUBLIC_AP
           </h3>
           {qrCodeUrl ? (
             <div className="flex justify-center">
-              <div className="bg-white p-4 rounded-lg shadow-md border-2 border-autohub-primary-200">
-                <Image
-                  src={qrCodeUrl}
-                  alt="Current GCash QR Code"
-                  width={250}
-                  height={250}
-                  className="rounded"
-                />
+              <div className="bg-white p-4 rounded-lg shadow-md border-2 border-autohub-primary-200 w-full max-w-sm">
+                <div className="relative w-full aspect-square">
+                  <Image
+                    src={qrCodeUrl}
+                    alt="Current GCash QR Code"
+                    width={300}
+                    height={300}
+                    className="w-full h-full object-contain rounded"
+                    classNames={{
+                      wrapper: "w-full h-full",
+                      img: "w-full h-full object-contain"
+                    }}
+                  />
+                </div>
               </div>
             </div>
           ) : (
@@ -272,14 +278,20 @@ export default function QRCodeSettings({ apiBaseUrl = process.env.NEXT_PUBLIC_AP
 
             {previewUrl && (
               <div className="flex justify-center">
-                <div className="bg-white p-4 rounded-lg shadow-md border-2 border-dashed border-autohub-primary-300">
-                  <Image
-                    src={previewUrl}
-                    alt="Preview"
-                    width={200}
-                    height={200}
-                    className="rounded"
-                  />
+                <div className="bg-white p-4 rounded-lg shadow-md border-2 border-dashed border-autohub-primary-300 w-full max-w-xs">
+                  <div className="relative w-full aspect-square">
+                    <Image
+                      src={previewUrl}
+                      alt="Preview"
+                      width={250}
+                      height={250}
+                      className="w-full h-full object-contain rounded"
+                      classNames={{
+                        wrapper: "w-full h-full",
+                        img: "w-full h-full object-contain"
+                      }}
+                    />
+                  </div>
                   <p className="text-xs text-center text-autohub-accent1-600 mt-2">Preview</p>
                 </div>
               </div>

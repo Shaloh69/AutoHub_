@@ -6,7 +6,7 @@ ADDED: QR code payment workflow, reference number handling, admin verification
 PRESERVED: All original functionality
 ===========================================
 """
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func
 from datetime import datetime, timedelta
 from typing import List, Optional, Dict, Tuple
@@ -35,8 +35,10 @@ class SubscriptionService:
     
     @staticmethod
     def get_user_subscription(db: Session, user_id: int) -> Optional[UserSubscription]:
-        """Get user's current active subscription"""
-        return db.query(UserSubscription).filter(
+        """Get user's current active subscription with plan details eager-loaded"""
+        return db.query(UserSubscription).options(
+            joinedload(UserSubscription.plan)
+        ).filter(
             UserSubscription.user_id == user_id,
             UserSubscription.status == "ACTIVE"  # Fixed: Use UPPERCASE to match SQL schema
         ).first()
