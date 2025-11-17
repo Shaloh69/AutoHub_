@@ -1,4 +1,4 @@
-// app/subscription/page.tsx
+// app/subscription/page.tsx - IMPROVED VERSION
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -13,6 +13,8 @@ import { SubscriptionPlan, Subscription } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import PaymentQRModal from '@/components/PaymentQRModal';
+import { ActiveSubscriptionCard } from '@/components/subscription/ActiveSubscriptionCard';
+import { Crown, Sparkles, Zap, TrendingUp } from 'lucide-react';
 
 interface PaymentHistory {
   id: number;
@@ -80,7 +82,6 @@ export default function SubscriptionPage() {
 
       if (paymentsResponse.success && paymentsResponse.data) {
         setPaymentHistory(paymentsResponse.data);
-        // Filter pending payments that haven't been verified
         const pending = paymentsResponse.data.filter(
           (p: PaymentHistory) => p.status === 'PENDING' && !p.admin_verified_at
         );
@@ -157,10 +158,14 @@ export default function SubscriptionPage() {
   };
 
   const handleCancelSubscription = async () => {
+    if (!confirm('Are you sure you want to cancel your subscription? You can continue using it until the end of your billing period.')) {
+      return;
+    }
+
     try {
       setActionLoading('cancel');
       const response = await apiService.cancelSubscription();
-      
+
       if (response.success) {
         await fetchSubscriptionData();
       } else {
@@ -173,6 +178,14 @@ export default function SubscriptionPage() {
     }
   };
 
+  const getPlanIcon = (planName: string) => {
+    const name = planName.toLowerCase();
+    if (name.includes('business')) return <Crown size={24} className="text-yellow-500" />;
+    if (name.includes('pro')) return <Zap size={24} className="text-purple-500" />;
+    if (name.includes('basic')) return <Sparkles size={24} className="text-blue-500" />;
+    return <TrendingUp size={24} className="text-gray-500" />;
+  };
+
   if (!isAuthenticated || loading) {
     return (
       <div className="flex justify-center items-center min-h-[400px]">
@@ -182,112 +195,51 @@ export default function SubscriptionPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto space-y-10">
+    <div className="max-w-7xl mx-auto px-4 py-8 space-y-10">
       {/* Header */}
       <div className="text-center space-y-4">
-        <div className="inline-flex items-center gap-2 bg-autohub-accent2-500/10 text-autohub-accent2-600 px-4 py-2 rounded-full text-sm font-medium">
-          <span className="w-2 h-2 bg-autohub-accent2-500 rounded-full animate-pulse"></span>
+        <div className="inline-flex items-center gap-2 bg-primary-500/10 text-primary-600 px-4 py-2 rounded-full text-sm font-medium">
+          <span className="w-2 h-2 bg-primary-500 rounded-full animate-pulse"></span>
           Premium Memberships
         </div>
-        <h1 className="text-4xl lg:text-5xl font-bold text-autohub-secondary-900 dark:text-autohub-neutral-50">
-          AutoHub
-          <span className="bg-gradient-to-r from-autohub-primary-500 to-autohub-accent2-500 bg-clip-text text-transparent ml-3">
-            Premium
+        <h1 className="text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white">
+          Choose Your
+          <span className="bg-gradient-to-r from-primary-500 to-secondary-500 bg-clip-text text-transparent ml-3">
+            Perfect Plan
           </span>
         </h1>
-        <p className="text-xl text-autohub-accent1-600 max-w-3xl mx-auto">
+        <p className="text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
           Unlock the full potential of your automotive business with our premium subscription plans
         </p>
       </div>
 
       {error && (
-        <div className="bg-autohub-primary-50 border-l-4 border-autohub-primary-500 text-autohub-primary-700 px-6 py-4 rounded">
+        <div className="bg-red-50 dark:bg-red-900/30 border-l-4 border-red-500 text-red-700 dark:text-red-300 px-6 py-4 rounded">
           <p className="font-medium">{error}</p>
         </div>
       )}
 
-      {/* Current Subscription Status */}
-      {currentSubscription && (
-        <Card className="border-2 border-autohub-accent2-500 bg-gradient-to-br from-autohub-accent2-50 to-autohub-neutral-50 dark:from-autohub-accent2-950 dark:to-autohub-secondary-900 shadow-lg">
-          <CardHeader>
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-autohub-accent2-500 rounded-xl flex items-center justify-center">
-                <span className="text-autohub-secondary-900 font-bold text-lg">★</span>
-              </div>
-              <div>
-                <h3 className="text-xl font-semibold text-autohub-secondary-900 dark:text-autohub-neutral-50">
-                  Current Subscription
-                </h3>
-                <p className="text-autohub-accent1-600">Your premium membership</p>
-              </div>
-            </div>
-          </CardHeader>
-          <CardBody>
-            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
-              <div className="space-y-4">
-                <div>
-                  <h4 className="text-2xl font-bold text-autohub-primary-500">
-                    {currentSubscription.plan?.name || 'Subscription Plan'}
-                  </h4>
-                  <p className="text-autohub-accent1-600">{currentSubscription.plan?.description || ''}</p>
-                </div>
-                <div className="flex flex-wrap gap-4 text-sm">
-                  <div className="flex items-center gap-2">
-                    <span className="text-autohub-accent1-600">Status:</span>
-                    <Chip
-                      size="sm"
-                      className={`${
-                        currentSubscription.status === 'ACTIVE'
-                          ? 'bg-green-500 text-white'
-                          : 'bg-amber-500 text-white'
-                      }`}
-                    >
-                      {currentSubscription.status}
-                    </Chip>
-                  </div>
-                  <div className="text-autohub-accent1-600">
-                    <span>Renews:</span> <span className="font-medium">{new Date(currentSubscription.current_period_end || '').toLocaleDateString()}</span>
-                  </div>
-                  {userLimits && (
-                    <div className="text-autohub-accent1-600">
-                      <span>Listings:</span> <span className="font-medium">{userLimits.usedListings} / {currentSubscription.plan?.max_listings === -1 ? '∞' : currentSubscription.plan?.max_listings}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-              <div className="text-right space-y-3">
-                <div>
-                  <p className="text-3xl font-bold text-autohub-primary-500">
-                    ₱{currentSubscription.plan?.price || 0}
-                  </p>
-                  <p className="text-autohub-accent1-600">per {currentSubscription.billing_cycle?.toLowerCase()}</p>
-                </div>
-                {currentSubscription.status === 'ACTIVE' && !currentSubscription.cancelled_at && (
-                  <Button
-                    variant="bordered"
-                    size="sm"
-                    onPress={handleCancelSubscription}
-                    isLoading={actionLoading === 'cancel'}
-                    className="border-autohub-primary-500 text-autohub-primary-500 hover:bg-autohub-primary-500 hover:text-white"
-                  >
-                    Cancel Subscription
-                  </Button>
-                )}
-                {currentSubscription.cancelled_at && currentSubscription.status !== 'CANCELLED' && (
-                  <Chip color="warning" size="sm" className="bg-amber-500 text-white">
-                    Cancels at period end
-                  </Chip>
-                )}
-              </div>
-            </div>
-          </CardBody>
-        </Card>
-      )}
+      {/* Current Subscription Status - NEW DESIGN */}
+      <ActiveSubscriptionCard
+        subscription={currentSubscription}
+        userLimits={userLimits}
+        showUpgradeButton={true}
+        onUpgrade={() => {
+          const nextPlan = plans.find(p =>
+            currentSubscription?.plan && p.price > (currentSubscription.plan.price || 0)
+          );
+          if (nextPlan) {
+            handleUpgrade(nextPlan.id);
+          }
+        }}
+        onCancel={handleCancelSubscription}
+        loading={actionLoading === 'cancel'}
+      />
 
       {/* Pending Payments Section */}
       {pendingPayments.length > 0 && (
         <div className="space-y-4">
-          <h2 className="text-2xl font-bold text-autohub-secondary-900 dark:text-autohub-neutral-50">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
             Pending Payments
           </h2>
           {pendingPayments.map((payment) => (
@@ -300,246 +252,216 @@ export default function SubscriptionPage() {
         </div>
       )}
 
-      {/* Subscription Plans */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        {plans
-          .sort((a, b) => a.price - b.price)
-          .map((plan) => {
-            const isCurrent = currentSubscription?.plan_id === plan.id;
-            const canUpgrade = currentSubscription &&
-              currentSubscription.plan &&
-              (currentSubscription.plan?.price ?? 0) < plan.price &&
-              !isCurrent;
+      {/* Subscription Plans Grid - IMPROVED */}
+      <div className="space-y-6">
+        <div className="text-center">
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+            Available Plans
+          </h2>
+          <p className="text-gray-600 dark:text-gray-400">
+            Choose the plan that best fits your needs
+          </p>
+        </div>
 
-            return (
-              <Card
-                key={plan.id}
-                className={`relative overflow-hidden transition-all duration-300 hover:-translate-y-2 hover:shadow-autohub ${
-                  isCurrent
-                    ? 'border-4 border-autohub-accent2-500 shadow-gold ring-2 ring-autohub-accent2-300'
-                    : plan.is_popular
-                    ? 'border-2 border-autohub-accent2-500 shadow-gold'
-                    : 'border border-autohub-accent1-200 hover:border-autohub-primary-500/50'
-                }`}
-              >
-                {plan.is_popular && (
-                  <>
-                    <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                      <Chip className="bg-autohub-accent2-500 text-autohub-secondary-900 font-bold" size="lg">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {plans
+            .sort((a, b) => a.price - b.price)
+            .map((plan) => {
+              const isCurrent = currentSubscription?.plan_id === plan.id;
+              const canUpgrade = currentSubscription &&
+                currentSubscription.plan &&
+                (currentSubscription.plan?.price ?? 0) < plan.price &&
+                !isCurrent;
+
+              return (
+                <Card
+                  key={plan.id}
+                  className={`relative overflow-hidden transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl ${
+                    isCurrent
+                      ? 'border-4 border-primary-500 shadow-xl ring-2 ring-primary-300'
+                      : plan.is_popular
+                      ? 'border-2 border-secondary-500 shadow-xl'
+                      : 'border border-gray-200 dark:border-gray-700'
+                  }`}
+                >
+                  {plan.is_popular && !isCurrent && (
+                    <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 z-10">
+                      <Chip className="bg-secondary-500 text-white font-bold shadow-lg" size="lg">
                         Most Popular
                       </Chip>
                     </div>
-                    <div className="absolute top-0 right-0 w-0 h-0 border-l-[60px] border-l-transparent border-b-[60px] border-b-autohub-accent2-500">
-                      <span className="absolute -bottom-12 -right-3 text-autohub-secondary-900 font-bold text-lg rotate-45">★</span>
-                    </div>
-                  </>
-                )}
-                
-                <CardHeader className="text-center pb-4 pt-8">
-                  <div className="space-y-2">
-                    <h3 className="text-2xl font-bold text-autohub-secondary-900 dark:text-autohub-neutral-50">
-                      {plan.name}
-                    </h3>
-                    <p className="text-autohub-accent1-600">{plan.description}</p>
-                  </div>
-                </CardHeader>
-                
-                <CardBody className="space-y-8">
-                  <div className="text-center">
-                    <div className="text-5xl font-bold text-autohub-primary-500 mb-2">
-                      ₱{plan.price}
-                    </div>
-                    <div className="text-autohub-accent1-600">
-                      per {plan.billing_cycle?.toLowerCase()}
-                    </div>
-                  </div>
+                  )}
 
-                  <Divider className="bg-autohub-accent1-200" />
+                  {isCurrent && (
+                    <div className="absolute top-0 right-0 bg-success-500 text-white px-3 py-1 rounded-bl-lg font-semibold text-sm">
+                      Current Plan
+                    </div>
+                  )}
 
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-3">
-                      <CheckIcon className="text-autohub-accent2-500 flex-shrink-0" size={20} />
-                      <span className="text-autohub-secondary-900 dark:text-autohub-neutral-50">
-                        {plan.max_listings === -1 ? 'Unlimited' : plan.max_listings} active listings
-                      </span>
+                  <CardHeader className="text-center pb-4 pt-10">
+                    <div className="space-y-3">
+                      <div className="w-16 h-16 bg-gradient-to-br from-primary-100 to-secondary-100 dark:from-primary-900 dark:to-secondary-900 rounded-2xl flex items-center justify-center mx-auto">
+                        {getPlanIcon(plan.name)}
+                      </div>
+                      <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
+                        {plan.name}
+                      </h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
+                        {plan.description || `Perfect for ${plan.name.toLowerCase()} users`}
+                      </p>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <CheckIcon className="text-autohub-accent2-500 flex-shrink-0" size={20} />
-                      <span className="text-autohub-secondary-900 dark:text-autohub-neutral-50">
-                        {plan.max_photos_per_listing} photos per listing
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <CheckIcon className="text-autohub-accent2-500 flex-shrink-0" size={20} />
-                      <span className="text-autohub-secondary-900 dark:text-autohub-neutral-50">
-                        {plan.max_featured_listings} featured listings
-                      </span>
-                    </div>
-                    {plan.can_add_video && (
-                      <div className="flex items-center gap-3">
-                        <CheckIcon className="text-autohub-accent2-500 flex-shrink-0" size={20} />
-                        <span className="text-autohub-secondary-900 dark:text-autohub-neutral-50">
-                          Video uploads
-                        </span>
-                      </div>
-                    )}
-                    {plan.can_add_virtual_tour && (
-                      <div className="flex items-center gap-3">
-                        <CheckIcon className="text-autohub-accent2-500 flex-shrink-0" size={20} />
-                        <span className="text-autohub-secondary-900 dark:text-autohub-neutral-50">
-                          Virtual tour
-                        </span>
-                      </div>
-                    )}
-                    {plan.priority_support && (
-                      <div className="flex items-center gap-3">
-                        <CheckIcon className="text-autohub-accent2-500 flex-shrink-0" size={20} />
-                        <span className="text-autohub-secondary-900 dark:text-autohub-neutral-50">
-                          Priority support
-                        </span>
-                      </div>
-                    )}
-                    {plan.advanced_analytics && (
-                      <div className="flex items-center gap-3">
-                        <CheckIcon className="text-autohub-accent2-500 flex-shrink-0" size={20} />
-                        <span className="text-autohub-secondary-900 dark:text-autohub-neutral-50">
-                          Advanced analytics
-                        </span>
-                      </div>
-                    )}
-                    {plan.featured_badge && (
-                      <div className="flex items-center gap-3">
-                        <CheckIcon className="text-autohub-accent2-500 flex-shrink-0" size={20} />
-                        <span className="text-autohub-secondary-900 dark:text-autohub-neutral-50">
-                          Featured badge
-                        </span>
-                      </div>
-                    )}
-                  </div>
+                  </CardHeader>
 
-                  <div className="pt-4">
-                    {isCurrent ? (
-                      <Button 
-                        className="w-full bg-autohub-accent1-200 text-autohub-accent1-700 cursor-not-allowed" 
-                        disabled
-                        size="lg"
-                      >
-                        Current Plan
-                      </Button>
-                    ) : canUpgrade ? (
-                      <Button
-                        className="w-full bg-autohub-primary-500 hover:bg-autohub-primary-600 text-white font-semibold shadow-autohub transition-all duration-200 hover:shadow-lg hover:scale-105"
-                        size="lg"
-                        onPress={() => handleUpgrade(plan.id)}
-                        isLoading={actionLoading === plan.id}
-                      >
-                        Upgrade to {plan.name}
-                      </Button>
-                    ) : !currentSubscription ? (
-                      <Button
-                        className={`w-full font-semibold transition-all duration-200 hover:shadow-lg hover:scale-105 ${
-                          plan.is_popular
-                            ? 'bg-autohub-accent2-500 hover:bg-autohub-accent2-600 text-autohub-secondary-900 shadow-gold'
-                            : 'bg-autohub-primary-500 hover:bg-autohub-primary-600 text-white shadow-autohub'
-                        }`}
-                        size="lg"
-                        onPress={() => handleSubscribe(plan.id)}
-                        isLoading={actionLoading === plan.id.toString()}
-                      >
-                        Get Started
-                      </Button>
-                    ) : (
-                      <Button
-                        variant="bordered"
-                        className="w-full border-autohub-accent1-300 text-autohub-accent1-600 cursor-not-allowed"
-                        disabled
-                        size="lg"
-                      >
-                        {currentSubscription.plan && (currentSubscription.plan?.price ?? 0) > plan.price ? 'Lower Tier' : 'Contact Support'}
-                      </Button>
-                    )}
-                  </div>
-                </CardBody>
-              </Card>
-            );
-          })}
+                  <CardBody className="space-y-6">
+                    <div className="text-center">
+                      <div className="text-5xl font-bold text-primary-600 dark:text-primary-400 mb-2">
+                        {plan.price === 0 ? 'Free' : `₱${plan.price}`}
+                      </div>
+                      {plan.price > 0 && (
+                        <div className="text-gray-600 dark:text-gray-400 text-sm">
+                          per {plan.billing_cycle?.toLowerCase()}
+                        </div>
+                      )}
+                    </div>
+
+                    <Divider />
+
+                    <div className="space-y-3">
+                      <FeatureItem
+                        text={`${plan.max_listings === -1 ? 'Unlimited' : plan.max_listings} active listings`}
+                        included={true}
+                      />
+                      <FeatureItem
+                        text={`${plan.max_photos_per_listing} photos per listing`}
+                        included={true}
+                      />
+                      <FeatureItem
+                        text={`${plan.max_featured_listings} featured listings`}
+                        included={plan.max_featured_listings > 0}
+                      />
+                      <FeatureItem
+                        text="Video uploads"
+                        included={plan.can_add_video}
+                      />
+                      <FeatureItem
+                        text="Virtual tour"
+                        included={plan.can_add_virtual_tour}
+                      />
+                      <FeatureItem
+                        text="Priority support"
+                        included={plan.priority_support}
+                      />
+                      <FeatureItem
+                        text="Advanced analytics"
+                        included={plan.advanced_analytics}
+                      />
+                      <FeatureItem
+                        text="Featured badge"
+                        included={plan.featured_badge}
+                      />
+                    </div>
+
+                    <div className="pt-4">
+                      {isCurrent ? (
+                        <Button
+                          className="w-full"
+                          variant="bordered"
+                          size="lg"
+                          disabled
+                        >
+                          Current Plan
+                        </Button>
+                      ) : canUpgrade ? (
+                        <Button
+                          className="w-full bg-gradient-to-r from-primary-500 to-secondary-500 text-white font-semibold hover:shadow-lg"
+                          size="lg"
+                          onPress={() => handleUpgrade(plan.id)}
+                          isLoading={actionLoading === plan.id.toString()}
+                        >
+                          Upgrade Now
+                        </Button>
+                      ) : !currentSubscription ? (
+                        <Button
+                          className={`w-full font-semibold ${
+                            plan.is_popular
+                              ? 'bg-secondary-500 text-white shadow-lg hover:shadow-xl'
+                              : 'bg-primary-500 text-white hover:bg-primary-600'
+                          }`}
+                          size="lg"
+                          onPress={() => handleSubscribe(plan.id)}
+                          isLoading={actionLoading === plan.id.toString()}
+                        >
+                          Get Started
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="bordered"
+                          className="w-full"
+                          disabled
+                          size="lg"
+                        >
+                          {currentSubscription.plan && (currentSubscription.plan?.price ?? 0) > plan.price ? 'Lower Tier' : 'Not Available'}
+                        </Button>
+                      )}
+                    </div>
+                  </CardBody>
+                </Card>
+              );
+            })}
+        </div>
       </div>
 
-      {/* Features Comparison */}
-      <Card className="border border-autohub-accent1-200">
+      {/* Comparison Table - Kept from original */}
+      <Card className="border border-gray-200 dark:border-gray-700">
         <CardHeader>
-          <h3 className="text-2xl font-bold text-autohub-secondary-900 dark:text-autohub-neutral-50">
-            Detailed Comparison
+          <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
+            Detailed Feature Comparison
           </h3>
         </CardHeader>
         <CardBody>
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-autohub-accent1-200">
-                  <th className="text-left py-4 px-2 text-autohub-secondary-900 dark:text-autohub-neutral-50 font-semibold">Feature</th>
+                <tr className="border-b border-gray-200 dark:border-gray-700">
+                  <th className="text-left py-4 px-2 text-gray-900 dark:text-white font-semibold">Feature</th>
                   {plans.map(plan => (
-                    <th key={plan.id} className="text-center py-4 px-2 text-autohub-secondary-900 dark:text-autohub-neutral-50 font-semibold">
+                    <th key={plan.id} className="text-center py-4 px-2 text-gray-900 dark:text-white font-semibold">
                       {plan.name}
                     </th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                <tr className="border-b border-autohub-accent1-200">
-                  <td className="py-4 px-2 text-autohub-accent1-700 font-medium">Vehicle Listings</td>
-                  {plans.map(plan => (
-                    <td key={plan.id} className="text-center py-4 px-2 text-autohub-secondary-900 dark:text-autohub-neutral-50">
-                      <span className="font-semibold">
-                        {plan.max_listings === -1 ? 'Unlimited' : plan.max_listings}
-                      </span>
-                    </td>
-                  ))}
-                </tr>
-                <tr className="border-b border-autohub-accent1-200">
-                  <td className="py-4 px-2 text-autohub-accent1-700 font-medium">Photo Uploads</td>
-                  {plans.map(plan => (
-                    <td key={plan.id} className="text-center py-4 px-2">
-                      <CheckIcon className="text-autohub-accent2-500 mx-auto" size={20} />
-                    </td>
-                  ))}
-                </tr>
-                <tr className="border-b border-autohub-accent1-200">
-                  <td className="py-4 px-2 text-autohub-accent1-700 font-medium">Featured Listings</td>
-                  {plans.map(plan => (
-                    <td key={plan.id} className="text-center py-4 px-2">
-                      {plan.max_featured_listings > 0 ? (
-                        <CheckIcon className="text-autohub-accent2-500 mx-auto" size={20} />
-                      ) : (
-                        <span className="text-autohub-accent1-400">—</span>
-                      )}
-                    </td>
-                  ))}
-                </tr>
-                <tr className="border-b border-autohub-accent1-200">
-                  <td className="py-4 px-2 text-autohub-accent1-700 font-medium">Priority Support</td>
-                  {plans.map(plan => (
-                    <td key={plan.id} className="text-center py-4 px-2">
-                      {plan.priority_support ? (
-                        <CheckIcon className="text-autohub-accent2-500 mx-auto" size={20} />
-                      ) : (
-                        <span className="text-autohub-accent1-400">—</span>
-                      )}
-                    </td>
-                  ))}
-                </tr>
-                <tr>
-                  <td className="py-4 px-2 text-autohub-accent1-700 font-medium">Analytics Dashboard</td>
-                  {plans.map(plan => (
-                    <td key={plan.id} className="text-center py-4 px-2">
-                      {plan.advanced_analytics ? (
-                        <CheckIcon className="text-autohub-accent2-500 mx-auto" size={20} />
-                      ) : (
-                        <span className="text-autohub-accent1-400">—</span>
-                      )}
-                    </td>
-                  ))}
-                </tr>
+                <ComparisonRow
+                  label="Vehicle Listings"
+                  plans={plans}
+                  getValue={(plan) => plan.max_listings === -1 ? 'Unlimited' : plan.max_listings.toString()}
+                />
+                <ComparisonRow
+                  label="Photos per Listing"
+                  plans={plans}
+                  getValue={(plan) => plan.max_photos_per_listing.toString()}
+                />
+                <ComparisonRow
+                  label="Featured Listings"
+                  plans={plans}
+                  getValue={(plan) => plan.max_featured_listings > 0 ? plan.max_featured_listings.toString() : '—'}
+                />
+                <ComparisonRow
+                  label="Video Uploads"
+                  plans={plans}
+                  getValue={(plan) => plan.can_add_video ? '✓' : '—'}
+                />
+                <ComparisonRow
+                  label="Priority Support"
+                  plans={plans}
+                  getValue={(plan) => plan.priority_support ? '✓' : '—'}
+                />
+                <ComparisonRow
+                  label="Advanced Analytics"
+                  plans={plans}
+                  getValue={(plan) => plan.advanced_analytics ? '✓' : '—'}
+                />
               </tbody>
             </table>
           </div>
@@ -563,7 +485,53 @@ export default function SubscriptionPage() {
   );
 }
 
-// Pending Payment Card Component
+// Helper Components
+function FeatureItem({ text, included }: { text: string; included: boolean }) {
+  return (
+    <div className="flex items-center gap-3">
+      {included ? (
+        <CheckIcon className="text-success-500 flex-shrink-0" size={20} />
+      ) : (
+        <span className="text-gray-300 dark:text-gray-700 flex-shrink-0">—</span>
+      )}
+      <span className={`text-sm ${included ? 'text-gray-900 dark:text-white' : 'text-gray-400 line-through'}`}>
+        {text}
+      </span>
+    </div>
+  );
+}
+
+function ComparisonRow({
+  label,
+  plans,
+  getValue
+}: {
+  label: string;
+  plans: SubscriptionPlan[];
+  getValue: (plan: SubscriptionPlan) => string;
+}) {
+  return (
+    <tr className="border-b border-gray-200 dark:border-gray-700">
+      <td className="py-4 px-2 text-gray-700 dark:text-gray-300 font-medium">{label}</td>
+      {plans.map(plan => {
+        const value = getValue(plan);
+        return (
+          <td key={plan.id} className="text-center py-4 px-2 text-gray-900 dark:text-white">
+            {value === '✓' ? (
+              <CheckIcon className="text-success-500 mx-auto" size={20} />
+            ) : (
+              <span className={value === '—' ? 'text-gray-400' : 'font-semibold'}>
+                {value}
+              </span>
+            )}
+          </td>
+        );
+      })}
+    </tr>
+  );
+}
+
+// Pending Payment Card Component (kept from original)
 function PendingPaymentCard({
   payment,
   onPaymentSubmitted
@@ -579,7 +547,6 @@ function PendingPaymentCard({
   const [loadingQR, setLoadingQR] = useState(false);
 
   useEffect(() => {
-    // Fetch QR code settings when component mounts
     const fetchQRCode = async () => {
       try {
         setLoadingQR(true);
@@ -616,7 +583,6 @@ function PendingPaymentCard({
       if (response.success) {
         onPaymentSubmitted();
       } else {
-        // Handle error - convert to string if it's an object
         const errorMessage = typeof response.error === 'string'
           ? response.error
           : typeof response.error === 'object' && response.error !== null
@@ -634,14 +600,14 @@ function PendingPaymentCard({
   const hasSubmittedReference = !!payment.reference_number;
 
   return (
-    <Card className="border-2 border-amber-500 bg-amber-50 dark:bg-amber-950">
+    <Card className="border-2 border-orange-500 bg-orange-50 dark:bg-orange-950">
       <CardBody className="space-y-4">
         <div className="flex items-start justify-between">
           <div>
-            <h3 className="text-xl font-bold text-autohub-secondary-900 dark:text-autohub-neutral-50">
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white">
               Payment Pending Verification
             </h3>
-            <p className="text-sm text-autohub-accent1-600">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
               Amount: ₱{payment.amount} • Created: {new Date(payment.created_at).toLocaleDateString()}
             </p>
           </div>
@@ -651,33 +617,33 @@ function PendingPaymentCard({
         </div>
 
         {error && (
-          <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded">
+          <div className="bg-red-50 dark:bg-red-900/30 border-l-4 border-red-500 text-red-700 dark:text-red-300 p-4 rounded">
             <p className="font-medium">{error}</p>
           </div>
         )}
 
         {hasSubmittedReference ? (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <h4 className="font-semibold text-autohub-secondary-900 mb-2">
+          <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
+            <h4 className="font-semibold text-gray-900 dark:text-white mb-2">
               Payment Reference Submitted
             </h4>
-            <p className="text-sm text-autohub-accent1-700">
+            <p className="text-sm text-gray-700 dark:text-gray-300">
               Reference Number: <span className="font-bold">{payment.reference_number}</span>
             </p>
-            <p className="text-sm text-autohub-accent1-700 mt-2">
+            <p className="text-sm text-gray-700 dark:text-gray-300 mt-2">
               Submitted: {payment.submitted_at ? new Date(payment.submitted_at).toLocaleString() : 'N/A'}
             </p>
-            <p className="text-sm text-autohub-accent1-700 mt-3">
+            <p className="text-sm text-gray-700 dark:text-gray-300 mt-3">
               Your payment is being verified by our admin team. You'll be notified once approved.
             </p>
           </div>
         ) : (
           <>
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <h4 className="font-semibold text-autohub-secondary-900 mb-2">
+            <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
+              <h4 className="font-semibold text-gray-900 dark:text-white mb-2">
                 Payment Instructions:
               </h4>
-              <p className="text-sm text-autohub-accent1-700 whitespace-pre-line">
+              <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line">
                 {instructions || 'Please scan the QR code and enter the reference number from your payment confirmation.'}
               </p>
             </div>
@@ -688,7 +654,7 @@ function PendingPaymentCard({
               </div>
             ) : qrCodeUrl ? (
               <div className="flex flex-col items-center space-y-4">
-                <div className="bg-white p-4 sm:p-6 rounded-lg shadow-lg border-2 border-autohub-primary-200 w-full max-w-md mx-auto">
+                <div className="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg border-2 border-primary-200 dark:border-primary-700 w-full max-w-md mx-auto">
                   <div className="relative w-full aspect-square">
                     <img
                       src={qrCodeUrl}
@@ -697,20 +663,20 @@ function PendingPaymentCard({
                     />
                   </div>
                 </div>
-                <p className="text-sm text-autohub-accent1-600 text-center px-4">
+                <p className="text-sm text-gray-600 dark:text-gray-400 text-center px-4">
                   Scan this QR code with your GCash app to make payment
                 </p>
               </div>
             ) : (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                <p className="text-sm text-red-700">
+              <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-lg p-4">
+                <p className="text-sm text-red-700 dark:text-red-300">
                   QR code not available. Please contact support.
                 </p>
               </div>
             )}
 
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-autohub-secondary-900 dark:text-autohub-neutral-50">
+              <label className="block text-sm font-medium text-gray-900 dark:text-white">
                 Enter Payment Reference Number
               </label>
               <div className="flex gap-2">
@@ -720,10 +686,10 @@ function PendingPaymentCard({
                   value={referenceNumber}
                   onChange={(e) => setReferenceNumber(e.target.value)}
                   disabled={submitting}
-                  className="flex-1 px-4 py-2 border border-autohub-accent1-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-autohub-primary-500"
+                  className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                 />
                 <Button
-                  className="bg-autohub-primary-500 text-white"
+                  color="primary"
                   onPress={handleSubmit}
                   isLoading={submitting}
                   isDisabled={!referenceNumber.trim()}
@@ -731,7 +697,7 @@ function PendingPaymentCard({
                   Submit
                 </Button>
               </div>
-              <p className="text-xs text-autohub-accent1-600">
+              <p className="text-xs text-gray-600 dark:text-gray-400">
                 After completing payment via GCash, enter the reference number from your payment confirmation
               </p>
             </div>

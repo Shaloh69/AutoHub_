@@ -18,6 +18,7 @@ import {
 import { apiService, getImageUrl } from '@/services/api';
 import { Car as CarType, Analytics, Subscription } from '@/types';
 import { useRequireSeller } from '@/contexts/AuthContext';
+import { ActiveSubscriptionCard } from '@/components/subscription/ActiveSubscriptionCard';
 
 export default function SellerDashboardPage() {
   const router = useRouter();
@@ -170,111 +171,30 @@ export default function SellerDashboardPage() {
           </Card>
         )}
 
-        {/* Subscription Status Card */}
-        {subscription && (
-          <Card className="mb-6 bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 border-2 border-orange-200 dark:border-orange-800">
-            <CardBody>
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <div className="flex items-start gap-3">
-                  <div className="p-3 bg-orange-100 dark:bg-orange-900/50 rounded-full">
-                    <Crown className="text-orange-600 dark:text-orange-400" size={24} />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-orange-900 dark:text-orange-100 mb-1 flex items-center gap-2">
-                      {subscription.plan?.name || 'Free'} Plan
-                      {subscription.status === 'ACTIVE' && (
-                        <Chip size="sm" color="success" variant="flat">Active</Chip>
-                      )}
-                    </h3>
-                    <p className="text-sm text-orange-800 dark:text-orange-200 mb-2">
-                      {subscription.plan?.description || 'Basic features included'}
-                    </p>
-                    {subscription.plan && analytics && (
-                      <div className="flex flex-wrap gap-3 text-sm">
-                        <span className="text-orange-700 dark:text-orange-300">
-                          <strong>{analytics.active_listings}</strong> / {subscription.plan?.max_listings ?? 0} listings used
-                        </span>
-                        {(subscription.plan?.max_featured_listings ?? 0) > 0 && (
-                          <span className="text-orange-700 dark:text-orange-300">
-                            • {subscription.plan?.max_featured_listings} featured listings
-                          </span>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <div className="flex flex-col sm:flex-row gap-2">
-                  {subscription.plan?.slug !== 'premium' && subscription.plan?.slug !== 'professional' && (
-                    <Button
-                      color="warning"
-                      variant="solid"
-                      endContent={<ArrowRight size={18} />}
-                      onPress={() => router.push('/subscription')}
-                      className="font-semibold"
-                    >
-                      Upgrade Plan
-                    </Button>
-                  )}
-                  <Button
-                    variant="flat"
-                    onPress={() => router.push('/subscription')}
-                    className="font-medium"
-                  >
-                    Manage Subscription
-                  </Button>
-                </div>
-              </div>
-            </CardBody>
-          </Card>
-        )}
-
-        {/* Subscription Promotion Banner - Only show if on free/basic plan */}
-        {subscription && (!subscription.plan || subscription.plan?.slug === 'basic' || subscription.plan?.slug === 'free') && (
-          <Card className="mb-6 bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 border-0 overflow-hidden relative">
-            <div className="absolute inset-0 bg-black/20"></div>
-            <CardBody className="relative z-10 p-6 md:p-8">
-              <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-                <div className="flex-1 text-center md:text-left">
-                  <div className="inline-flex items-center gap-2 bg-yellow-400 text-gray-900 px-4 py-1 rounded-full text-sm font-bold mb-3">
-                    <Crown size={16} />
-                    PREMIUM OFFER
-                  </div>
-                  <h3 className="text-2xl md:text-3xl font-black text-white mb-2">
-                    Unlock Premium Features Today!
-                  </h3>
-                  <p className="text-white/90 text-lg mb-4">
-                    Get 3x more views, unlimited listings, and priority support
-                  </p>
-                  <div className="flex flex-wrap gap-4 text-sm text-white/80">
-                    <div className="flex items-center gap-2">
-                      <CheckCircle size={18} className="text-yellow-300" />
-                      <span>Unlimited Active Listings</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <CheckCircle size={18} className="text-yellow-300" />
-                      <span>Featured Badge</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <CheckCircle size={18} className="text-yellow-300" />
-                      <span>Advanced Analytics</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex flex-col gap-3">
-                  <Button
-                    size="lg"
-                    className="bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-bold shadow-lg hover:shadow-xl transition-all"
-                    endContent={<ArrowRight size={20} />}
-                    onPress={() => router.push('/subscription')}
-                  >
-                    Upgrade Now
-                  </Button>
-                  <p className="text-white/70 text-xs text-center">Starting at ₱299/month</p>
-                </div>
-              </div>
-            </CardBody>
-          </Card>
-        )}
+        {/* Active Subscription Card - Enhanced */}
+        <div className="mb-6">
+          <ActiveSubscriptionCard
+            subscription={subscription}
+            userLimits={analytics ? {
+              usedListings: analytics.active_listings || 0,
+              usedFeatured: 0, // You can add this to analytics if needed
+              remainingListings: subscription?.plan ? (subscription.plan.max_listings === -1 ? Infinity : subscription.plan.max_listings - (analytics.active_listings || 0)) : 0,
+              remainingFeatured: subscription?.plan ? subscription.plan.max_featured_listings : 0
+            } : null}
+            showUpgradeButton={true}
+            onUpgrade={() => router.push('/subscription')}
+            onCancel={async () => {
+              if (confirm('Are you sure you want to cancel your subscription?')) {
+                try {
+                  await apiService.cancelSubscription();
+                  await loadDashboardData();
+                } catch (error) {
+                  console.error('Failed to cancel subscription:', error);
+                }
+              }
+            }}
+          />
+        </div>
 
         {/* Quick Actions */}
         <Card className="mb-6 border-2 border-orange-200 dark:border-orange-800">

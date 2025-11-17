@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { apiService, getImageUrl } from '@/services/api';
 import { User, Car } from '@/types';
+import { SubscriptionBadge } from '@/components/subscription/SubscriptionBadge';
 
 interface Review {
   id: number;
@@ -198,6 +199,52 @@ export default function SellerProfilePage() {
                         {seller.business_name}
                       </p>
                     )}
+
+                    {/* Subscription Badge */}
+                    {seller.subscription_status && seller.subscription_status !== 'FREE' && (
+                      <div className="mb-3">
+                        <SubscriptionBadge
+                          subscription={seller.current_subscription_id ? {
+                            id: seller.current_subscription_id,
+                            user_id: seller.id,
+                            plan_id: 0,
+                            status: seller.subscription_status as any,
+                            billing_cycle: 'MONTHLY',
+                            auto_renew: true,
+                            subscribed_at: seller.created_at,
+                            started_at: seller.created_at,
+                            created_at: seller.created_at,
+                            updated_at: seller.created_at,
+                            expires_at: seller.subscription_expires_at,
+                            current_period_end: seller.subscription_expires_at,
+                            plan: seller.subscription_status === 'ACTIVE' ? {
+                              id: 0,
+                              name: 'Premium Member',
+                              slug: 'premium',
+                              price: 0,
+                              currency_id: 1,
+                              billing_cycle: 'MONTHLY',
+                              max_listings: -1,
+                              max_photos_per_listing: 30,
+                              max_featured_listings: 5,
+                              can_add_video: true,
+                              can_add_virtual_tour: true,
+                              priority_support: true,
+                              advanced_analytics: true,
+                              featured_badge: true,
+                              is_popular: false,
+                              display_order: 0,
+                              is_active: true,
+                              created_at: seller.created_at,
+                              updated_at: seller.created_at
+                            } : undefined
+                          } : null}
+                          size="md"
+                          showExpiry={true}
+                        />
+                      </div>
+                    )}
+
                     <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
                       {seller.location && (
                         <div className="flex items-center gap-1">
