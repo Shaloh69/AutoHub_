@@ -270,10 +270,10 @@ class SubscriptionService:
 
         Args:
             db: Database session
-            request_base_url: Base URL from the request (e.g., 'http://localhost:8000')
-                            If not provided, will try to get from environment
+            request_base_url: Base URL from the request (DEPRECATED - not used anymore)
         """
         import os
+        from app.config import settings
 
         qr_image = db.query(PaymentSetting).filter(
             PaymentSetting.setting_key == "payment_qr_code_image"
@@ -286,12 +286,9 @@ class SubscriptionService:
         # Get QR code path from settings (default to SVG placeholder)
         qr_code_path = getattr(qr_image, 'setting_value', '/uploads/qr/default_payment_qr.svg') if qr_image else '/uploads/qr/default_payment_qr.svg'
 
-        # Determine base URL
-        # Priority: 1. Passed request URL, 2. Environment variable, 3. Default
-        if request_base_url:
-            api_base_url = request_base_url
-        else:
-            api_base_url = os.getenv('API_BASE_URL', 'http://localhost:8000')
+        # Always use BACKEND_URL from settings to ensure correct URL
+        # This ensures QR codes are served from the backend, not the frontend
+        api_base_url = settings.BACKEND_URL
 
         # Remove /api/v1 suffix if present
         if api_base_url.endswith('/api/v1'):

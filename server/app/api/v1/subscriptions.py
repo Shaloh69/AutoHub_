@@ -158,9 +158,8 @@ async def upgrade_subscription(
             payment_method="qr_code"
         )
 
-        # Get QR code settings with request base URL
-        base_url = f"{request.url.scheme}://{request.url.netloc}"
-        qr_settings = SubscriptionService.get_qr_code_settings(db, request_base_url=base_url)
+        # Get QR code settings
+        qr_settings = SubscriptionService.get_qr_code_settings(db)
         
         return {
             "message": "Subscription upgrade initiated. Please complete payment.",
@@ -211,8 +210,7 @@ async def subscribe_to_plan(
 
         # For QR code payments, return QR code information
         if subscription_data.payment_method == "qr_code":
-            base_url = f"{request.url.scheme}://{request.url.netloc}"
-            qr_settings = SubscriptionService.get_qr_code_settings(db, request_base_url=base_url)
+            qr_settings = SubscriptionService.get_qr_code_settings(db)
             
             # Send notification to user
             try:
@@ -415,9 +413,8 @@ async def get_qr_code_settings(request: Request, db: Session = Depends(get_db)):
     Returns the GCash QR code image URL and payment instructions configured by admin
     """
     try:
-        # Extract base URL from request
-        base_url = f"{request.url.scheme}://{request.url.netloc}"
-        qr_settings = SubscriptionService.get_qr_code_settings(db, request_base_url=base_url)
+        # Get QR code settings
+        qr_settings = SubscriptionService.get_qr_code_settings(db)
 
         return {
             "success": True,

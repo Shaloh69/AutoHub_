@@ -202,12 +202,16 @@ async def general_exception_handler(request: Request, exc: Exception):
 
 # Mount static files directory
 if settings.USE_LOCAL_STORAGE:
-    if os.path.exists(settings.LOCAL_UPLOAD_DIR):
-        app.mount(
-            "/uploads",
-            StaticFiles(directory=settings.LOCAL_UPLOAD_DIR),
-            name="uploads"
-        )
+    # Create uploads directory if it doesn't exist
+    os.makedirs(settings.LOCAL_UPLOAD_DIR, exist_ok=True)
+    os.makedirs(os.path.join(settings.LOCAL_UPLOAD_DIR, "qr"), exist_ok=True)
+
+    # Mount static files
+    app.mount(
+        "/uploads",
+        StaticFiles(directory=settings.LOCAL_UPLOAD_DIR),
+        name="uploads"
+    )
 
 
 # Health check endpoint
