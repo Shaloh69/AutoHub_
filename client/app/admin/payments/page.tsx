@@ -198,13 +198,12 @@ export default function AdminPaymentsPage() {
     return `${diffInDays} days ago`;
   };
 
-  // FIX: Use UPPERCASE for status comparisons
   const getStatusColor = (status: string): "success" | "warning" | "danger" | "default" => {
-    const upperStatus = status?.toUpperCase();
-    switch (upperStatus) {
-      case 'VERIFIED': return 'success';
-      case 'PENDING': return 'warning';
-      case 'REJECTED': return 'danger';
+    const lowerStatus = status?.toLowerCase();
+    switch (lowerStatus) {
+      case 'verified': return 'success';
+      case 'pending': return 'warning';
+      case 'rejected': return 'danger';
       default: return 'default';
     }
   };
@@ -789,9 +788,9 @@ export default function AdminPaymentsPage() {
                               size="sm"
                               color={getStatusColor(selectedPayment.status)}
                               variant="flat"
-                              className="font-medium mt-1"
+                              className="font-medium mt-1 capitalize"
                             >
-                              {selectedPayment.status.toUpperCase()}
+                              {selectedPayment.status}
                             </Chip>
                           </div>
                           <div>

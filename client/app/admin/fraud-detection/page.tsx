@@ -175,12 +175,11 @@ export default function FraudDetectionPage() {
   };
 
   const getSeverityColor = (severity: string): "danger" | "warning" | "default" => {
-    // FIX: Use toUpperCase() for enum comparison
-    const upperSeverity = severity?.toUpperCase();
-    switch (upperSeverity) {
-      case 'HIGH': return 'danger';
-      case 'MEDIUM': return 'warning';
-      case 'LOW': return 'default';
+    const lowerSeverity = severity?.toLowerCase();
+    switch (lowerSeverity) {
+      case 'high': return 'danger';
+      case 'medium': return 'warning';
+      case 'low': return 'default';
       default: return 'default';
     }
   };
@@ -399,9 +398,9 @@ export default function FraudDetectionPage() {
                           color={getSeverityColor(indicator.severity)}
                           variant="flat"
                           size="sm"
-                          className="font-medium"
+                          className="font-medium capitalize"
                         >
-                          {indicator.severity.toUpperCase()}
+                          {indicator.severity}
                         </Chip>
                       </TableCell>
                       <TableCell>
@@ -616,8 +615,8 @@ export default function FraudDetectionPage() {
                         </div>
                         <div className="flex justify-between items-center">
                           <span className="text-gray-400">Severity:</span>
-                          <Chip color={getSeverityColor(selectedIndicator.severity)} size="sm" variant="flat">
-                            {selectedIndicator.severity.toUpperCase()}
+                          <Chip color={getSeverityColor(selectedIndicator.severity)} size="sm" variant="flat" className="capitalize">
+                            {selectedIndicator.severity}
                           </Chip>
                         </div>
                         <div className="pt-3 border-t border-gray-700">
@@ -720,8 +719,8 @@ export default function FraudDetectionPage() {
                       </div>
                       <div className="bg-black/40 backdrop-blur-sm p-4 rounded-lg border border-gray-700">
                         <p className="text-sm text-gray-400 mb-2">Severity</p>
-                        <Chip color={getSeverityColor(selectedIndicator.severity)} variant="flat" className="mt-1">
-                          {selectedIndicator.severity.toUpperCase()}
+                        <Chip color={getSeverityColor(selectedIndicator.severity)} variant="flat" className="mt-1 capitalize">
+                          {selectedIndicator.severity}
                         </Chip>
                       </div>
                     </div>

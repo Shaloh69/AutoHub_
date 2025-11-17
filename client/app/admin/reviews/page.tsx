@@ -55,9 +55,9 @@ export default function AdminReviewsPage() {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [stats, setStats] = useState<ReviewStats | null>(null);
-  const [statusFilter, setStatusFilter] = useState<string>('PENDING');
+  const [statusFilter, setStatusFilter] = useState<string>('pending');
   const [adminNotes, setAdminNotes] = useState('');
-  const [moderationAction, setModerationAction] = useState<'APPROVED' | 'REJECTED' | 'HIDDEN' | 'PENDING'>('APPROVED');
+  const [moderationAction, setModerationAction] = useState<'approved' | 'rejected' | 'hidden' | 'pending'>('approved');
 
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
 
@@ -97,7 +97,7 @@ export default function AdminReviewsPage() {
     }
   };
 
-  const openModerationModal = (review: Review, action: 'APPROVED' | 'REJECTED' | 'HIDDEN') => {
+  const openModerationModal = (review: Review, action: 'approved' | 'rejected' | 'hidden') => {
     setSelectedReview(review);
     setModerationAction(action);
     setAdminNotes('');
@@ -109,9 +109,9 @@ export default function AdminReviewsPage() {
 
     try {
       setActionLoading(true);
-      // FIX: Convert to uppercase to match backend enum values
+      // Send lowercase status to match backend enum values
       const response = await apiService.moderateReview(selectedReview.id, {
-        status: moderationAction.toUpperCase(),
+        status: moderationAction.toLowerCase(),
         admin_notes: adminNotes.trim() || undefined,
       });
 
@@ -283,7 +283,7 @@ export default function AdminReviewsPage() {
                 }
               />
               <Tab
-                key="PENDING"
+                key="pending"
                 title={
                   <div className="flex items-center gap-2">
                     <TrendingUp size={16} />
@@ -293,7 +293,7 @@ export default function AdminReviewsPage() {
                 }
               />
               <Tab
-                key="APPROVED"
+                key="approved"
                 title={
                   <div className="flex items-center gap-2">
                     <Check size={16} />
@@ -303,7 +303,7 @@ export default function AdminReviewsPage() {
                 }
               />
               <Tab
-                key="REJECTED"
+                key="rejected"
                 title={
                   <div className="flex items-center gap-2">
                     <X size={16} />
@@ -313,7 +313,7 @@ export default function AdminReviewsPage() {
                 }
               />
               <Tab
-                key="HIDDEN"
+                key="hidden"
                 title={
                   <div className="flex items-center gap-2">
                     <EyeOff size={16} />
@@ -424,34 +424,34 @@ export default function AdminReviewsPage() {
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-2">
-                          {review.status?.toUpperCase() !== 'APPROVED' && (
+                          {review.status?.toLowerCase() !== 'approved' && (
                             <Button
                               size="sm"
                               color="success"
                               variant="flat"
                               startContent={<Check size={14} />}
-                              onPress={() => openModerationModal(review, 'APPROVED')}
+                              onPress={() => openModerationModal(review, 'approved')}
                             >
                               Approve
                             </Button>
                           )}
-                          {review.status?.toUpperCase() !== 'REJECTED' && (
+                          {review.status?.toLowerCase() !== 'rejected' && (
                             <Button
                               size="sm"
                               color="danger"
                               variant="flat"
                               startContent={<X size={14} />}
-                              onPress={() => openModerationModal(review, 'REJECTED')}
+                              onPress={() => openModerationModal(review, 'rejected')}
                             >
                               Reject
                             </Button>
                           )}
-                          {review.status?.toUpperCase() !== 'HIDDEN' && (
+                          {review.status?.toLowerCase() !== 'hidden' && (
                             <Button
                               size="sm"
                               variant="flat"
                               startContent={<EyeOff size={14} />}
-                              onPress={() => openModerationModal(review, 'HIDDEN')}
+                              onPress={() => openModerationModal(review, 'hidden')}
                             >
                               Hide
                             </Button>
@@ -484,17 +484,17 @@ export default function AdminReviewsPage() {
             <>
               <ModalHeader className="text-white flex items-center gap-3">
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                  moderationAction === 'APPROVED' ? 'bg-green-600/20 border border-green-500/30' :
-                  moderationAction === 'REJECTED' ? 'bg-red-600/20 border border-red-500/30' :
+                  moderationAction === 'approved' ? 'bg-green-600/20 border border-green-500/30' :
+                  moderationAction === 'rejected' ? 'bg-red-600/20 border border-red-500/30' :
                   'bg-gray-600/20 border border-gray-500/30'
                 }`}>
-                  {moderationAction === 'APPROVED' && <Check className="text-green-500" size={20} />}
-                  {moderationAction === 'REJECTED' && <X className="text-red-500" size={20} />}
-                  {moderationAction === 'HIDDEN' && <EyeOff className="text-gray-500" size={20} />}
+                  {moderationAction === 'approved' && <Check className="text-green-500" size={20} />}
+                  {moderationAction === 'rejected' && <X className="text-red-500" size={20} />}
+                  {moderationAction === 'hidden' && <EyeOff className="text-gray-500" size={20} />}
                 </div>
                 <div>
                   <h3 className="text-lg font-bold">
-                    {moderationAction.charAt(0) + moderationAction.slice(1).toLowerCase()} Review
+                    {moderationAction.charAt(0).toUpperCase() + moderationAction.slice(1)} Review
                   </h3>
                   <p className="text-sm text-gray-400 font-normal">Review #{selectedReview?.id}</p>
                 </div>
@@ -565,20 +565,20 @@ export default function AdminReviewsPage() {
                 </Button>
                 <Button
                   color={
-                    moderationAction === 'APPROVED' ? 'success' :
-                    moderationAction === 'REJECTED' ? 'danger' :
+                    moderationAction === 'approved' ? 'success' :
+                    moderationAction === 'rejected' ? 'danger' :
                     'default'
                   }
                   onPress={handleModerateReview}
                   isLoading={actionLoading}
                   className="font-medium"
                   startContent={
-                    moderationAction === 'APPROVED' ? <Check size={16} /> :
-                    moderationAction === 'REJECTED' ? <X size={16} /> :
+                    moderationAction === 'approved' ? <Check size={16} /> :
+                    moderationAction === 'rejected' ? <X size={16} /> :
                     <EyeOff size={16} />
                   }
                 >
-                  Confirm {moderationAction.charAt(0) + moderationAction.slice(1).toLowerCase()}
+                  Confirm {moderationAction.charAt(0).toUpperCase() + moderationAction.slice(1)}
                 </Button>
               </ModalFooter>
             </>

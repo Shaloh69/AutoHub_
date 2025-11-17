@@ -13,7 +13,7 @@ import { Chip } from '@heroui/chip';
 import {
   LayoutDashboard, MessageSquare, CreditCard, Shield,
   Users, Car, Settings, LogOut, Menu, X, Bell,
-  ChevronRight, Search, Home
+  ChevronRight, Search, Home, Calendar
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -68,12 +68,21 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     return pathname.startsWith(href);
   };
 
+  const getCurrentDate = () => {
+    return new Date().toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    });
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900">
       {/* Sidebar */}
       <aside
-        className={`fixed left-0 top-0 h-full bg-black/40 backdrop-blur-xl border-r border-gray-700 transition-all duration-300 z-50 ${
-          sidebarOpen ? 'w-64' : 'w-20'
+        className={`fixed left-0 top-0 h-full bg-black/40 backdrop-blur-xl border-r border-gray-700 transition-all duration-300 z-50 flex flex-col ${
+          sidebarOpen ? 'w-72' : 'w-20'
         }`}
       >
         {/* Logo & Toggle */}
@@ -81,11 +90,11 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           {sidebarOpen ? (
             <>
               <Link href="/admin" className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-red-600 to-red-800 flex items-center justify-center">
-                  <Shield className="text-white" size={20} />
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-red-600 to-red-800 flex items-center justify-center shadow-lg shadow-red-500/30">
+                  <Shield className="text-white" size={22} />
                 </div>
                 <div>
-                  <h1 className="text-white font-bold text-lg">AutoHub</h1>
+                  <h1 className="text-white font-bold text-xl">AutoHub</h1>
                   <p className="text-xs text-gray-400">Admin Console</p>
                 </div>
               </Link>
@@ -111,8 +120,31 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           )}
         </div>
 
+        {/* Admin Badge & Date - Moved from navbar */}
+        {sidebarOpen && (
+          <div className="px-4 py-3 border-b border-gray-700 bg-black/20 space-y-2">
+            <div className="flex items-center justify-between">
+              <Chip size="sm" color="success" variant="flat" className="font-medium">
+                Admin Access
+              </Chip>
+              <Button
+                isIconOnly
+                size="sm"
+                variant="light"
+                className="text-gray-400 hover:text-white"
+              >
+                <Bell size={18} />
+              </Button>
+            </div>
+            <div className="flex items-center gap-2 text-xs text-gray-400">
+              <Calendar size={14} />
+              <span>{getCurrentDate()}</span>
+            </div>
+          </div>
+        )}
+
         {/* Navigation */}
-        <nav className="p-3 space-y-2">
+        <nav className="p-3 space-y-2 flex-1 overflow-y-auto">
           {navigation.map((item) => {
             const Icon = item.icon;
             const active = isActive(item.href);
@@ -147,26 +179,26 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               </Link>
             );
           })}
+
+          {/* Quick Links */}
+          {sidebarOpen && (
+            <div className="pt-4 mt-4 border-t border-gray-700">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-3">
+                Quick Links
+              </p>
+              <Link
+                href="/"
+                className="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-400 hover:bg-white/5 hover:text-white transition-all"
+              >
+                <Home size={18} />
+                <span className="text-sm">Main Site</span>
+              </Link>
+            </div>
+          )}
         </nav>
 
-        {/* Quick Links */}
-        {sidebarOpen && (
-          <div className="px-3 mt-6">
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-3">
-              Quick Links
-            </p>
-            <Link
-              href="/"
-              className="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-400 hover:bg-white/5 hover:text-white transition-all"
-            >
-              <Home size={18} />
-              <span className="text-sm">Main Site</span>
-            </Link>
-          </div>
-        )}
-
         {/* User Profile */}
-        <div className={`absolute bottom-0 left-0 right-0 p-4 border-t border-gray-700 bg-black/20 ${
+        <div className={`p-4 border-t border-gray-700 bg-black/20 ${
           sidebarOpen ? '' : 'flex justify-center'
         }`}>
           {sidebarOpen ? (
@@ -211,40 +243,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       </aside>
 
       {/* Main Content */}
-      <main className={`transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-20'}`}>
-        {/* Top Bar */}
-        <header className="sticky top-0 z-40 bg-black/40 backdrop-blur-xl border-b border-gray-700">
-          <div className="flex items-center justify-between px-6 py-4">
-            <div className="flex items-center gap-4">
-              <h2 className="text-xl font-bold text-white">
-                {navigation.find(item => isActive(item.href))?.label || 'Dashboard'}
-              </h2>
-              <Chip size="sm" color="success" variant="flat">
-                Admin
-              </Chip>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <Button
-                isIconOnly
-                variant="flat"
-                className="text-gray-400 hover:text-white"
-              >
-                <Bell size={20} />
-              </Button>
-              <div className="w-px h-6 bg-gray-700" />
-              <div className="text-sm text-gray-400">
-                {new Date().toLocaleDateString('en-US', {
-                  weekday: 'short',
-                  month: 'short',
-                  day: 'numeric'
-                })}
-              </div>
-            </div>
-          </div>
-        </header>
-
-        {/* Page Content */}
+      <main className={`transition-all duration-300 min-h-screen ${sidebarOpen ? 'ml-72' : 'ml-20'}`}>
+        {/* Page Content - No navbar */}
         <div className="p-6">
           {children}
         </div>

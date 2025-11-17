@@ -683,7 +683,7 @@ export default function AdminDashboardPage() {
                                 <div>
                                   <p className="text-sm text-cyan-300 mb-2 font-medium">Active Sellers</p>
                                   <p className="text-3xl font-bold text-white">
-                                    {users.filter(u => u.role?.toUpperCase() === 'SELLER' || u.role?.toUpperCase() === 'DEALER').length}
+                                    {users.filter(u => u.role?.toLowerCase() === 'seller' || u.role?.toLowerCase() === 'dealer').length}
                                   </p>
                                   <p className="text-xs text-cyan-400 mt-2">Total seller accounts</p>
                                 </div>
@@ -748,7 +748,7 @@ export default function AdminDashboardPage() {
                                 <div className="flex justify-between items-center py-2">
                                   <span className="text-gray-400">Total Sellers:</span>
                                   <span className="font-semibold text-white">
-                                    {users.filter(u => u.role?.toUpperCase() === 'SELLER' || u.role?.toUpperCase() === 'DEALER').length}
+                                    {users.filter(u => u.role?.toLowerCase() === 'seller' || u.role?.toLowerCase() === 'dealer').length}
                                   </span>
                                 </div>
                               </div>
