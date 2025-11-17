@@ -193,7 +193,7 @@ class SubscriptionService:
         base_price = Decimal(str(getattr(plan, 'price', 0)))
 
         # Apply multiplier for yearly subscriptions (typically 10x monthly for annual discount)
-        if billing_cycle == "yearly":
+        if billing_cycle == "YEARLY":
             amount = base_price * Decimal('10')  # 10 months worth (2 months free)
         else:
             amount = base_price
@@ -208,8 +208,8 @@ class SubscriptionService:
         
         # Determine subscription status based on payment method
         # Fixed: Use UPPERCASE for UserSubscription.status and SubscriptionPayment.status to match SQL schema
-        subscription_status = "PENDING" if payment_method == "qr_code" else "ACTIVE"
-        payment_status = "PENDING" if payment_method == "qr_code" else "COMPLETED"
+        subscription_status = "PENDING" if payment_method == "QR_CODE" else "ACTIVE"
+        payment_status = "PENDING" if payment_method == "QR_CODE" else "COMPLETED"
 
         # Create subscription
         subscription = UserSubscription(
@@ -218,8 +218,8 @@ class SubscriptionService:
             status=subscription_status,
             billing_cycle=billing_cycle,
             current_period_start=datetime.utcnow() if subscription_status == "ACTIVE" else None,
-            current_period_end=(datetime.utcnow() + timedelta(days=30 if billing_cycle == "monthly" else 365)) if subscription_status == "ACTIVE" else None,
-            next_billing_date=(datetime.utcnow() + timedelta(days=30 if billing_cycle == "monthly" else 365)) if subscription_status == "ACTIVE" else None,
+            current_period_end=(datetime.utcnow() + timedelta(days=30 if billing_cycle == "MONTHLY" else 365)) if subscription_status == "ACTIVE" else None,
+            next_billing_date=(datetime.utcnow() + timedelta(days=30 if billing_cycle == "MONTHLY" else 365)) if subscription_status == "ACTIVE" else None,
             subscribed_at=datetime.utcnow()
         )
 
@@ -236,7 +236,7 @@ class SubscriptionService:
             amount=amount,
             payment_method=payment_method,
             status=payment_status,
-            qr_code_shown=(payment_method == "qr_code"),
+            qr_code_shown=(payment_method == "QR_CODE"),
             created_at=datetime.utcnow()
         )
 
@@ -436,8 +436,8 @@ class SubscriptionService:
                 setattr(subscription, 'status', 'ACTIVE')
                 setattr(subscription, 'current_period_start', datetime.utcnow())
 
-                billing_cycle = getattr(subscription, 'billing_cycle', 'monthly')
-                days = 30 if billing_cycle == "monthly" else 365
+                billing_cycle = getattr(subscription, 'billing_cycle', 'MONTHLY')
+                days = 30 if billing_cycle == "MONTHLY" else 365
                 setattr(subscription, 'current_period_end', datetime.utcnow() + timedelta(days=days))
                 setattr(subscription, 'next_billing_date', datetime.utcnow() + timedelta(days=days))
 

@@ -87,16 +87,22 @@ export default function SellerDashboardPage() {
   };
 
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active':
+    const upperStatus = status?.toUpperCase();
+    switch (upperStatus) {
+      case 'ACTIVE':
         return 'success';
-      case 'pending':
+      case 'PENDING':
+      case 'DRAFT':
         return 'warning';
-      case 'sold':
+      case 'SOLD':
         return 'primary';
-      case 'expired':
-      case 'removed':
+      case 'EXPIRED':
+      case 'REMOVED':
+      case 'INACTIVE':
+      case 'REJECTED':
         return 'danger';
+      case 'RESERVED':
+        return 'secondary';
       default:
         return 'default';
     }
@@ -104,7 +110,7 @@ export default function SellerDashboardPage() {
 
   const filteredCars = cars.filter(car => {
     if (selectedTab === 'all') return true;
-    return car.status === selectedTab;
+    return car.status?.toUpperCase() === selectedTab.toUpperCase();
   });
 
   if (authLoading || loading) {
@@ -327,15 +333,15 @@ export default function SellerDashboardPage() {
               <Tab key="all" title={`All (${cars.length})`} />
               <Tab
                 key="active"
-                title={`Active (${cars.filter(c => c.status === 'active').length})`}
+                title={`Active (${cars.filter(c => c.status?.toUpperCase() === 'ACTIVE').length})`}
               />
               <Tab
                 key="pending"
-                title={`Pending (${cars.filter(c => c.status === 'pending').length})`}
+                title={`Pending (${cars.filter(c => c.status?.toUpperCase() === 'PENDING').length})`}
               />
               <Tab
                 key="sold"
-                title={`Sold (${cars.filter(c => c.status === 'sold').length})`}
+                title={`Sold (${cars.filter(c => c.status?.toUpperCase() === 'SOLD').length})`}
               />
             </Tabs>
 
@@ -428,7 +434,7 @@ export default function SellerDashboardPage() {
                                 size="sm"
                                 variant="flat"
                                 onPress={() => router.push(`/seller/cars/${car.id}/edit`)}
-                                isDisabled={car.status === 'sold'}
+                                isDisabled={car.status?.toUpperCase() === 'SOLD'}
                               >
                                 Edit
                               </Button>

@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, field_validator
 from typing import Optional
 from datetime import datetime
 from decimal import Decimal
@@ -29,8 +29,16 @@ class ReviewUpdate(BaseModel):
 
 class ReviewModerate(BaseModel):
     """Admin moderation schema"""
-    status: str = Field(..., pattern="^(pending|approved|rejected|hidden)$")
+    status: str = Field(..., pattern="^(PENDING|APPROVED|REJECTED|HIDDEN)$")
     admin_notes: Optional[str] = Field(None, max_length=500)
+
+    @field_validator('status', mode='before')
+    @classmethod
+    def uppercase_status(cls, v):
+        """Convert status to uppercase to match database schema"""
+        if v is not None and isinstance(v, str):
+            return v.upper()
+        return v
 
 
 class ReviewHelpful(BaseModel):

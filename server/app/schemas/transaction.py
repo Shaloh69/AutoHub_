@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, field_validator
 from typing import Optional
 from datetime import datetime
 from decimal import Decimal
@@ -8,7 +8,7 @@ class TransactionCreate(BaseModel):
     """Create transaction - Complete with all fields"""
     car_id: int
     agreed_price: Decimal = Field(..., gt=0)
-    payment_method: str = Field(..., pattern="^(cash|bank_transfer|financing|installment)$")
+    payment_method: str = Field(..., pattern="^(CASH|BANK_TRANSFER|CHECK|FINANCING|TRADE_IN|MIXED)$")
     deposit_amount: Optional[Decimal] = Field(None, ge=0)
     financing_provider: Optional[str] = Field(None, max_length=200)
     down_payment: Optional[Decimal] = Field(None, ge=0)
@@ -18,13 +18,29 @@ class TransactionCreate(BaseModel):
     trade_in_value: Optional[Decimal] = Field(None, ge=0)
     trade_in_vehicle_details: Optional[str] = Field(None, max_length=1000)
 
+    @field_validator('payment_method', mode='before')
+    @classmethod
+    def uppercase_payment_method(cls, v):
+        """Convert payment_method to uppercase to match database schema"""
+        if v is not None and isinstance(v, str):
+            return v.upper()
+        return v
+
 
 class TransactionUpdate(BaseModel):
     """Update transaction - Complete"""
-    status: Optional[str] = Field(None, pattern="^(pending|confirmed|completed|cancelled|disputed)$")  # Fixed: Match SQL schema exactly
+    status: Optional[str] = Field(None, pattern="^(PENDING|CONFIRMED|COMPLETED|CANCELLED|DISPUTED)$")
     documents_verified: Optional[bool] = None
     payment_verified: Optional[bool] = None
     transfer_completed: Optional[bool] = None
+
+    @field_validator('status', mode='before')
+    @classmethod
+    def uppercase_status(cls, v):
+        """Convert status to uppercase to match database schema"""
+        if v is not None and isinstance(v, str):
+            return v.upper()
+        return v
 
 
 class TransactionResponse(BaseModel):

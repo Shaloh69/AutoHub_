@@ -102,25 +102,37 @@ export default function SellerInquiriesPage() {
   };
 
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'open':
+    const upperStatus = status?.toUpperCase();
+    switch (upperStatus) {
+      case 'NEW':
+      case 'OPEN':
         return 'warning';
-      case 'replied':
+      case 'REPLIED':
+      case 'READ':
+      case 'IN_NEGOTIATION':
         return 'primary';
-      case 'closed':
+      case 'CLOSED':
+      case 'CONVERTED':
         return 'success';
+      case 'SPAM':
+        return 'danger';
       default:
         return 'default';
     }
   };
 
   const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'open':
+    const upperStatus = status?.toUpperCase();
+    switch (upperStatus) {
+      case 'NEW':
+      case 'OPEN':
         return <Clock size={16} />;
-      case 'replied':
+      case 'REPLIED':
+      case 'READ':
+      case 'IN_NEGOTIATION':
         return <MessageCircle size={16} />;
-      case 'closed':
+      case 'CLOSED':
+      case 'CONVERTED':
         return <CheckCircle2 size={16} />;
       default:
         return null;
@@ -169,7 +181,7 @@ export default function SellerInquiriesPage() {
                 title={
                   <div className="flex items-center gap-2">
                     <Clock size={16} />
-                    <span>Open ({inquiries.filter(i => i.status === 'open').length})</span>
+                    <span>Open ({inquiries.filter(i => i.status?.toUpperCase() === 'NEW' || i.status?.toUpperCase() === 'OPEN').length})</span>
                   </div>
                 }
               />
@@ -178,7 +190,7 @@ export default function SellerInquiriesPage() {
                 title={
                   <div className="flex items-center gap-2">
                     <MessageCircle size={16} />
-                    <span>Replied ({inquiries.filter(i => i.status === 'replied').length})</span>
+                    <span>Replied ({inquiries.filter(i => i.status?.toUpperCase() === 'REPLIED' || i.status?.toUpperCase() === 'READ').length})</span>
                   </div>
                 }
               />
@@ -187,7 +199,7 @@ export default function SellerInquiriesPage() {
                 title={
                   <div className="flex items-center gap-2">
                     <CheckCircle2 size={16} />
-                    <span>Closed ({inquiries.filter(i => i.status === 'closed').length})</span>
+                    <span>Closed ({inquiries.filter(i => i.status?.toUpperCase() === 'CLOSED' || i.status?.toUpperCase() === 'CONVERTED').length})</span>
                   </div>
                 }
               />

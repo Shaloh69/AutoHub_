@@ -51,9 +51,17 @@ class SubscriptionPlanResponse(BaseModel):
 class SubscriptionCreate(BaseModel):
     """Create subscription - Complete"""
     plan_id: int
-    billing_cycle: str = Field("monthly", pattern="^(monthly|yearly)$")
-    payment_method: str = Field("qr_code", pattern="^(qr_code|credit_card|bank_transfer|gcash|paymaya|paypal)$")
+    billing_cycle: str = Field("MONTHLY", pattern="^(MONTHLY|QUARTERLY|YEARLY|ONE_TIME)$")
+    payment_method: str = Field("QR_CODE", pattern="^(QR_CODE|CREDIT_CARD|BANK_TRANSFER|GCASH|PAYMAYA|PAYPAL)$")
     promo_code: Optional[str] = Field(None, max_length=50)
+
+    @field_validator('billing_cycle', 'payment_method', mode='before')
+    @classmethod
+    def uppercase_enums(cls, v):
+        """Convert enum values to uppercase to match database schema"""
+        if v is not None and isinstance(v, str):
+            return v.upper()
+        return v
 
 
 class UserSubscriptionResponse(BaseModel):
