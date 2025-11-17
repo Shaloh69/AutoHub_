@@ -17,33 +17,33 @@ from decimal import Decimal
 # ========================================
 
 class SubscriptionPlanResponse(BaseModel):
-    """Subscription plan response - Aligned with actual DB schema"""
+    """Subscription plan response - Fixed to match actual database schema"""
     id: int
     name: str
     slug: str
     description: Optional[str] = None
 
-    # Pricing (from DB schema)
+    # Pricing - Fixed: Match SQL schema (price + billing_cycle, not monthly_price/yearly_price)
     price: Decimal
     currency_id: int = 1
-    billing_cycle: str = "MONTHLY"
+    billing_cycle: str
 
-    # Limits (from DB schema)
-    max_listings: int = 5
-    max_photos_per_listing: int = 10
-    max_featured_listings: int = 0
+    # Limits - Fixed: Match SQL schema exactly
+    max_listings: int  # Fixed: was max_active_listings
+    max_featured_listings: int
+    max_photos_per_listing: int  # Fixed: was max_images_per_listing
 
-    # Features (from DB schema)
+    # Features - Fixed: Match SQL schema exactly
     can_add_video: bool = False
     can_add_virtual_tour: bool = False
     priority_support: bool = False
     advanced_analytics: bool = False
     featured_badge: bool = False
 
-    # Status (from DB schema)
-    is_popular: bool = False
+    # Status
+    is_active: bool
+    is_popular: bool
     display_order: int = 0
-    is_active: bool = True
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -77,21 +77,20 @@ class UserSubscriptionResponse(BaseModel):
 
 
 class SubscriptionUsageResponse(BaseModel):
-    """Subscription usage response - Aligned with DB schema"""
-    id: int
-    user_id: int
-    subscription_id: int
+    """Subscription usage response - Fixed to match actual database schema"""
+    # Current usage (from subscription_usage table)
+    current_listings: int  # Fixed: was active_listings
+    current_featured: int  # Fixed: was featured_listings
+    total_listings_created: int
 
-    # Usage Tracking (from DB)
-    current_listings: int = 0
-    current_featured: int = 0
-    total_listings_created: int = 0
+    # Limits (from subscription_plans table)
+    max_listings: int  # Fixed: was max_active_listings
+    max_featured_listings: int
+    max_photos_per_listing: int  # Fixed: was max_images_per_listing
 
-    # Timestamps
+    # Period
     reset_at: Optional[datetime] = None
     updated_at: datetime
-
-    model_config = ConfigDict(from_attributes=True)
 
 
 class PromoCodeValidation(BaseModel):
