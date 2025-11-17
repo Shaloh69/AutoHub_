@@ -52,10 +52,25 @@ class CarService:
         city = db.query(PhCity).filter(PhCity.id == car_data["city_id"]).first()
         if not city:
             raise ValueError("Invalid city_id")
-        
-        # FIX: Use getattr for province_id and region_id
-        car_data["province_id"] = int(getattr(city, 'province_id', 0))
-        car_data["region_id"] = int(getattr(getattr(city, 'province', None), 'region_id', 0))
+
+        # FIX: Safely extract province_id and region_id with proper null checking
+        province_id = getattr(city, 'province_id', None)
+        if province_id:
+            car_data["province_id"] = int(province_id)
+            # Get region_id from province relationship if it exists
+            province = getattr(city, 'province', None)
+            if province:
+                region_id = getattr(province, 'region_id', None)
+                if region_id:
+                    car_data["region_id"] = int(region_id)
+                else:
+                    # Fallback: Try to get region_id directly from city if province doesn't have it
+                    car_data["region_id"] = car_data.get("region_id", None)
+            else:
+                # Province relationship not loaded, keep existing region_id if provided
+                car_data["region_id"] = car_data.get("region_id", None)
+        else:
+            raise ValueError("City does not have a valid province_id")
 
         # NOTE: Removed auto-populate of 'make' and 'model' fields
         # The Car model uses brand_id/model_id FKs and brand_rel/model_rel relationships
