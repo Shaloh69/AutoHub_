@@ -265,8 +265,14 @@ class SubscriptionService:
     # ========================================
     
     @staticmethod
-    def get_qr_code_settings(db: Session) -> Dict[str, str]:
-        """Get QR code payment settings"""
+    def get_qr_code_settings(db: Session, request_base_url: str = None) -> Dict[str, str]:
+        """Get QR code payment settings
+
+        Args:
+            db: Database session
+            request_base_url: Base URL from the request (e.g., 'http://localhost:8000')
+                            If not provided, will try to get from environment
+        """
         import os
 
         qr_image = db.query(PaymentSetting).filter(
@@ -277,11 +283,16 @@ class SubscriptionService:
             PaymentSetting.setting_key == "payment_instructions"
         ).first()
 
-        # Get QR code path from settings
-        qr_code_path = getattr(qr_image, 'setting_value', '/uploads/qr/default_payment_qr.png') if qr_image else '/uploads/qr/default_payment_qr.png'
+        # Get QR code path from settings (default to SVG placeholder)
+        qr_code_path = getattr(qr_image, 'setting_value', '/uploads/qr/default_payment_qr.svg') if qr_image else '/uploads/qr/default_payment_qr.svg'
 
-        # Construct full URL using API server base URL from environment
-        api_base_url = os.getenv('API_BASE_URL', 'http://localhost:8000')
+        # Determine base URL
+        # Priority: 1. Passed request URL, 2. Environment variable, 3. Default
+        if request_base_url:
+            api_base_url = request_base_url
+        else:
+            api_base_url = os.getenv('API_BASE_URL', 'http://localhost:8000')
+
         # Remove /api/v1 suffix if present
         if api_base_url.endswith('/api/v1'):
             api_base_url = api_base_url[:-7]
