@@ -1183,6 +1183,23 @@ async def get_pending_payments(
         )
 
 
+@router.get("/payments/statistics", response_model=PaymentStatisticsResponse)
+async def get_payment_statistics(
+    current_admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """Get payment statistics for admin dashboard"""
+    try:
+        stats = SubscriptionService.get_payment_statistics(db)
+        return PaymentStatisticsResponse(**stats)
+    except Exception as e:
+        logger.error(f"Error fetching payment statistics: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to fetch payment statistics"
+        )
+
+
 @router.get("/payments/{payment_id}", response_model=SubscriptionPaymentDetailedResponse)
 async def get_payment_details_admin(
     payment_id: int,
@@ -1357,23 +1374,6 @@ Car Marketplace Philippines Team
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to verify payment"
-        )
-
-
-@router.get("/payments/statistics", response_model=PaymentStatisticsResponse)
-async def get_payment_statistics(
-    current_admin: User = Depends(get_current_admin),
-    db: Session = Depends(get_db)
-):
-    """Get payment statistics for admin dashboard"""
-    try:
-        stats = SubscriptionService.get_payment_statistics(db)
-        return PaymentStatisticsResponse(**stats)
-    except Exception as e:
-        logger.error(f"Error fetching payment statistics: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to fetch payment statistics"
         )
 
 
