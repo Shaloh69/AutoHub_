@@ -8,7 +8,7 @@ PRESERVED: All original endpoints
 """
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from typing import List, Dict
+from typing import List, Dict, Optional
 from decimal import Decimal
 from datetime import datetime
 from app.database import get_db
@@ -45,7 +45,7 @@ async def get_subscription_plans(db: Session = Depends(get_db)):
     return [SubscriptionPlanResponse.model_validate(p) for p in plans]
 
 
-@router.get("/current", response_model=UserSubscriptionResponse)
+@router.get("/current", response_model=Optional[UserSubscriptionResponse])
 async def get_current_subscription(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -53,13 +53,10 @@ async def get_current_subscription(
     """Get user's current subscription"""
     user_id = int(getattr(current_user, 'id', 0))
     subscription = SubscriptionService.get_user_subscription(db, user_id)
-    
+
     if not subscription:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="No active subscription found"
-        )
-    
+        return None
+
     return UserSubscriptionResponse.model_validate(subscription)
 
 
