@@ -211,6 +211,7 @@ OBSOLETE_VALUE_MAPPINGS = {
         'rwd': 'RWD',
         'awd': 'AWD',
         '4wd': '4WD',
+        'four_wd': '4WD',  # Handle underscore variation
     },
 
     # Condition

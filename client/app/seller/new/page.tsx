@@ -807,22 +807,33 @@ export default function CreateCarPage() {
                 <div className="space-y-6">
                   {['safety', 'comfort', 'entertainment', 'technology'].map(category => (
                     <div key={category}>
-                      <h3 className="text-lg font-semibold mb-3 capitalize">
+                      <h3 className="text-lg font-semibold mb-3 capitalize text-white">
                         {category}
                       </h3>
-                      <div className="flex flex-wrap gap-2">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                         {features
                           .filter(f => f.category === category)
                           .map(feature => (
-                            <Chip
+                            <div
                               key={feature.id}
-                              variant={selectedFeatures.includes(feature.id) ? 'solid' : 'bordered'}
-                              color={selectedFeatures.includes(feature.id) ? 'primary' : 'default'}
                               onClick={() => toggleFeature(feature.id)}
-                              className="cursor-pointer"
+                              className={`p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                                selectedFeatures.includes(feature.id)
+                                  ? 'border-primary-500 bg-primary-500/20'
+                                  : 'border-gray-700 bg-black/20 hover:border-gray-600'
+                              }`}
                             >
-                              {feature.name}
-                            </Chip>
+                              <Checkbox
+                                isSelected={selectedFeatures.includes(feature.id)}
+                                onChange={() => toggleFeature(feature.id)}
+                                classNames={{
+                                  base: "w-full max-w-full",
+                                  label: "w-full text-white"
+                                }}
+                              >
+                                {feature.name}
+                              </Checkbox>
+                            </div>
                           ))}
                       </div>
                     </div>
