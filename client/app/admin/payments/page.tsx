@@ -101,7 +101,13 @@ export default function AdminPaymentsPage() {
         onVerifyOpenChange();
         loadStatistics();
       } else {
-        alert(response.error || 'Failed to verify payment');
+        // Handle error - convert to string if it's an object
+        const errorMessage = typeof response.error === 'string'
+          ? response.error
+          : typeof response.error === 'object' && response.error !== null
+          ? JSON.stringify(response.error)
+          : 'Failed to verify payment';
+        alert(errorMessage);
       }
     } catch (error) {
       console.error('Error verifying payment:', error);
@@ -133,7 +139,13 @@ export default function AdminPaymentsPage() {
         onRejectOpenChange();
         loadStatistics();
       } else {
-        alert(response.error || 'Failed to reject payment');
+        // Handle error - convert to string if it's an object
+        const errorMessage = typeof response.error === 'string'
+          ? response.error
+          : typeof response.error === 'object' && response.error !== null
+          ? JSON.stringify(response.error)
+          : 'Failed to reject payment';
+        alert(errorMessage);
       }
     } catch (error) {
       console.error('Error rejecting payment:', error);
