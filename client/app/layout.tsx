@@ -13,6 +13,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { siteConfig } from "@/config/site";
 import { fontSans } from "@/config/fonts";
 import Navigation from "@/components/Navigation";
+import { AnimatedBackground } from "@/components/background";
 
 export const metadata: Metadata = {
   title: {
@@ -95,13 +96,16 @@ export default function RootLayout({
       </head>
       <body
         className={clsx(
-          "min-h-screen bg-black text-white font-sans antialiased selection:bg-primary-600 selection:text-white",
+          "min-h-screen bg-transparent text-white font-sans antialiased selection:bg-primary-600 selection:text-white overflow-x-hidden",
           fontSans.variable,
         )}
       >
+        {/* Animated Background - Applied to all pages */}
+        <AnimatedBackground />
+
         <Providers themeProps={{ attribute: "class", defaultTheme: "dark" }}>
           <AuthProvider>
-            <div className="relative flex flex-col min-h-screen">
+            <div className="relative flex flex-col min-h-screen z-10">
               {/* Navigation */}
               <Navigation />
               
@@ -113,7 +117,7 @@ export default function RootLayout({
               </main>
               
               {/* Premium Footer */}
-              <footer className="w-full bg-dark-950 border-t border-dark-700">
+              <footer className="w-full bg-black/80 backdrop-blur-sm border-t border-dark-700">
                 <div className="container mx-auto px-6 py-16 max-w-7xl">
                   {/* Main Footer Content */}
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-12">
@@ -340,12 +344,6 @@ export default function RootLayout({
             </div>
           </AuthProvider>
         </Providers>
-        
-        {/* Background Enhancement */}
-        <div className="fixed inset-0 pointer-events-none z-[-1]">
-          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-gradient-to-r from-primary-600/10 to-transparent rounded-full blur-3xl animate-float"></div>
-          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-gradient-to-r from-primary-700/10 to-transparent rounded-full blur-3xl animate-float" style={{animationDelay: '3s'}}></div>
-        </div>
       </body>
     </html>
   );

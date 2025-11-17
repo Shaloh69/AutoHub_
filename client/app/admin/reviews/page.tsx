@@ -177,7 +177,7 @@ export default function AdminReviewsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-dark-950 py-8 px-4">
+    <div className="min-h-screen bg-transparent py-8 px-4">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div>

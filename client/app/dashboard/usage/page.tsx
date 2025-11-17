@@ -85,7 +85,7 @@ export default function SubscriptionUsagePage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-dark-950 py-8 px-4">
+      <div className="min-h-screen bg-transparent py-8 px-4">
         <div className="max-w-4xl mx-auto">
           <Card className="bg-dark-900 border border-dark-700">
             <CardBody className="p-12 text-center">
@@ -107,7 +107,7 @@ export default function SubscriptionUsagePage() {
 
   if (!featureUsage) {
     return (
-      <div className="min-h-screen bg-dark-950 py-8 px-4">
+      <div className="min-h-screen bg-transparent py-8 px-4">
         <div className="max-w-4xl mx-auto">
           <Card className="bg-dark-900 border border-dark-700">
             <CardBody className="p-12 text-center">
@@ -132,7 +132,7 @@ export default function SubscriptionUsagePage() {
   }
 
   return (
-    <div className="min-h-screen bg-dark-950 py-8 px-4">
+    <div className="min-h-screen bg-transparent py-8 px-4">
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
         <div className="mb-8">
