@@ -11,7 +11,8 @@ import { Tabs, Tab } from "@heroui/tabs";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure } from "@heroui/modal";
 import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@heroui/dropdown";
 import { PlusIcon, EditIcon, DeleteIcon, VerticalDotsIcon, EyeIcon, DashboardIcon } from "@/components/icons";
-import { apiService, getImageUrl, Car } from '@/services/api';
+import { apiService, getImageUrl } from '@/services/api';
+import { Car } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 
@@ -43,9 +44,9 @@ export default function DashboardPage() {
     try {
       setLoading(true);
       setError(null);
-      
-      const response = await apiService.getMyListings();
-      
+
+      const response = await apiService.getUserListings();
+
       if (response.success && Array.isArray(response.data)) {
         setMyListings(response.data);
       } else {
@@ -71,9 +72,9 @@ export default function DashboardPage() {
     }
   };
 
-  const handleMarkAsSold = async (carId: string) => {
+  const handleMarkAsSold = async (carId: number) => {
     try {
-      await apiService.markCarAsSold(carId);
+      await apiService.updateCar(carId, { status: 'SOLD' });
       fetchMyListings();
     } catch (err) {
       console.error('Failed to mark as sold:', err);
@@ -105,7 +106,7 @@ export default function DashboardPage() {
         <h1 className="text-4xl lg:text-5xl font-bold text-autohub-secondary-900 dark:text-autohub-neutral-50">
           Welcome back,
           <span className="bg-gradient-to-r from-autohub-primary-500 to-autohub-accent2-500 bg-clip-text text-transparent ml-3">
-            {user?.firstName}
+            {user?.first_name}
           </span>
         </h1>
         <p className="text-xl text-autohub-accent1-600">
@@ -182,10 +183,10 @@ export default function DashboardPage() {
             <Spinner size="lg" color="primary" />
           </div>
             ) : error ? (
-          <div className="text-center py-16"></div>
+          <div className="text-center py-16">
             <p className="text-autohub-primary-500 text-lg mb-4">Error: {error}</p>
-            <Button 
-              className="bg-autohub-primary-500 hover:bg-autohub-primary-600 text-white" 
+            <Button
+              className="bg-autohub-primary-500 hover:bg-autohub-primary-600 text-white"
               onPress={fetchMyListings}
             >
               Try Again
@@ -193,22 +194,22 @@ export default function DashboardPage() {
           </div>
             ) : myListings.length === 0 ? (
           <Card className="border border-autohub-accent1-200">
-            <CardBody className="text-center py-16"></CardBody>
+            <CardBody className="text-center py-16">
               <div className="w-20 h-20 bg-autohub-accent1-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <PlusIcon className="text-autohub-accent1-500" size={32} />
+                <PlusIcon className="text-autohub-accent1-500" size={32} />
               </div>
               <h3 className="text-2xl font-semibold text-autohub-secondary-900 dark:text-autohub-neutral-50 mb-2">
-            No listings yet
+                No listings yet
               </h3>
-              <p className="text-autohub-accent1-600 mb-6 max-w-md mx-auto"></p>
-            Start building your automotive portfolio by listing your first premium vehicle
+              <p className="text-autohub-accent1-600 mb-6 max-w-md mx-auto">
+                Start building your automotive portfolio by listing your first premium vehicle
               </p>
               <Button
-            className="bg-autohub-primary-500 hover:bg-autohub-primary-600 text-white font-semibold"
-            size="lg"
-            onPress={() => router.push('/dashboard/create-listing')}
+                className="bg-autohub-primary-500 hover:bg-autohub-primary-600 text-white font-semibold"
+                size="lg"
+                onPress={() => router.push('/dashboard/create-listing')}
               >
-            Create First Listing
+                Create First Listing
               </Button>
             </CardBody>
           </Card>
@@ -228,7 +229,7 @@ export default function DashboardPage() {
               radius="none"
                 />
                 <div className="absolute top-3 left-3 flex gap-2">
-              {car.isFeatured && (
+              {car.is_featured && (
                 <Chip className="bg-autohub-accent2-500 text-autohub-secondary-900 font-semibold" size="sm">
                   Featured
                 </Chip>
@@ -282,34 +283,32 @@ export default function DashboardPage() {
                 </DropdownItem>
                   )}
                   <DropdownItem
-                key="delete"
-                className="text-autohub-primary-500"
-                              </DropdownItem>
-                            </DropdownMenu>={() => openDeleteModal(car)}
+                    key="delete"
+                    className="text-autohub-primary-500"
+                    onPress={() => openDeleteModal(car)}
                   >
-                Delete Listing
+                    Delete Listing
                   </DropdownItem>
                 </DropdownMenu>
               </Dropdown>
-                        <h3 className="font-bold text-lg text-autohub-secondary-900 dark:text-autohub-neutral-50">
-                          {car.year} {car.make} {car.model}
-                        </h3>
-              <div className="p-6 space-y-3"></div>
-                <h3 className="font-bold text-lg text-autohub-secondary-900 dark:text-autohub-neutral-50"></h3>
-              {car.year} {car.make} {car.model}
+                </div>
+              </div>
+              <div className="p-6 space-y-3">
+                <h3 className="font-bold text-lg text-autohub-secondary-900 dark:text-autohub-neutral-50">
+                  {car.year} {car.brand?.name} {car.model?.name}
                 </h3>
                 <p className="text-2xl font-bold text-autohub-primary-500">
-              {formatPrice(car.price)}
+                  {formatPrice(car.price)}
                 </p>
                 <div className="space-y-2">
-              <div className="flex justify-between text-sm text-autohub-accent1-600">
-                <span>{new Intl.NumberFormat().format(car.mileage)} miles</span>
-                <span>{car.location}</span>
-              </div>
-              <div className="flex justify-between text-sm text-autohub-accent1-600"></div>
-                <span>Listed: {new Date(car.createdAt).toLocaleDateString()}</span>
-                <span>{car.fuelType}</span>
-              </div>
+                  <div className="flex justify-between text-sm text-autohub-accent1-600">
+                    <span>{new Intl.NumberFormat().format(car.mileage)} {car.mileage_unit}</span>
+                    <span>{car.city?.name}</span>
+                  </div>
+                  <div className="flex justify-between text-sm text-autohub-accent1-600">
+                    <span>Listed: {new Date(car.created_at).toLocaleDateString()}</span>
+                    <span>{car.fuel_type}</span>
+                  </div>
                 </div>
               </div>
             </CardBody>
@@ -336,7 +335,7 @@ export default function DashboardPage() {
               <div>
             <label className="text-sm font-medium text-autohub-accent1-600">Full Name</label>
             <p className="text-lg text-autohub-secondary-900 dark:text-autohub-neutral-50">
-              {user?.firstName} {user?.lastName}
+              {user?.first_name} {user?.last_name}
             </p>
               </div>
               <div>
@@ -348,18 +347,18 @@ export default function DashboardPage() {
               <div>
             <label className="text-sm font-medium text-autohub-accent1-600">Member Since</label>
             <p className="text-lg text-autohub-secondary-900 dark:text-autohub-neutral-50">
-              {new Date(user?.createdAt || '').toLocaleDateString()}
+              {new Date(user?.created_at || '').toLocaleDateString()}
             </p>
               </div>
               <div>
             <label className="text-sm font-medium text-autohub-accent1-600">Account Status</label>
             <div className="flex items-center gap-2">
               <Chip 
-                color={user?.isVerified ? 'success' : 'warning'} 
+              color={user?.email_verified ? 'success' : 'warning'}
                 size="sm"
-                className={user?.isVerified ? 'bg-green-500 text-white' : 'bg-amber-500 text-white'}
+                className={user?.email_verified ? 'bg-green-500 text-white' : 'bg-amber-500 text-white'}
               >
-                {user?.isVerified ? 'Verified' : 'Pending Verification'}
+                {user?.email_verified ? 'Verified' : 'Pending Verification'}
               </Chip>
             </div>
               </div>

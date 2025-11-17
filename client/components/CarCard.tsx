@@ -17,7 +17,7 @@ interface CarCardProps {
 
 export default function CarCard({ car, onFavoriteChange }: CarCardProps) {
   const router = useRouter();
-  const [isFavorite, setIsFavorite] = useState(car.is_favorite || false);
+  const [isFavorite, setIsFavorite] = useState(false); // Initialize as false, will be fetched separately if needed
   const [isLoading, setIsLoading] = useState(false);
 
   const formatPrice = (price: number) => {
@@ -104,9 +104,9 @@ export default function CarCard({ car, onFavoriteChange }: CarCardProps) {
           <Chip
             size="sm"
             className={`
-              ${status === 'active' ? 'bg-green-600/90 text-white' : ''}
-              ${status === 'pending' ? 'bg-yellow-600/90 text-white' : ''}
-              ${status === 'sold' ? 'bg-gray-600/90 text-white' : ''}
+              ${car.status?.toLowerCase() === 'active' ? 'bg-green-600/90 text-white' : ''}
+              ${car.status?.toLowerCase() === 'pending' ? 'bg-yellow-600/90 text-white' : ''}
+              ${car.status?.toLowerCase() === 'sold' ? 'bg-gray-600/90 text-white' : ''}
               backdrop-blur-sm capitalize font-semibold
             `}
           >
@@ -114,8 +114,8 @@ export default function CarCard({ car, onFavoriteChange }: CarCardProps) {
           </Chip>
         </div>
 
-        {/* Featured Badge */}
-        {car.is_featured && (
+        {/* Featured Badge - Commented out until backend adds is_featured field */}
+        {/* {car.is_featured && (
           <div className="absolute bottom-3 left-3 z-10">
             <Chip
               size="sm"
@@ -124,10 +124,10 @@ export default function CarCard({ car, onFavoriteChange }: CarCardProps) {
               ⭐ FEATURED
             </Chip>
           </div>
-        )}
+        )} */}
 
-        {/* Boosted Badge */}
-        {car.is_boosted && (
+        {/* Boosted Badge - Commented out until backend adds is_boosted field */}
+        {/* {car.is_boosted && (
           <div className="absolute bottom-3 right-3 z-10">
             <Chip
               size="sm"
@@ -136,7 +136,7 @@ export default function CarCard({ car, onFavoriteChange }: CarCardProps) {
               🚀 BOOSTED
             </Chip>
           </div>
-        )}
+        )} */}
       </div>
 
       <CardBody className="p-5 bg-dark-900 border-t border-dark-800">
@@ -166,7 +166,7 @@ export default function CarCard({ car, onFavoriteChange }: CarCardProps) {
         <div className="grid grid-cols-2 gap-2 text-sm mb-3">
           <div className="flex items-center gap-2 text-gray-400">
             <Gauge className="w-4 h-4 text-primary-500" />
-            <span>{formatMileage(car.mileage_km)}</span>
+            <span>{formatMileage(car.mileage)}</span>
           </div>
           <div className="flex items-center gap-2 text-gray-400">
             <Calendar className="w-4 h-4 text-primary-500" />

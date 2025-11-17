@@ -8,7 +8,8 @@ import { Chip } from "@heroui/chip";
 import { Spinner } from "@heroui/spinner";
 import { Divider } from "@heroui/divider";
 import { CheckIcon } from "@/components/icons";
-import { apiService, SubscriptionPlan, Subscription } from '@/services/api';
+import { apiService } from '@/services/api';
+import { SubscriptionPlan, Subscription } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import PaymentQRModal from '@/components/PaymentQRModal';
@@ -441,7 +442,7 @@ export default function SubscriptionPage() {
                   {plans.map(plan => (
                     <td key={plan.id} className="text-center py-4 px-2 text-autohub-secondary-900 dark:text-autohub-neutral-50">
                       <span className="font-semibold">
-                        {plan.maxListings === -1 ? 'Unlimited' : plan.maxListings}
+                        {plan.max_listings === -1 ? 'Unlimited' : plan.max_listings}
                       </span>
                     </td>
                   ))}
@@ -458,7 +459,7 @@ export default function SubscriptionPage() {
                   <td className="py-4 px-2 text-autohub-accent1-700 font-medium">Featured Listings</td>
                   {plans.map(plan => (
                     <td key={plan.id} className="text-center py-4 px-2">
-                      {plan.features.includes('Featured listings') ? (
+                      {plan.max_featured_listings > 0 ? (
                         <CheckIcon className="text-autohub-accent2-500 mx-auto" size={20} />
                       ) : (
                         <span className="text-autohub-accent1-400">—</span>
@@ -470,7 +471,7 @@ export default function SubscriptionPage() {
                   <td className="py-4 px-2 text-autohub-accent1-700 font-medium">Priority Support</td>
                   {plans.map(plan => (
                     <td key={plan.id} className="text-center py-4 px-2">
-                      {plan.features.includes('Priority support') ? (
+                      {plan.priority_support ? (
                         <CheckIcon className="text-autohub-accent2-500 mx-auto" size={20} />
                       ) : (
                         <span className="text-autohub-accent1-400">—</span>
@@ -482,7 +483,7 @@ export default function SubscriptionPage() {
                   <td className="py-4 px-2 text-autohub-accent1-700 font-medium">Analytics Dashboard</td>
                   {plans.map(plan => (
                     <td key={plan.id} className="text-center py-4 px-2">
-                      {plan.features.includes('Advanced analytics') ? (
+                      {plan.advanced_analytics ? (
                         <CheckIcon className="text-autohub-accent2-500 mx-auto" size={20} />
                       ) : (
                         <span className="text-autohub-accent1-400">—</span>
