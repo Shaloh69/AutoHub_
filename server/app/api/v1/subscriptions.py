@@ -24,7 +24,7 @@ from app.schemas.subscription import (
 from app.schemas.common import MessageResponse
 from app.core.dependencies import get_current_user
 from app.models.user import User
-from app.models.subscription import SubscriptionPayment
+from app.models.subscription import SubscriptionPayment, PaymentSetting
 from app.services.subscription_service import SubscriptionService
 from app.services.email_service import EmailService
 from app.services.notification_service import NotificationService
@@ -486,7 +486,3 @@ async def get_feature_usage(
     feature_usage = SubscriptionService.get_feature_usage(db, user_id)
 
     return feature_usage
-
-
-# Import at the top if not already
-from app.models.subscription import PaymentSetting
