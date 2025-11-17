@@ -228,6 +228,94 @@ export default function SellerDashboardPage() {
           </Card>
         )}
 
+        {/* Subscription Promotion Banner - Only show if on free/basic plan */}
+        {subscription && (!subscription.plan || subscription.plan.slug === 'basic' || subscription.plan.slug === 'free') && (
+          <Card className="mb-6 bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 border-0 overflow-hidden relative">
+            <div className="absolute inset-0 bg-black/20"></div>
+            <CardBody className="relative z-10 p-6 md:p-8">
+              <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+                <div className="flex-1 text-center md:text-left">
+                  <div className="inline-flex items-center gap-2 bg-yellow-400 text-gray-900 px-4 py-1 rounded-full text-sm font-bold mb-3">
+                    <Crown size={16} />
+                    PREMIUM OFFER
+                  </div>
+                  <h3 className="text-2xl md:text-3xl font-black text-white mb-2">
+                    Unlock Premium Features Today!
+                  </h3>
+                  <p className="text-white/90 text-lg mb-4">
+                    Get 3x more views, unlimited listings, and priority support
+                  </p>
+                  <div className="flex flex-wrap gap-4 text-sm text-white/80">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle size={18} className="text-yellow-300" />
+                      <span>Unlimited Active Listings</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <CheckCircle size={18} className="text-yellow-300" />
+                      <span>Featured Badge</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <CheckCircle size={18} className="text-yellow-300" />
+                      <span>Advanced Analytics</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex flex-col gap-3">
+                  <Button
+                    size="lg"
+                    className="bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-bold shadow-lg hover:shadow-xl transition-all"
+                    endContent={<ArrowRight size={20} />}
+                    onPress={() => router.push('/subscription')}
+                  >
+                    Upgrade Now
+                  </Button>
+                  <p className="text-white/70 text-xs text-center">Starting at ₱299/month</p>
+                </div>
+              </div>
+            </CardBody>
+          </Card>
+        )}
+
+        {/* Quick Actions */}
+        <Card className="mb-6 border-2 border-orange-200 dark:border-orange-800">
+          <CardBody className="p-6">
+            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+              <TrendingUp size={20} className="text-orange-500" />
+              Quick Actions
+            </h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <Button
+                className="flex-col h-20 bg-orange-50 dark:bg-orange-900/20 hover:bg-orange-100 dark:hover:bg-orange-900/30 border border-orange-200 dark:border-orange-800"
+                onPress={() => router.push('/seller/new')}
+              >
+                <Plus size={24} className="text-orange-600 dark:text-orange-400 mb-1" />
+                <span className="text-sm font-semibold">New Listing</span>
+              </Button>
+              <Button
+                className="flex-col h-20 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 border border-blue-200 dark:border-blue-800"
+                onPress={() => router.push('/seller/inquiries')}
+              >
+                <MessageCircle size={24} className="text-blue-600 dark:text-blue-400 mb-1" />
+                <span className="text-sm font-semibold">Inquiries</span>
+              </Button>
+              <Button
+                className="flex-col h-20 bg-green-50 dark:bg-green-900/20 hover:bg-green-100 dark:hover:bg-green-900/30 border border-green-200 dark:border-green-800"
+                onPress={() => router.push('/seller/transactions')}
+              >
+                <DollarSign size={24} className="text-green-600 dark:text-green-400 mb-1" />
+                <span className="text-sm font-semibold">Transactions</span>
+              </Button>
+              <Button
+                className="flex-col h-20 bg-purple-50 dark:bg-purple-900/20 hover:bg-purple-100 dark:hover:bg-purple-900/30 border border-purple-200 dark:border-purple-800"
+                onPress={() => router.push('/subscription')}
+              >
+                <Crown size={24} className="text-purple-600 dark:text-purple-400 mb-1" />
+                <span className="text-sm font-semibold">Subscription</span>
+              </Button>
+            </div>
+          </CardBody>
+        </Card>
+
         {/* Analytics Cards */}
         {analytics && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
