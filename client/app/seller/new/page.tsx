@@ -1,5 +1,5 @@
 // ==========================================
-// app/seller/cars/new/page.tsx - Create Car Listing
+// app/seller/cars/new/page.tsx - Create Car Listing (Redesigned)
 // ==========================================
 
 'use client';
@@ -15,7 +15,8 @@ import { Chip } from '@heroui/chip';
 import { Spinner } from '@heroui/spinner';
 import { Progress } from '@heroui/progress';
 import {
-  ChevronLeft, ChevronRight, Check, Upload, X
+  ChevronLeft, ChevronRight, Check, Upload, X, AlertCircle,
+  Car, DollarSign, Settings, MapPin, Image as ImageIcon, Sparkles
 } from 'lucide-react';
 import { apiService } from '@/services/api';
 import { Brand, Model, Category, Feature, CarFormData } from '@/types';
@@ -26,6 +27,25 @@ const FUEL_TYPES = ['GASOLINE', 'DIESEL', 'ELECTRIC', 'HYBRID'];
 const TRANSMISSIONS = ['MANUAL', 'AUTOMATIC', 'CVT', 'DCT'];
 const DRIVETRAINS = ['FWD', 'RWD', 'AWD', '4WD'];
 const CONDITION_RATINGS = ['BRAND_NEW', 'LIKE_NEW', 'EXCELLENT', 'GOOD', 'FAIR', 'POOR'];
+
+const STEPS = [
+  { number: 1, title: 'Basic Info', icon: Car, description: 'Vehicle details' },
+  { number: 2, title: 'Pricing', icon: DollarSign, description: 'Set your price' },
+  { number: 3, title: 'Specifications', icon: Settings, description: 'Technical details' },
+  { number: 4, title: 'Condition', icon: AlertCircle, description: 'Vehicle condition' },
+  { number: 5, title: 'Location', icon: MapPin, description: 'Where is it?' },
+  { number: 6, title: 'Images', icon: ImageIcon, description: 'Upload photos' },
+  { number: 7, title: 'Features', icon: Sparkles, description: 'Amenities' },
+];
+
+const IMAGE_TYPES = [
+  { value: 'exterior', label: 'Exterior', icon: '🚗' },
+  { value: 'interior', label: 'Interior', icon: '🪑' },
+  { value: 'engine', label: 'Engine', icon: '⚙️' },
+  { value: 'damage', label: 'Damage', icon: '⚠️' },
+  { value: 'document', label: 'Documents', icon: '📄' },
+  { value: 'other', label: 'Other', icon: '📸' },
+];
 
 export default function CreateCarPage() {
   const router = useRouter();
@@ -42,15 +62,6 @@ export default function CreateCarPage() {
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imageMetadata, setImageMetadata] = useState<{ type: string; isMain: boolean }[]>([]);
   const [error, setError] = useState<string | null>(null);
-
-  const IMAGE_TYPES = [
-    { value: 'exterior', label: 'Exterior', icon: '🚗' },
-    { value: 'interior', label: 'Interior', icon: '🪑' },
-    { value: 'engine', label: 'Engine', icon: '⚙️' },
-    { value: 'damage', label: 'Damage', icon: '⚠️' },
-    { value: 'document', label: 'Documents', icon: '📄' },
-    { value: 'other', label: 'Other', icon: '📸' },
-  ];
 
   const [formData, setFormData] = useState<Partial<CarFormData>>({
     price_negotiable: true,
@@ -122,10 +133,9 @@ export default function CreateCarPage() {
     }
     setImageFiles(prev => [...prev, ...files]);
 
-    // Initialize metadata for new images
     const newMetadata = files.map((_, index) => ({
       type: 'exterior',
-      isMain: imageFiles.length === 0 && index === 0 // First image is main by default
+      isMain: imageFiles.length === 0 && index === 0
     }));
     setImageMetadata(prev => [...prev, ...newMetadata]);
     setError(null);
@@ -135,7 +145,6 @@ export default function CreateCarPage() {
     setImageFiles(prev => prev.filter((_, i) => i !== index));
     setImageMetadata(prev => {
       const updated = prev.filter((_, i) => i !== index);
-      // If we removed the main image, make the first image main
       if (prev[index]?.isMain && updated.length > 0) {
         updated[0].isMain = true;
       }
@@ -172,7 +181,7 @@ export default function CreateCarPage() {
     setError(null);
 
     switch (currentStep) {
-      case 1: // Basic Info
+      case 1:
         if (!formData.brand_id || !formData.model_id || !formData.year) {
           setError('Please fill in all required basic information');
           return false;
@@ -187,23 +196,18 @@ export default function CreateCarPage() {
         }
         break;
 
-      case 2: // Pricing
+      case 2:
         if (!formData.price || formData.price <= 0) {
           setError('Please enter a valid price');
           return false;
         }
-        // Maximum price validation - DECIMAL(12,2) limit
         if (formData.price > 9999999999.99) {
-          setError('Price cannot exceed ₱9,999,999,999.99 (database limit). Please enter a reasonable price.');
-          return false;
-        }
-        if (formData.original_price && formData.original_price > 9999999999.99) {
-          setError('Original price cannot exceed ₱9,999,999,999.99 (database limit).');
+          setError('Price cannot exceed ₱9,999,999,999.99');
           return false;
         }
         break;
 
-      case 3: // Specifications
+      case 3:
         if (!formData.mileage || formData.mileage < 0) {
           setError('Please enter valid mileage');
           return false;
@@ -212,24 +216,23 @@ export default function CreateCarPage() {
           setError('Please select fuel type and transmission');
           return false;
         }
-        // Color is optional in normalized schema
         break;
 
-      case 4: // Condition
+      case 4:
         if (!formData.car_condition) {
           setError('Please select condition rating');
           return false;
         }
         break;
 
-      case 5: // Location
+      case 5:
         if (!formData.city_id) {
           setError('Please select your city');
           return false;
         }
         break;
 
-      case 6: // Images
+      case 6:
         if (imageFiles.length === 0) {
           setError('Please upload at least one image');
           return false;
@@ -243,12 +246,14 @@ export default function CreateCarPage() {
   const handleNext = () => {
     if (validateStep(step)) {
       setStep(prev => prev + 1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
   const handleBack = () => {
     setError(null);
     setStep(prev => prev - 1);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleSubmit = async () => {
@@ -260,7 +265,6 @@ export default function CreateCarPage() {
       setLoading(true);
       setError(null);
 
-      // Create the car listing
       const carData: CarFormData = {
         ...formData,
         feature_ids: selectedFeatures,
@@ -271,380 +275,520 @@ export default function CreateCarPage() {
       if (response.success && response.data) {
         const carId = response.data.id;
 
-        // Upload images with metadata (type and main image flag)
         if (imageFiles.length > 0) {
           await apiService.uploadCarImages(carId, imageFiles, imageMetadata);
         }
 
         router.push('/seller/dashboard');
       } else {
-        // Parse backend validation errors to show helpful messages
         let errorMessage = response.error || 'Failed to create listing';
 
-        // Check if it's a validation error with details
         if (typeof response.error === 'string') {
           if (response.error.includes('price') && response.error.includes('range')) {
-            errorMessage = 'Price exceeds the maximum allowed value of ₱9,999,999,999.99. Please enter a reasonable price.';
-          } else if (response.error.includes('latitude') || response.error.includes('longitude')) {
-            errorMessage = 'Invalid GPS coordinates. Please check your location data.';
+            errorMessage = 'Price exceeds the maximum allowed value';
           } else if (response.error.includes('required')) {
-            errorMessage = 'Please fill in all required fields.';
+            errorMessage = 'Please fill in all required fields';
           }
         }
 
         setError(errorMessage);
       }
     } catch (err: any) {
-      // Handle different types of errors
-      let errorMessage = 'An error occurred. Please try again.';
-
-      if (err?.response?.data?.detail) {
-        const detail = err.response.data.detail;
-
-        // If detail is an array of validation errors
-        if (Array.isArray(detail)) {
-          const validationErrors = detail.map((e: any) => {
-            const field = e.loc ? e.loc[e.loc.length - 1] : 'field';
-            return `${field}: ${e.msg}`;
-          }).join(', ');
-          errorMessage = `Validation error: ${validationErrors}`;
-        } else if (typeof detail === 'string') {
-          errorMessage = detail;
-        }
-      }
-
-      setError(errorMessage);
-      console.error('Error creating car listing:', err);
+      setError(err.message || 'An error occurred. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  const progress = (step / 7) * 100;
+  const progress = (step / STEPS.length) * 100;
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 px-4">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen bg-transparent py-8 px-4">
+      <div className="max-w-5xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-black text-white mb-2 text-gradient-red">
             Create New Listing
           </h1>
-          <Progress value={progress} className="mb-2" color="primary" />
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            Step {step} of 7
+          <p className="text-gray-400">
+            Step {step} of {STEPS.length}: {STEPS[step - 1].title}
           </p>
         </div>
 
+        {/* Progress Bar */}
+        <div className="mb-8">
+          <Progress
+            value={progress}
+            className="h-2"
+            classNames={{
+              indicator: "bg-gradient-red-dark"
+            }}
+          />
+
+          {/* Step Indicators */}
+          <div className="grid grid-cols-7 gap-2 mt-6">
+            {STEPS.map((s) => {
+              const StepIcon = s.icon;
+              const isComplete = step > s.number;
+              const isCurrent = step === s.number;
+
+              return (
+                <div
+                  key={s.number}
+                  className={`text-center transition-all ${
+                    isCurrent ? 'scale-110' : ''
+                  }`}
+                >
+                  <div
+                    className={`mx-auto w-12 h-12 rounded-full flex items-center justify-center mb-2 transition-all ${
+                      isComplete
+                        ? 'bg-green-600 shadow-lg shadow-green-500/50'
+                        : isCurrent
+                        ? 'bg-gradient-red-dark shadow-lg shadow-red-500/50'
+                        : 'bg-black/40 border-2 border-gray-700'
+                    }`}
+                  >
+                    {isComplete ? (
+                      <Check size={24} className="text-white" />
+                    ) : (
+                      <StepIcon size={20} className={isCurrent ? 'text-white' : 'text-gray-500'} />
+                    )}
+                  </div>
+                  <p className={`text-xs font-medium ${isCurrent ? 'text-white' : 'text-gray-500'}`}>
+                    {s.title}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Error Alert */}
         {error && (
-          <Card className="mb-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
-            <CardBody>
-              <p className="text-red-600 dark:text-red-400">{error}</p>
-            </CardBody>
-          </Card>
+          <div className="mb-6 p-4 bg-red-500/20 border-2 border-red-500 rounded-lg flex items-start gap-3 backdrop-blur-md">
+            <AlertCircle className="text-red-500 flex-shrink-0 mt-0.5" size={20} />
+            <div className="flex-1">
+              <p className="text-red-200 font-medium">{error}</p>
+            </div>
+            <button onClick={() => setError(null)} className="text-red-400 hover:text-red-300">
+              <X size={20} />
+            </button>
+          </div>
         )}
 
-        <Card>
-          <CardBody className="p-6">
-            {/* Step 1: Basic Information */}
+        {/* Main Form Card */}
+        <Card className="bg-black/40 backdrop-blur-xl border-2 border-gray-700 shadow-2xl">
+          <CardHeader className="border-b border-gray-700 bg-black/20">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-gradient-red-dark flex items-center justify-center">
+                {React.createElement(STEPS[step - 1].icon, { size: 20, className: 'text-white' })}
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-white">{STEPS[step - 1].title}</h2>
+                <p className="text-sm text-gray-400">{STEPS[step - 1].description}</p>
+              </div>
+            </div>
+          </CardHeader>
+
+          <CardBody className="p-8">
+            {/* Step 1: Basic Info */}
             {step === 1 && (
-              <div className="space-y-4">
-                <h2 className="text-2xl font-bold mb-4">Basic Information</h2>
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <Select
+                    label="Brand *"
+                    placeholder="Select brand"
+                    selectedKeys={formData.brand_id ? [formData.brand_id.toString()] : []}
+                    onChange={(e) => handleBrandChange(e.target.value)}
+                    classNames={{
+                      trigger: "bg-black/40 backdrop-blur-sm border-gray-700 data-[hover=true]:border-primary-500",
+                      label: "text-white font-semibold",
+                      value: "text-white"
+                    }}
+                  >
+                    {brands.map((brand) => (
+                      <SelectItem key={brand.id.toString()} value={brand.id.toString()}>
+                        {brand.name}
+                      </SelectItem>
+                    ))}
+                  </Select>
 
-                <Select
-                  label="Brand"
-                  placeholder="Select brand"
-                  selectedKeys={formData.brand_id ? [String(formData.brand_id)] : []}
-                  onChange={(e) => handleBrandChange(e.target.value)}
-                  isRequired
-                >
-                  {brands.map(brand => (
-                    <SelectItem key={brand.id}>
-                      {brand.name}
-                    </SelectItem>
-                  ))}
-                </Select>
+                  <Select
+                    label="Model *"
+                    placeholder="Select model"
+                    selectedKeys={formData.model_id ? [formData.model_id.toString()] : []}
+                    onChange={(e) => setFormData(prev => ({ ...prev, model_id: parseInt(e.target.value) }))}
+                    isDisabled={!formData.brand_id}
+                    classNames={{
+                      trigger: "bg-black/40 backdrop-blur-sm border-gray-700 data-[hover=true]:border-primary-500",
+                      label: "text-white font-semibold",
+                      value: "text-white"
+                    }}
+                  >
+                    {models.map((model) => (
+                      <SelectItem key={model.id.toString()} value={model.id.toString()}>
+                        {model.name}
+                      </SelectItem>
+                    ))}
+                  </Select>
+                </div>
 
-                <Select
-                  label="Model"
-                  placeholder="Select model"
-                  selectedKeys={formData.model_id ? [String(formData.model_id)] : []}
-                  onChange={(e) => setFormData(prev => ({ ...prev, model_id: parseInt(e.target.value) }))}
-                  isDisabled={!formData.brand_id}
-                  isRequired
-                >
-                  {models.map(model => (
-                    <SelectItem key={model.id}>
-                      {model.name}
-                    </SelectItem>
-                  ))}
-                </Select>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <Input
+                    type="number"
+                    label="Year *"
+                    placeholder="2024"
+                    value={formData.year?.toString() || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, year: parseInt(e.target.value) }))}
+                    classNames={{
+                      input: "text-white",
+                      inputWrapper: "bg-black/40 backdrop-blur-sm border-gray-700 data-[hover=true]:border-primary-500",
+                      label: "text-white font-semibold"
+                    }}
+                  />
 
-                <Select
-                  label="Category"
-                  placeholder="Select category"
-                  selectedKeys={formData.category_id ? [String(formData.category_id)] : []}
-                  onChange={(e) => setFormData(prev => ({ ...prev, category_id: parseInt(e.target.value) }))}
-                >
-                  {categories.map(category => (
-                    <SelectItem key={category.id}>
-                      {category.name}
-                    </SelectItem>
-                  ))}
-                </Select>
+                  <Input
+                    label="Trim (Optional)"
+                    placeholder="EX, LX, Sport"
+                    value={formData.trim || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, trim: e.target.value }))}
+                    classNames={{
+                      input: "text-white",
+                      inputWrapper: "bg-black/40 backdrop-blur-sm border-gray-700 data-[hover=true]:border-primary-500",
+                      label: "text-white font-semibold"
+                    }}
+                  />
+                </div>
 
                 <Input
-                  type="number"
-                  label="Year"
-                  placeholder="2024"
-                  value={formData.year ? String(formData.year) : ''}
-                  onChange={(e) => setFormData(prev => ({ ...prev, year: parseInt(e.target.value) }))}
-                  description={`Valid range: 1900 - ${new Date().getFullYear() + 1}`}
-                  isRequired
-                  isInvalid={formData.year !== undefined && (formData.year < 1900 || formData.year > new Date().getFullYear() + 1)}
-                  errorMessage={formData.year !== undefined && (formData.year < 1900 || formData.year > new Date().getFullYear() + 1) ? "Year must be between 1900 and next year" : ""}
-                />
-
-                <Input
-                  label="Listing Title"
-                  placeholder="2024 Toyota Fortuner 2.8 V 4x4 AT"
+                  label="Listing Title *"
+                  placeholder="2024 Honda Civic EX - Low Mileage, Excellent Condition"
                   value={formData.title || ''}
                   onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                  description="Be specific and descriptive (minimum 10 characters)"
-                  isRequired
-                  isInvalid={formData.title !== undefined && formData.title.length > 0 && formData.title.length < 10}
-                  errorMessage={formData.title !== undefined && formData.title.length > 0 && formData.title.length < 10 ? "Title must be at least 10 characters" : ""}
+                  description="Minimum 10 characters"
+                  classNames={{
+                    input: "text-white",
+                    inputWrapper: "bg-black/40 backdrop-blur-sm border-gray-700 data-[hover=true]:border-primary-500",
+                    label: "text-white font-semibold",
+                    description: "text-gray-500"
+                  }}
                 />
 
                 <Textarea
                   label="Description"
-                  placeholder="Describe your vehicle's condition, features, and history..."
+                  placeholder="Describe your vehicle in detail..."
                   value={formData.description || ''}
                   onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                  minRows={6}
+                  minRows={4}
+                  classNames={{
+                    input: "text-white",
+                    inputWrapper: "bg-black/40 backdrop-blur-sm border-gray-700 data-[hover=true]:border-primary-500",
+                    label: "text-white font-semibold"
+                  }}
                 />
               </div>
             )}
 
             {/* Step 2: Pricing */}
             {step === 2 && (
-              <div className="space-y-4">
-                <h2 className="text-2xl font-bold mb-4">Pricing</h2>
+              <div className="space-y-6">
+                <div className="p-6 bg-gradient-to-br from-primary-900/30 to-primary-800/20 border-2 border-primary-700/50 rounded-xl">
+                  <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                    <DollarSign size={20} className="text-primary-400" />
+                    Pricing Information
+                  </h3>
 
-                <Input
-                  type="number"
-                  label="Asking Price (PHP)"
-                  placeholder="1000000"
-                  value={formData.price ? String(formData.price) : ''}
-                  onChange={(e) => setFormData(prev => ({ ...prev, price: parseFloat(e.target.value) }))}
-                  startContent={<span className="text-gray-500">₱</span>}
-                  description="Maximum allowed: ₱9,999,999,999.99"
-                  isRequired
-                  isInvalid={formData.price !== undefined && formData.price > 9999999999.99}
-                  errorMessage={formData.price !== undefined && formData.price > 9999999999.99 ? "Price exceeds maximum limit" : ""}
-                />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <Input
+                      type="number"
+                      label="Price (₱) *"
+                      placeholder="500000"
+                      value={formData.price?.toString() || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, price: parseFloat(e.target.value) }))}
+                      startContent={<span className="text-gray-400">₱</span>}
+                      classNames={{
+                        input: "text-white text-xl font-bold",
+                        inputWrapper: "bg-black/40 backdrop-blur-sm border-gray-700",
+                        label: "text-white font-semibold"
+                      }}
+                    />
 
-                <Checkbox
-                  isSelected={formData.price_negotiable}
-                  onValueChange={(checked) => setFormData(prev => ({ ...prev, price_negotiable: checked }))}
-                >
-                  Price is negotiable
-                </Checkbox>
+                    <Input
+                      type="number"
+                      label="Original Price (Optional)"
+                      placeholder="550000"
+                      value={formData.original_price?.toString() || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, original_price: parseFloat(e.target.value) }))}
+                      startContent={<span className="text-gray-400">₱</span>}
+                      description="For showing discounts"
+                      classNames={{
+                        input: "text-white",
+                        inputWrapper: "bg-black/40 backdrop-blur-sm border-gray-700",
+                        label: "text-white font-semibold",
+                        description: "text-gray-500"
+                      }}
+                    />
+                  </div>
+                </div>
 
-                <Checkbox
-                  isSelected={formData.financing_available}
-                  onValueChange={(checked) => setFormData(prev => ({ ...prev, financing_available: checked }))}
-                >
-                  Financing available
-                </Checkbox>
-
-                <Checkbox
-                  isSelected={formData.trade_in_accepted}
-                  onValueChange={(checked) => setFormData(prev => ({ ...prev, trade_in_accepted: checked }))}
-                >
-                  Accept trade-in
-                </Checkbox>
-
-                <Checkbox
-                  isSelected={formData.installment_available}
-                  onValueChange={(checked) => setFormData(prev => ({ ...prev, installment_available: checked }))}
-                >
-                  Installment available
-                </Checkbox>
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-white">Payment Options</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Checkbox
+                      isSelected={formData.price_negotiable}
+                      onValueChange={(val) => setFormData(prev => ({ ...prev, price_negotiable: val }))}
+                      classNames={{ label: "text-white" }}
+                    >
+                      Price Negotiable
+                    </Checkbox>
+                    <Checkbox
+                      isSelected={formData.financing_available}
+                      onValueChange={(val) => setFormData(prev => ({ ...prev, financing_available: val }))}
+                      classNames={{ label: "text-white" }}
+                    >
+                      Financing Available
+                    </Checkbox>
+                    <Checkbox
+                      isSelected={formData.trade_in_accepted}
+                      onValueChange={(val) => setFormData(prev => ({ ...prev, trade_in_accepted: val }))}
+                      classNames={{ label: "text-white" }}
+                    >
+                      Trade-In Accepted
+                    </Checkbox>
+                    <Checkbox
+                      isSelected={formData.installment_available}
+                      onValueChange={(val) => setFormData(prev => ({ ...prev, installment_available: val }))}
+                      classNames={{ label: "text-white" }}
+                    >
+                      Installment Available
+                    </Checkbox>
+                  </div>
+                </div>
               </div>
             )}
 
             {/* Step 3: Specifications */}
             {step === 3 && (
-              <div className="space-y-4">
-                <h2 className="text-2xl font-bold mb-4">Specifications</h2>
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <Input
+                    type="number"
+                    label="Mileage *"
+                    placeholder="50000"
+                    value={formData.mileage?.toString() || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, mileage: parseInt(e.target.value) }))}
+                    endContent={<span className="text-gray-400">KM</span>}
+                    classNames={{
+                      input: "text-white",
+                      inputWrapper: "bg-black/40 backdrop-blur-sm border-gray-700",
+                      label: "text-white font-semibold"
+                    }}
+                  />
 
-                <Input
-                  type="number"
-                  label="Mileage (km)"
-                  placeholder="50000"
-                  value={formData.mileage ? String(formData.mileage) : ''}
-                  onChange={(e) => setFormData(prev => ({ ...prev, mileage: parseInt(e.target.value) }))}
-                  description="Current odometer reading in kilometers"
-                  isRequired
-                  isInvalid={formData.mileage !== undefined && formData.mileage < 0}
-                  errorMessage={formData.mileage !== undefined && formData.mileage < 0 ? "Mileage cannot be negative" : ""}
-                />
+                  <Input
+                    label="Engine Size"
+                    placeholder="2.0L"
+                    value={formData.engine_size || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, engine_size: e.target.value }))}
+                    classNames={{
+                      input: "text-white",
+                      inputWrapper: "bg-black/40 backdrop-blur-sm border-gray-700",
+                      label: "text-white font-semibold"
+                    }}
+                  />
+                </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <Select
-                    label="Fuel Type"
+                    label="Fuel Type *"
                     placeholder="Select fuel type"
                     selectedKeys={formData.fuel_type ? [formData.fuel_type] : []}
-                    onChange={(e) => setFormData(prev => ({ ...prev, fuel_type: e.target.value as any }))}
-                    isRequired
+                    onChange={(e) => setFormData(prev => ({ ...prev, fuel_type: e.target.value }))}
+                    classNames={{
+                      trigger: "bg-black/40 backdrop-blur-sm border-gray-700",
+                      label: "text-white font-semibold",
+                      value: "text-white"
+                    }}
                   >
-                    {FUEL_TYPES.map(type => (
-                      <SelectItem key={type}>
-                        {type.replace('_', ' ').toUpperCase()}
+                    {FUEL_TYPES.map((type) => (
+                      <SelectItem key={type} value={type}>
+                        {type}
                       </SelectItem>
                     ))}
                   </Select>
 
                   <Select
-                    label="Transmission"
+                    label="Transmission *"
                     placeholder="Select transmission"
                     selectedKeys={formData.transmission ? [formData.transmission] : []}
-                    onChange={(e) => setFormData(prev => ({ ...prev, transmission: e.target.value as any }))}
-                    isRequired
+                    onChange={(e) => setFormData(prev => ({ ...prev, transmission: e.target.value }))}
+                    classNames={{
+                      trigger: "bg-black/40 backdrop-blur-sm border-gray-700",
+                      label: "text-white font-semibold",
+                      value: "text-white"
+                    }}
                   >
-                    {TRANSMISSIONS.map(type => (
-                      <SelectItem key={type}>
-                        {type.toUpperCase()}
+                    {TRANSMISSIONS.map((type) => (
+                      <SelectItem key={type} value={type}>
+                        {type}
                       </SelectItem>
                     ))}
                   </Select>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <Select
+                    label="Drivetrain"
+                    placeholder="Select drivetrain"
+                    selectedKeys={formData.drivetrain ? [formData.drivetrain] : []}
+                    onChange={(e) => setFormData(prev => ({ ...prev, drivetrain: e.target.value }))}
+                    classNames={{
+                      trigger: "bg-black/40 backdrop-blur-sm border-gray-700",
+                      label: "text-white font-semibold",
+                      value: "text-white"
+                    }}
+                  >
+                    {DRIVETRAINS.map((type) => (
+                      <SelectItem key={type} value={type}>
+                        {type}
+                      </SelectItem>
+                    ))}
+                  </Select>
+
                   <Input
                     type="number"
                     label="Seats"
                     placeholder="5"
-                    value={formData.seats ? String(formData.seats) : ''}
+                    value={formData.seats?.toString() || ''}
                     onChange={(e) => setFormData(prev => ({ ...prev, seats: parseInt(e.target.value) }))}
+                    classNames={{
+                      input: "text-white",
+                      inputWrapper: "bg-black/40 backdrop-blur-sm border-gray-700",
+                      label: "text-white font-semibold"
+                    }}
                   />
 
                   <Input
                     type="number"
                     label="Doors"
                     placeholder="4"
-                    value={formData.doors ? String(formData.doors) : ''}
+                    value={formData.doors?.toString() || ''}
                     onChange={(e) => setFormData(prev => ({ ...prev, doors: parseInt(e.target.value) }))}
+                    classNames={{
+                      input: "text-white",
+                      inputWrapper: "bg-black/40 backdrop-blur-sm border-gray-700",
+                      label: "text-white font-semibold"
+                    }}
                   />
                 </div>
-
-                {/* TODO: Add color picker from standard_colors table */}
-                {/* Color selection using color_id is now handled via normalized schema */}
-
-                <Input
-                  label="Engine Size"
-                  placeholder="2.8L"
-                  value={formData.engine_size || ''}
-                  onChange={(e) => setFormData(prev => ({ ...prev, engine_size: e.target.value }))}
-                />
-
-                <Select
-                  label="Drivetrain"
-                  placeholder="Select drivetrain"
-                  selectedKeys={formData.drivetrain ? [formData.drivetrain] : []}
-                  onChange={(e) => setFormData(prev => ({ ...prev, drivetrain: e.target.value as any }))}
-                >
-                  {DRIVETRAINS.map(type => (
-                    <SelectItem key={type}>
-                      {type.toUpperCase()}
-                    </SelectItem>
-                  ))}
-                </Select>
               </div>
             )}
 
             {/* Step 4: Condition */}
             {step === 4 && (
-              <div className="space-y-4">
-                <h2 className="text-2xl font-bold mb-4">Vehicle Condition</h2>
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-white font-semibold mb-4">Condition Rating *</label>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {CONDITION_RATINGS.map((rating) => (
+                      <div
+                        key={rating}
+                        onClick={() => setFormData(prev => ({ ...prev, car_condition: rating }))}
+                        className={`p-4 rounded-xl border-2 cursor-pointer transition-all text-center ${
+                          formData.car_condition === rating
+                            ? 'border-primary-500 bg-primary-500/20 shadow-lg shadow-primary-500/20'
+                            : 'border-gray-700 bg-black/30 hover:border-gray-600'
+                        }`}
+                      >
+                        <p className={`font-semibold ${
+                          formData.car_condition === rating ? 'text-primary-400' : 'text-white'
+                        }`}>
+                          {rating.replace('_', ' ')}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
 
-                <Select
-                  label="Overall Condition"
-                  placeholder="Select condition"
-                  selectedKeys={formData.car_condition ? [formData.car_condition] : []}
-                  onChange={(e) => setFormData(prev => ({ ...prev, car_condition: e.target.value as any }))}
-                  isRequired
-                >
-                  {CONDITION_RATINGS.map(rating => (
-                    <SelectItem key={rating}>
-                      {rating.replace('_', ' ').toUpperCase()}
-                    </SelectItem>
-                  ))}
-                </Select>
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-white">History & Documentation</h3>
 
-                <Input
-                  type="number"
-                  label="Number of Owners"
-                  placeholder="1"
-                  value={formData.number_of_owners ? String(formData.number_of_owners) : ''}
-                  onChange={(e) => setFormData(prev => ({ ...prev, number_of_owners: parseInt(e.target.value) }))}
-                  isRequired
-                />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Checkbox
+                      isSelected={formData.accident_history}
+                      onValueChange={(val) => setFormData(prev => ({ ...prev, accident_history: val }))}
+                      classNames={{ label: "text-white" }}
+                    >
+                      Has Accident History
+                    </Checkbox>
+                    <Checkbox
+                      isSelected={formData.flood_history}
+                      onValueChange={(val) => setFormData(prev => ({ ...prev, flood_history: val }))}
+                      classNames={{ label: "text-white" }}
+                    >
+                      Has Flood History
+                    </Checkbox>
+                    <Checkbox
+                      isSelected={formData.service_history_available}
+                      onValueChange={(val) => setFormData(prev => ({ ...prev, service_history_available: val }))}
+                      classNames={{ label: "text-white" }}
+                    >
+                      Service History Available
+                    </Checkbox>
+                    <Checkbox
+                      isSelected={formData.casa_maintained}
+                      onValueChange={(val) => setFormData(prev => ({ ...prev, casa_maintained: val }))}
+                      classNames={{ label: "text-white" }}
+                    >
+                      CASA Maintained
+                    </Checkbox>
+                    <Checkbox
+                      isSelected={formData.lto_registered}
+                      onValueChange={(val) => setFormData(prev => ({ ...prev, lto_registered: val }))}
+                      classNames={{ label: "text-white" }}
+                    >
+                      LTO Registered
+                    </Checkbox>
+                    <Checkbox
+                      isSelected={formData.deed_of_sale_available}
+                      onValueChange={(val) => setFormData(prev => ({ ...prev, deed_of_sale_available: val }))}
+                      classNames={{ label: "text-white" }}
+                    >
+                      Deed of Sale Available
+                    </Checkbox>
+                  </div>
 
-                <div className="space-y-3">
-                  <Checkbox
-                    isSelected={formData.accident_history}
-                    onValueChange={(checked) => setFormData(prev => ({ ...prev, accident_history: checked }))}
-                  >
-                    Has accident history
-                  </Checkbox>
-
-                  <Checkbox
-                    isSelected={formData.flood_history}
-                    onValueChange={(checked) => setFormData(prev => ({ ...prev, flood_history: checked }))}
-                  >
-                    Has flood damage history
-                  </Checkbox>
-
-                  <Checkbox
-                    isSelected={formData.service_history_available}
-                    onValueChange={(checked) => setFormData(prev => ({ ...prev, service_history_available: checked }))}
-                  >
-                    Service history available
-                  </Checkbox>
-
-                  <Checkbox
-                    isSelected={formData.casa_maintained}
-                    onValueChange={(checked) => setFormData(prev => ({ ...prev, casa_maintained: checked }))}
-                  >
-                    Casa maintained
-                  </Checkbox>
-
-                  <Checkbox
-                    isSelected={formData.warranty_remaining}
-                    onValueChange={(checked) => setFormData(prev => ({ ...prev, warranty_remaining: checked }))}
-                  >
-                    Warranty remaining
-                  </Checkbox>
+                  <Input
+                    type="number"
+                    label="Number of Previous Owners"
+                    value={formData.number_of_owners?.toString() || '1'}
+                    onChange={(e) => setFormData(prev => ({ ...prev, number_of_owners: parseInt(e.target.value) }))}
+                    classNames={{
+                      input: "text-white",
+                      inputWrapper: "bg-black/40 backdrop-blur-sm border-gray-700",
+                      label: "text-white font-semibold"
+                    }}
+                  />
                 </div>
               </div>
             )}
 
             {/* Step 5: Location */}
             {step === 5 && (
-              <div className="space-y-4">
-                <h2 className="text-2xl font-bold mb-4">Location</h2>
-
+              <div className="space-y-6">
                 <Select
-                  label="City/Municipality"
+                  label="City *"
                   placeholder="Select your city"
-                  selectedKeys={formData.city_id ? [String(formData.city_id)] : []}
+                  selectedKeys={formData.city_id ? [formData.city_id.toString()] : []}
                   onChange={(e) => setFormData(prev => ({ ...prev, city_id: parseInt(e.target.value) }))}
-                  isRequired
+                  classNames={{
+                    trigger: "bg-black/40 backdrop-blur-sm border-gray-700",
+                    label: "text-white font-semibold",
+                    value: "text-white"
+                  }}
                 >
-                  {cities.slice(0, 100).map(city => (
-                    <SelectItem key={city.id}>
+                  {cities.map((city) => (
+                    <SelectItem key={city.id.toString()} value={city.id.toString()}>
                       {city.name}
                     </SelectItem>
                   ))}
@@ -655,6 +799,11 @@ export default function CreateCarPage() {
                   placeholder="Barangay name"
                   value={formData.barangay || ''}
                   onChange={(e) => setFormData(prev => ({ ...prev, barangay: e.target.value }))}
+                  classNames={{
+                    input: "text-white",
+                    inputWrapper: "bg-black/40 backdrop-blur-sm border-gray-700",
+                    label: "text-white font-semibold"
+                  }}
                 />
 
                 <Textarea
@@ -663,19 +812,19 @@ export default function CreateCarPage() {
                   value={formData.detailed_address || ''}
                   onChange={(e) => setFormData(prev => ({ ...prev, detailed_address: e.target.value }))}
                   minRows={3}
+                  classNames={{
+                    input: "text-white",
+                    inputWrapper: "bg-black/40 backdrop-blur-sm border-gray-700",
+                    label: "text-white font-semibold"
+                  }}
                 />
               </div>
             )}
 
             {/* Step 6: Images */}
             {step === 6 && (
-              <div className="space-y-4">
-                <h2 className="text-2xl font-bold mb-4">Upload Images</h2>
-                <p className="text-gray-600 dark:text-gray-400 mb-4">
-                  Upload up to 10 high-quality images of your vehicle. Select one as the main spotlight image.
-                </p>
-
-                <div className="border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg p-8 text-center">
+              <div className="space-y-6">
+                <div className="border-2 border-dashed border-gray-600 rounded-2xl p-8 text-center bg-black/20 hover:border-primary-500 transition-all">
                   <input
                     type="file"
                     accept="image/*"
@@ -688,21 +837,32 @@ export default function CreateCarPage() {
                     htmlFor="image-upload"
                     className="cursor-pointer flex flex-col items-center"
                   >
-                    <Upload className="text-gray-400 mb-2" size={48} />
-                    <span className="text-gray-700 dark:text-gray-300 font-semibold">
-                      Click to upload images
+                    <div className="w-20 h-20 rounded-full bg-gradient-red-dark flex items-center justify-center mb-4">
+                      <Upload className="text-white" size={32} />
+                    </div>
+                    <span className="text-xl font-bold text-white mb-2">
+                      Upload Vehicle Images
                     </span>
-                    <span className="text-sm text-gray-500 mt-1">
-                      PNG, JPG up to 10MB each
+                    <span className="text-sm text-gray-400 mb-1">
+                      Click to select or drag and drop
+                    </span>
+                    <span className="text-xs text-gray-500">
+                      PNG, JPG up to 10MB each • Maximum 10 images
                     </span>
                   </label>
                 </div>
 
                 {imageFiles.length > 0 && (
                   <div className="space-y-4">
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      {imageFiles.length} image{imageFiles.length !== 1 ? 's' : ''} uploaded. Click "Set as Main Photo" to choose the spotlight image for Browse Cars page.
-                    </p>
+                    <div className="flex items-center justify-between">
+                      <p className="text-white font-semibold">
+                        {imageFiles.length} image{imageFiles.length !== 1 ? 's' : ''} uploaded
+                      </p>
+                      <Chip color="primary" variant="flat">
+                        Select Main Photo
+                      </Chip>
+                    </div>
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {imageFiles.map((file, index) => {
                         const metadata = imageMetadata[index] || { type: 'exterior', isMain: false };
@@ -711,14 +871,13 @@ export default function CreateCarPage() {
                         return (
                           <div
                             key={index}
-                            className={`relative border-2 rounded-lg p-3 transition-all ${
+                            className={`relative border-2 rounded-xl p-3 transition-all ${
                               metadata.isMain
-                                ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
-                                : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800'
+                                ? 'border-primary-500 bg-primary-500/10 shadow-lg shadow-primary-500/20'
+                                : 'border-gray-700 bg-black/30 hover:border-gray-600'
                             }`}
                           >
                             <div className="flex gap-3">
-                              {/* Image Preview */}
                               <div className="relative flex-shrink-0">
                                 <img
                                   src={URL.createObjectURL(file)}
@@ -730,7 +889,7 @@ export default function CreateCarPage() {
                                   onClick={() => removeImage(index)}
                                   className="absolute -top-2 -right-2 p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors shadow-lg"
                                 >
-                                  <X size={14} />
+                                  <X size={16} />
                                 </button>
                                 {metadata.isMain && (
                                   <Chip
@@ -739,35 +898,32 @@ export default function CreateCarPage() {
                                     className="absolute bottom-2 left-2"
                                     startContent={<Check size={12} />}
                                   >
-                                    Main Photo
+                                    Main
                                   </Chip>
                                 )}
                               </div>
 
-                              {/* Controls */}
                               <div className="flex-1 space-y-3">
-                                <div>
-                                  <label className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1 block">
-                                    Image Category
-                                  </label>
-                                  <Select
-                                    size="sm"
-                                    selectedKeys={[metadata.type]}
-                                    onChange={(e) => setImageType(index, e.target.value)}
-                                    className="max-w-full"
-                                    startContent={<span className="text-lg">{imageType.icon}</span>}
-                                  >
-                                    {IMAGE_TYPES.map(type => (
-                                      <SelectItem
-                                        key={type.value}
-                                        value={type.value}
-                                        startContent={<span className="text-lg">{type.icon}</span>}
-                                      >
-                                        {type.label}
-                                      </SelectItem>
-                                    ))}
-                                  </Select>
-                                </div>
+                                <Select
+                                  size="sm"
+                                  selectedKeys={[metadata.type]}
+                                  onChange={(e) => setImageType(index, e.target.value)}
+                                  startContent={<span className="text-lg">{imageType.icon}</span>}
+                                  classNames={{
+                                    trigger: "bg-black/40 border-gray-700",
+                                    value: "text-white"
+                                  }}
+                                >
+                                  {IMAGE_TYPES.map(type => (
+                                    <SelectItem
+                                      key={type.value}
+                                      value={type.value}
+                                      startContent={<span className="text-lg">{type.icon}</span>}
+                                    >
+                                      {type.label}
+                                    </SelectItem>
+                                  ))}
+                                </Select>
 
                                 {!metadata.isMain && (
                                   <Button
@@ -776,14 +932,13 @@ export default function CreateCarPage() {
                                     variant="flat"
                                     onPress={() => setMainImage(index)}
                                     fullWidth
-                                    startContent={<Check size={16} />}
                                   >
-                                    Set as Main Photo
+                                    Set as Main
                                   </Button>
                                 )}
 
-                                <p className="text-xs text-gray-500 dark:text-gray-400">
-                                  {file.name} • {(file.size / 1024 / 1024).toFixed(2)}MB
+                                <p className="text-xs text-gray-500">
+                                  {(file.size / 1024 / 1024).toFixed(2)}MB
                                 </p>
                               </div>
                             </div>
@@ -796,81 +951,112 @@ export default function CreateCarPage() {
               </div>
             )}
 
-            {/* Step 7: Features */}
+            {/* Step 7: Features - FIXED */}
             {step === 7 && (
-              <div className="space-y-4">
-                <h2 className="text-2xl font-bold mb-4">Features & Amenities</h2>
-                <p className="text-gray-600 dark:text-gray-400 mb-4">
-                  Select all features that apply to your vehicle
-                </p>
+              <div className="space-y-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-white">
+                    Selected Features: {selectedFeatures.length}
+                  </h3>
+                  {selectedFeatures.length > 0 && (
+                    <Button
+                      size="sm"
+                      variant="flat"
+                      color="danger"
+                      onPress={() => setSelectedFeatures([])}
+                    >
+                      Clear All
+                    </Button>
+                  )}
+                </div>
 
-                <div className="space-y-6">
-                  {['safety', 'comfort', 'entertainment', 'technology'].map(category => (
-                    <div key={category}>
-                      <h3 className="text-lg font-semibold mb-3 capitalize text-white">
+                {['safety', 'comfort', 'entertainment', 'technology'].map(category => {
+                  const categoryFeatures = features.filter(f => f.category === category);
+                  if (categoryFeatures.length === 0) return null;
+
+                  return (
+                    <div key={category} className="space-y-3">
+                      <h4 className="text-md font-semibold text-primary-400 capitalize flex items-center gap-2">
+                        <Sparkles size={18} />
                         {category}
-                      </h3>
+                      </h4>
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                        {features
-                          .filter(f => f.category === category)
-                          .map(feature => (
+                        {categoryFeatures.map(feature => {
+                          const isSelected = selectedFeatures.includes(feature.id);
+
+                          return (
                             <div
                               key={feature.id}
-                              onClick={() => toggleFeature(feature.id)}
-                              className={`p-3 rounded-lg border-2 cursor-pointer transition-all ${
-                                selectedFeatures.includes(feature.id)
-                                  ? 'border-primary-500 bg-primary-500/20'
-                                  : 'border-gray-700 bg-black/20 hover:border-gray-600'
+                              className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                                isSelected
+                                  ? 'border-primary-500 bg-primary-500/20 shadow-md shadow-primary-500/20'
+                                  : 'border-gray-700 bg-black/30 hover:border-gray-600 hover:bg-black/40'
                               }`}
                             >
                               <Checkbox
-                                isSelected={selectedFeatures.includes(feature.id)}
-                                onChange={() => toggleFeature(feature.id)}
+                                isSelected={isSelected}
+                                onValueChange={() => toggleFeature(feature.id)}
                                 classNames={{
                                   base: "w-full max-w-full",
-                                  label: "w-full text-white"
+                                  label: `w-full ${isSelected ? 'text-white font-medium' : 'text-gray-300'}`
                                 }}
                               >
                                 {feature.name}
                               </Checkbox>
                             </div>
-                          ))}
+                          );
+                        })}
                       </div>
                     </div>
-                  ))}
-                </div>
+                  );
+                })}
+
+                {features.length === 0 && (
+                  <div className="text-center py-12 text-gray-500">
+                    <Sparkles size={48} className="mx-auto mb-4 opacity-50" />
+                    <p>No features available</p>
+                  </div>
+                )}
               </div>
             )}
           </CardBody>
 
-          <CardFooter className="flex justify-between">
-            <Button
-              variant="flat"
-              onPress={handleBack}
-              isDisabled={step === 1 || loading}
-              startContent={<ChevronLeft size={20} />}
-            >
-              Back
-            </Button>
+          <CardFooter className="border-t border-gray-700 bg-black/20 p-6">
+            <div className="flex justify-between w-full gap-4">
+              <Button
+                size="lg"
+                variant="flat"
+                onPress={handleBack}
+                isDisabled={step === 1 || loading}
+                startContent={<ChevronLeft size={20} />}
+                className="bg-black/40 hover:bg-black/60"
+              >
+                Back
+              </Button>
 
-            {step < 7 ? (
-              <Button
-                color="primary"
-                onPress={handleNext}
-                endContent={<ChevronRight size={20} />}
-              >
-                Next
-              </Button>
-            ) : (
-              <Button
-                color="success"
-                onPress={handleSubmit}
-                isLoading={loading}
-                startContent={<Check size={20} />}
-              >
-                Create Listing
-              </Button>
-            )}
+              {step < 7 ? (
+                <Button
+                  size="lg"
+                  color="primary"
+                  onPress={handleNext}
+                  endContent={<ChevronRight size={20} />}
+                  className="bg-gradient-red-dark shadow-lg shadow-red-500/20"
+                >
+                  Next Step
+                </Button>
+              ) : (
+                <Button
+                  size="lg"
+                  color="success"
+                  onPress={handleSubmit}
+                  isLoading={loading}
+                  startContent={!loading && <Check size={20} />}
+                  className="bg-green-600 hover:bg-green-700 shadow-lg shadow-green-500/20"
+                >
+                  {loading ? 'Creating Listing...' : 'Create Listing'}
+                </Button>
+              )}
+            </div>
           </CardFooter>
         </Card>
       </div>
