@@ -26,10 +26,9 @@ class SubscriptionPlanResponse(BaseModel):
     currency: str
     
     # Limits
-    max_active_listings: int
+    max_listings: int  # Fixed: was max_active_listings
     max_featured_listings: int
-    max_premium_listings: int
-    max_images_per_listing: int
+    max_photos_per_listing: int  # Fixed: was max_images_per_listing
     storage_mb: int
     boost_credits_monthly: int
     
@@ -82,9 +81,9 @@ class SubscriptionUsageResponse(BaseModel):
     storage_used_mb: int
     
     # Limits
-    max_active_listings: int
+    max_listings: int  # Fixed: was max_active_listings
     max_featured_listings: int
-    max_premium_listings: int
+    max_photos_per_listing: int  # Fixed: was max_images_per_listing
     boost_credits_monthly: int
     storage_mb: int
     

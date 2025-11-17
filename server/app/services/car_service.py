@@ -421,7 +421,7 @@ class CarService:
         if not plan:
             return current_active < 3
         
-        max_listings = int(getattr(plan, 'max_active_listings', 3))
+        max_listings = int(getattr(plan, 'max_listings', 3))  # Fixed: was max_active_listings
         return current_active < max_listings
     
     @staticmethod

@@ -621,11 +621,10 @@ class SubscriptionService:
             Car.is_premium == True
         ).count()
 
-        # Get plan limits
-        max_active = int(getattr(plan, 'max_active_listings', 0)) if plan else 0
+        # Get plan limits (Fixed: use correct attribute names)
+        max_active = int(getattr(plan, 'max_listings', 0)) if plan else 0  # Fixed: was max_active_listings
         max_featured = int(getattr(plan, 'max_featured_listings', 0)) if plan else 0
-        max_premium = int(getattr(plan, 'max_premium_listings', 0)) if plan else 0
-        max_images = int(getattr(plan, 'max_images_per_listing', 0)) if plan else 0
+        max_images = int(getattr(plan, 'max_photos_per_listing', 0)) if plan else 0  # Fixed: was max_images_per_listing
         boost_credits = int(getattr(plan, 'boost_credits_monthly', 0)) if plan else 0
 
         return {
@@ -639,10 +638,10 @@ class SubscriptionService:
                 "limit": max_featured,
                 "percentage": round((featured_listings / max_featured * 100) if max_featured > 0 else 0, 1)
             },
-            "premium_listings": {
+            "featured_listings_extra": {  # Renamed from premium_listings (doesn't exist in DB)
                 "used": premium_listings,
-                "limit": max_premium,
-                "percentage": round((premium_listings / max_premium * 100) if max_premium > 0 else 0, 1)
+                "limit": 0,  # Not a real limit in the schema
+                "percentage": 0
             },
             "images_per_listing": {
                 "limit": max_images

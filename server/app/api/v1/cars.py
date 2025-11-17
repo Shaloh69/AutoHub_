@@ -915,17 +915,18 @@ async def upload_car_image(
     if not car:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Car not found")
     
-    # Check image limit
+    # Check image limit based on subscription
     image_count = db.query(CarImage).filter(CarImage.car_id == car_id).count()
-    
-    # FIX: Use getattr for subscription
-    subscription = getattr(current_user, 'current_subscription', None)
+
+    # Get subscription from database (Fixed: don't rely on current_user.current_subscription)
+    from app.services.subscription_service import SubscriptionService
+    subscription = SubscriptionService.get_user_subscription(db, user_id)
     if subscription:
         plan = getattr(subscription, 'plan', None)
-        max_images = int(getattr(plan, 'max_images_per_listing', 5)) if plan else 5
+        max_images = int(getattr(plan, 'max_photos_per_listing', 5)) if plan else 5  # Fixed: was max_images_per_listing
     else:
-        max_images = 5
-    
+        max_images = 5  # Free tier limit
+
     if image_count >= max_images:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -1079,14 +1080,38 @@ async def feature_car(
     if not car:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Car not found")
     
-    # Check subscription - FIX: use getattr
-    current_subscription = getattr(current_user, 'current_subscription', None)
-    if not current_subscription:
+    # Check subscription and featured listing limits
+    from app.services.subscription_service import SubscriptionService
+    subscription = SubscriptionService.get_user_subscription(db, user_id)
+    if not subscription:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Featured listings require an active subscription"
         )
-    
+
+    # Check featured listing limit
+    plan = getattr(subscription, 'plan', None)
+    if plan:
+        max_featured = int(getattr(plan, 'max_featured_listings', 0))
+        if max_featured == 0:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Your subscription plan does not include featured listings. Please upgrade."
+            )
+
+        # Count current featured listings
+        current_featured = db.query(Car).filter(
+            Car.seller_id == user_id,
+            Car.is_featured == True,
+            Car.featured_until > datetime.utcnow()
+        ).count()
+
+        if current_featured >= max_featured:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Featured listing limit reached ({current_featured}/{max_featured}). Please upgrade your plan or wait for existing featured listings to expire."
+            )
+
     # Set as featured - use setattr
     setattr(car, 'is_featured', True)
     setattr(car, 'featured_until', datetime.utcnow() + timedelta(days=duration_days))
