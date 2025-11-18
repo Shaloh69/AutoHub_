@@ -328,6 +328,7 @@ export default function SellerSubscriptionPage() {
           </div>
         </CardBody>
       </Card>
+      </div>
     </SellerLayout>
   );
 }
