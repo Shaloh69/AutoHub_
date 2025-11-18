@@ -2173,7 +2173,7 @@ async def moderate_review(
 
     # Update review status
     old_status = str(getattr(review, 'status', ''))
-    setattr(review, 'status', ReviewStatus(action))
+    setattr(review, 'status', ReviewStatus(action.upper()))
     setattr(review, 'admin_notes', moderation_data.get('admin_notes', ''))
     setattr(review, 'updated_at', datetime.utcnow())
 
