@@ -16,6 +16,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import UsageWarning from '@/components/UsageWarning';
 import LockedFeatureBadge from '@/components/LockedFeatureBadge';
+import SellerLayout from '@/components/seller/SellerLayout';
 
 export default function SellerSubscriptionPage() {
   const { user, isAuthenticated } = useAuth();
@@ -68,7 +69,8 @@ export default function SellerSubscriptionPage() {
   const isActive = subscription?.status === 'ACTIVE';
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-6xl">
+    <SellerLayout>
+      <div className="container mx-auto max-w-6xl">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-autohub-secondary-900 dark:text-autohub-neutral-50 mb-2">
@@ -326,6 +328,6 @@ export default function SellerSubscriptionPage() {
           </div>
         </CardBody>
       </Card>
-    </div>
+    </SellerLayout>
   );
 }

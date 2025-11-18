@@ -19,6 +19,7 @@ import { apiService, getImageUrl } from '@/services/api';
 import { Car as CarType, Analytics, Subscription } from '@/types';
 import { useRequireSeller } from '@/contexts/AuthContext';
 import { ActiveSubscriptionCard } from '@/components/subscription/ActiveSubscriptionCard';
+import SellerLayout from '@/components/seller/SellerLayout';
 
 export default function SellerDashboardPage() {
   const router = useRouter();
@@ -126,7 +127,7 @@ export default function SellerDashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 px-4">
+    <SellerLayout>
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
@@ -458,6 +459,6 @@ export default function SellerDashboardPage() {
           </CardBody>
         </Card>
       </div>
-    </div>
+    </SellerLayout>
   );
 }

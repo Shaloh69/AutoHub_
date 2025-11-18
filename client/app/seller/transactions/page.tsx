@@ -18,6 +18,7 @@ import {
 import { apiService, getImageUrl } from '@/services/api';
 import { Transaction } from '@/types';
 import { useRequireSeller } from '@/contexts/AuthContext';
+import SellerLayout from '@/components/seller/SellerLayout';
 
 export default function SellerTransactionsPage() {
   const router = useRouter();
@@ -124,7 +125,8 @@ export default function SellerTransactionsPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
+    <SellerLayout>
+      <div className="max-w-7xl mx-auto">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">My Transactions</h1>
@@ -395,6 +397,6 @@ export default function SellerTransactionsPage() {
       )}
 
       {/* Pagination could be added here if needed */}
-    </div>
+    </SellerLayout>
   );
 }

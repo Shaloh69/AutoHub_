@@ -21,6 +21,7 @@ import {
 import { apiService } from '@/services/api';
 import { Brand, Model, Category, Feature, CarFormData } from '@/types';
 import { useRequireSeller } from '@/contexts/AuthContext';
+import SellerLayout from '@/components/seller/SellerLayout';
 
 // Match SQL schema enum values exactly
 const FUEL_TYPES = ['GASOLINE', 'DIESEL', 'ELECTRIC', 'HYBRID'];
@@ -303,7 +304,7 @@ export default function CreateCarPage() {
   const progress = (step / STEPS.length) * 100;
 
   return (
-    <div className="min-h-screen bg-transparent py-8 px-4">
+    <SellerLayout>
       <div className="max-w-5xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
@@ -1060,6 +1061,6 @@ export default function CreateCarPage() {
           </CardFooter>
         </Card>
       </div>
-    </div>
+    </SellerLayout>
   );
 }

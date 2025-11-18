@@ -20,6 +20,7 @@ import {
 import { apiService, getImageUrl } from '@/services/api';
 import { Inquiry } from '@/types';
 import { useRequireSeller } from '@/contexts/AuthContext';
+import SellerLayout from '@/components/seller/SellerLayout';
 
 export default function SellerInquiriesPage() {
   const router = useRouter();
@@ -158,7 +159,7 @@ export default function SellerInquiriesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 px-4">
+    <SellerLayout>
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
@@ -458,6 +459,6 @@ export default function SellerInquiriesPage() {
           </ModalFooter>
         </ModalContent>
       </Modal>
-    </div>
+    </SellerLayout>
   );
 }

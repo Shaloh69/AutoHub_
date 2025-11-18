@@ -12,8 +12,8 @@ import { AuthProvider } from "@/contexts/AuthContext";
 
 import { siteConfig } from "@/config/site";
 import { fontSans } from "@/config/fonts";
-import Navigation from "@/components/Navigation";
 import { AnimatedBackground } from "@/components/background";
+import LayoutContent from "@/components/LayoutContent";
 
 export const metadata: Metadata = {
   title: {
@@ -105,17 +105,9 @@ export default function RootLayout({
 
         <Providers themeProps={{ attribute: "class", defaultTheme: "dark" }}>
           <AuthProvider>
-            <div className="relative flex flex-col min-h-screen z-10">
-              {/* Navigation */}
-              <Navigation />
-              
-              {/* Main Content */}
-              <main className="container mx-auto pt-6 px-6 flex-grow max-w-7xl">
-                <div className="animate-fade-in">
-                  {children}
-                </div>
-              </main>
-              
+            <LayoutContent>
+              {children}
+
               {/* Premium Footer */}
               <footer className="w-full bg-black/80 backdrop-blur-sm border-t border-dark-700">
                 <div className="container mx-auto px-6 py-16 max-w-7xl">
@@ -341,7 +333,7 @@ export default function RootLayout({
                   </div>
                 </div>
               </footer>
-            </div>
+            </LayoutContent>
           </AuthProvider>
         </Providers>
       </body>
