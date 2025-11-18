@@ -13,11 +13,10 @@ import { Select, SelectItem } from '@heroui/select';
 import { Slider } from '@heroui/slider';
 import { Checkbox } from '@heroui/checkbox';
 import { Chip } from '@heroui/chip';
-import { Image } from '@heroui/image';
 import { Spinner } from '@heroui/spinner';
 import {
   Search, SlidersHorizontal, X, MapPin, Calendar,
-  Gauge, Fuel, Settings, Heart, Star
+  Gauge, Fuel, Settings, Heart, Star, Eye, TrendingUp
 } from 'lucide-react';
 import { apiService, getImageUrl } from '@/services/api';
 import { Car, Brand, SearchFilters } from '@/types';
@@ -153,31 +152,39 @@ export default function SearchCarsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-gray-50 dark:from-gray-900 dark:via-blue-950/20 dark:to-gray-900 py-8 px-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-            Search Cars
+        <div className="mb-8 animate-fadeIn">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-3">
+            Discover Your Dream Car
           </h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            {totalItems} vehicle{totalItems !== 1 ? 's' : ''} found
-          </p>
+          <div className="flex items-center gap-3">
+            <p className="text-gray-600 dark:text-gray-400">
+              <span className="font-semibold text-blue-600 dark:text-blue-400">{totalItems}</span> vehicle{totalItems !== 1 ? 's' : ''} available
+            </p>
+            {totalItems > 0 && (
+              <Chip size="sm" color="success" variant="flat" startContent={<TrendingUp size={14} />}>
+                Live Listings
+              </Chip>
+            )}
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Filters Sidebar */}
-          <div className={`lg:col-span-1 ${showFilters ? 'block' : 'hidden lg:block'}`}>
-            <Card className="sticky top-4">
+          <div className={`lg:col-span-1 ${showFilters ? 'block animate-slideInLeft' : 'hidden lg:block'}`}>
+            <Card className="sticky top-4 shadow-lg border border-blue-100 dark:border-blue-900/20">
               <CardBody className="space-y-4">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-xl font-bold flex items-center gap-2">
-                    <SlidersHorizontal size={20} />
+                <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-200 dark:border-gray-700">
+                  <h2 className="text-xl font-bold flex items-center gap-2 text-gray-900 dark:text-white">
+                    <SlidersHorizontal size={20} className="text-blue-600" />
                     Filters
                   </h2>
                   <Button
                     size="sm"
                     variant="flat"
+                    color="danger"
                     onPress={handleClearFilters}
                     startContent={<X size={16} />}
                   >
@@ -377,90 +384,122 @@ export default function SearchCarsPage() {
               <>
                 {/* Car Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
-                  {cars.map((car) => (
+                  {cars.map((car, index) => (
                     <Card
                       key={car.id}
                       isPressable
                       onPress={() => router.push(`/cars/${car.id}`)}
-                      className="group hover:shadow-xl transition-all duration-300"
+                      className="group hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 border border-gray-200 dark:border-gray-800 overflow-hidden animate-fadeInUp"
+                      style={{ animationDelay: `${index * 50}ms` }}
                     >
                       <CardBody className="p-0">
                         {/* Image */}
-                        <div className="relative aspect-[4/3] overflow-hidden">
-                          <Image
-                            src={getImageUrl(car.images?.[0]?.image_url)}
+                        <div className="relative aspect-[4/3] overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900">
+                          <img
+                            src={getImageUrl(car.images?.[0]?.image_url) || '/placeholder-car.jpg'}
                             alt={car.title}
-                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.src = '/placeholder-car.jpg';
+                            }}
+                            loading="lazy"
                           />
 
+                          {/* Gradient Overlay */}
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+
                           {/* Badges */}
-                          <div className="absolute top-3 left-3 flex flex-col gap-2">
+                          <div className="absolute top-3 left-3 flex flex-col gap-2 z-10">
                             {car.is_featured && (
-                              <Chip color="warning" size="sm" variant="solid">
-                                <Star size={12} className="inline mr-1" />
+                              <Chip
+                                color="warning"
+                                size="sm"
+                                variant="solid"
+                                className="animate-pulse shadow-lg"
+                                startContent={<Star size={12} fill="currentColor" />}
+                              >
                                 Featured
+                              </Chip>
+                            )}
+                            {car.car_condition === 'BRAND_NEW' && (
+                              <Chip color="success" size="sm" variant="solid" className="shadow-lg">
+                                Brand New
                               </Chip>
                             )}
                           </div>
 
-                          {/* Favorite Button - Fixed: Use div instead of Button to avoid nesting */}
+                          {/* Quick View Overlay */}
+                          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10">
+                            <div className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm px-4 py-2 rounded-full flex items-center gap-2 transform scale-75 group-hover:scale-100 transition-transform duration-300">
+                              <Eye size={16} className="text-blue-600" />
+                              <span className="text-sm font-semibold text-gray-900 dark:text-white">View Details</span>
+                            </div>
+                          </div>
+
+                          {/* Favorite Button */}
                           <div
-                            className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/90 backdrop-blur flex items-center justify-center hover:bg-white transition-colors cursor-pointer"
+                            className="absolute top-3 right-3 w-10 h-10 rounded-full bg-white/95 dark:bg-gray-900/95 backdrop-blur flex items-center justify-center hover:bg-red-50 dark:hover:bg-red-900/30 hover:scale-110 transition-all duration-300 cursor-pointer shadow-lg z-10 group/heart"
                             onClick={(e) => {
                               e.stopPropagation();
                               handleAddToFavorites(car.id);
                             }}
                           >
-                            <Heart size={18} className="text-gray-700 hover:text-red-500 transition-colors" />
+                            <Heart size={18} className="text-gray-600 dark:text-gray-400 group-hover/heart:text-red-500 group-hover/heart:fill-red-500 transition-all duration-300" />
                           </div>
                         </div>
 
                         {/* Content */}
-                        <div className="p-4">
-                          <div className="mb-3">
-                            <h3 className="font-bold text-lg text-gray-900 dark:text-white line-clamp-1">
+                        <div className="p-5 bg-white dark:bg-gray-950">
+                          <div className="mb-4">
+                            <h3 className="font-bold text-lg text-gray-900 dark:text-white line-clamp-1 mb-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                               {car.title}
                             </h3>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">
-                              {car.brand_rel?.name} {car.model_rel?.name}
+                            <p className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1">
+                              <span className="font-medium">{car.brand_rel?.name}</span>
+                              <span>•</span>
+                              <span>{car.model_rel?.name}</span>
                             </p>
                           </div>
 
-                          <div className="flex items-center justify-between mb-3">
-                            <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                              {formatPrice(car.price)}
-                            </span>
+                          <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-100 dark:border-gray-800">
+                            <div>
+                              <p className="text-xs text-gray-500 dark:text-gray-500 mb-1">Price</p>
+                              <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                                {formatPrice(car.price)}
+                              </span>
+                            </div>
                             {car.price_negotiable && (
-                              <Chip size="sm" variant="flat" color="success">
+                              <Chip size="sm" variant="flat" color="success" className="animate-pulse">
                                 Negotiable
                               </Chip>
                             )}
                           </div>
 
                           {/* Specs */}
-                          <div className="grid grid-cols-2 gap-2 text-sm text-gray-600 dark:text-gray-400 mb-3">
-                            <div className="flex items-center gap-1">
-                              <Calendar size={14} />
-                              <span>{car.year}</span>
+                          <div className="grid grid-cols-2 gap-3 text-sm mb-4">
+                            <div className="flex items-center gap-2 p-2 rounded-lg bg-gray-50 dark:bg-gray-900/50 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors">
+                              <Calendar size={16} className="text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                              <span className="text-gray-700 dark:text-gray-300 font-medium">{car.year}</span>
                             </div>
-                            <div className="flex items-center gap-1">
-                              <Gauge size={14} />
-                              <span>{formatMileage(car.mileage)}</span>
+                            <div className="flex items-center gap-2 p-2 rounded-lg bg-gray-50 dark:bg-gray-900/50 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors">
+                              <Gauge size={16} className="text-green-600 dark:text-green-400 flex-shrink-0" />
+                              <span className="text-gray-700 dark:text-gray-300 font-medium text-xs">{formatMileage(car.mileage)}</span>
                             </div>
-                            <div className="flex items-center gap-1">
-                              <Fuel size={14} />
-                              <span className="capitalize">{car.fuel_type}</span>
+                            <div className="flex items-center gap-2 p-2 rounded-lg bg-gray-50 dark:bg-gray-900/50 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors">
+                              <Fuel size={16} className="text-orange-600 dark:text-orange-400 flex-shrink-0" />
+                              <span className="text-gray-700 dark:text-gray-300 font-medium text-xs capitalize">{car.fuel_type?.toLowerCase()}</span>
                             </div>
-                            <div className="flex items-center gap-1">
-                              <Settings size={14} />
-                              <span className="capitalize">{car.transmission}</span>
+                            <div className="flex items-center gap-2 p-2 rounded-lg bg-gray-50 dark:bg-gray-900/50 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors">
+                              <Settings size={16} className="text-purple-600 dark:text-purple-400 flex-shrink-0" />
+                              <span className="text-gray-700 dark:text-gray-300 font-medium text-xs capitalize">{car.transmission?.toLowerCase()}</span>
                             </div>
                           </div>
 
                           {/* Location */}
-                          <div className="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-500">
-                            <MapPin size={14} />
-                            <span>{car.city?.name || 'Philippines'}</span>
+                          <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 pt-3 border-t border-gray-100 dark:border-gray-800">
+                            <MapPin size={14} className="flex-shrink-0" />
+                            <span className="truncate">{car.city?.name || 'Philippines'}</span>
                           </div>
                         </div>
                       </CardBody>
