@@ -63,41 +63,41 @@ export default function Navigation() {
     };
   }, []);
 
-  // Role-based theme configuration
+  // Role-based theme configuration - matches AnimatedBackground
   const getRoleTheme = () => {
     if (isAdmin) {
       return {
-        gradient: 'from-purple-600 via-purple-500 to-indigo-600',
+        gradient: 'from-purple-500 via-purple-400 to-purple-600',
         accentColor: 'purple',
-        accent: 'text-purple-400',
-        accentHover: 'hover:text-purple-300',
-        badge: 'bg-purple-600',
-        bgOverlay: 'bg-purple-900/10',
+        accent: 'text-purple-500',
+        accentHover: 'hover:text-purple-400',
+        badge: 'bg-purple-500',
+        bgOverlay: 'bg-purple-500/10',
         borderColor: 'border-purple-500/20',
         roleIcon: Shield,
         roleLabel: 'ADMIN',
       };
     } else if (isSeller) {
       return {
-        gradient: 'from-orange-600 via-orange-500 to-red-600',
-        accentColor: 'orange',
-        accent: 'text-orange-400',
-        accentHover: 'hover:text-orange-300',
-        badge: 'bg-orange-600',
-        bgOverlay: 'bg-orange-900/10',
-        borderColor: 'border-orange-500/20',
+        gradient: 'from-green-500 via-green-400 to-green-600',
+        accentColor: 'green',
+        accent: 'text-green-500',
+        accentHover: 'hover:text-green-400',
+        badge: 'bg-green-500',
+        bgOverlay: 'bg-green-500/10',
+        borderColor: 'border-green-500/20',
         roleIcon: Package,
         roleLabel: 'SELLER',
       };
     } else {
       return {
-        gradient: 'from-blue-600 via-cyan-500 to-teal-600',
-        accentColor: 'blue',
-        accent: 'text-blue-400',
-        accentHover: 'hover:text-blue-300',
-        badge: 'bg-blue-600',
-        bgOverlay: 'bg-blue-900/10',
-        borderColor: 'border-blue-500/20',
+        gradient: 'from-red-600 via-red-500 to-red-700',
+        accentColor: 'red',
+        accent: 'text-red-500',
+        accentHover: 'hover:text-red-400',
+        badge: 'bg-red-600',
+        bgOverlay: 'bg-red-600/10',
+        borderColor: 'border-red-500/20',
         roleIcon: null,
         roleLabel: null,
       };
@@ -176,7 +176,7 @@ export default function Navigation() {
                   strokeWidth={2.5}
                 />
               </div>
-              <span className="font-black text-xl bg-gradient-to-r from-gray-900 to-gray-700 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
+              <span className={`font-black text-xl bg-gradient-to-r from-gray-900 to-gray-700 dark:from-white dark:to-gray-300 bg-clip-text text-transparent ${isAnimating ? 'animate-scatter' : ''}`}>
                 AutoHub
               </span>
             </Link>
@@ -200,7 +200,7 @@ export default function Navigation() {
                 </div>
               </div>
               <div className="flex flex-col">
-                <span className="font-black text-2xl bg-gradient-to-r from-gray-900 to-gray-700 dark:from-white dark:to-gray-300 bg-clip-text text-transparent leading-none">
+                <span className={`font-black text-2xl bg-gradient-to-r from-gray-900 to-gray-700 dark:from-white dark:to-gray-300 bg-clip-text text-transparent leading-none ${isAnimating ? 'animate-scatter' : ''}`}>
                   AutoHub
                 </span>
                 <span className={`text-[10px] font-semibold ${theme.accent} tracking-wider uppercase`}>
@@ -654,6 +654,49 @@ export default function Navigation() {
 
         .animate-drive {
           animation: drive 3s ease-in-out;
+        }
+
+        @keyframes scatter {
+          0% {
+            transform: translate(0, 0) scale(1);
+            opacity: 1;
+            letter-spacing: normal;
+          }
+          15% {
+            transform: translate(2px, -3px) scale(1.05);
+            opacity: 0.9;
+            letter-spacing: 0.05em;
+          }
+          30% {
+            transform: translate(-3px, 2px) scale(0.95);
+            opacity: 0.8;
+            letter-spacing: 0.1em;
+          }
+          45% {
+            transform: translate(4px, 1px) scale(1.08);
+            opacity: 0.85;
+            letter-spacing: 0.15em;
+          }
+          60% {
+            transform: translate(-2px, -2px) scale(0.98);
+            opacity: 0.9;
+            letter-spacing: 0.1em;
+          }
+          75% {
+            transform: translate(1px, 2px) scale(1.02);
+            opacity: 0.95;
+            letter-spacing: 0.05em;
+          }
+          100% {
+            transform: translate(0, 0) scale(1);
+            opacity: 1;
+            letter-spacing: normal;
+          }
+        }
+
+        .animate-scatter {
+          animation: scatter 3s ease-in-out;
+          display: inline-block;
         }
       `}</style>
     </>
