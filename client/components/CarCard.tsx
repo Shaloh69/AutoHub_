@@ -65,12 +65,13 @@ export default function CarCard({ car, onFavoriteChange }: CarCardProps) {
 
   return (
     <Card
-      isPressable
-      onPress={() => router.push(`/cars/${car.id}`)}
       className="group relative overflow-hidden bg-black/40 backdrop-blur-md border border-dark-700 hover:border-primary-600 transition-all duration-300 hover:shadow-red-glow"
     >
-      {/* Image Section */}
-      <div className="relative h-56 overflow-hidden bg-black/50">
+      {/* Image Section - Clickable */}
+      <div
+        className="relative h-56 overflow-hidden bg-black/50 cursor-pointer"
+        onClick={() => router.push(`/cars/${car.id}`)}
+      >
         <Image
           src={mainImage}
           alt={car.title}
@@ -139,7 +140,10 @@ export default function CarCard({ car, onFavoriteChange }: CarCardProps) {
         )} */}
       </div>
 
-      <CardBody className="p-5 bg-black/40 backdrop-blur-sm border-t border-dark-800/50">
+      <CardBody
+        className="p-5 bg-black/40 backdrop-blur-sm border-t border-dark-800/50 cursor-pointer"
+        onClick={() => router.push(`/cars/${car.id}`)}
+      >
         {/* Title */}
         <h3 className="text-lg font-bold mb-2 line-clamp-1 text-white group-hover:text-primary-500 transition-colors">
           {car.title}

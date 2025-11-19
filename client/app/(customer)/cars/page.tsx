@@ -1,10 +1,10 @@
 // ==========================================
-// app/(customer)/cars/page.tsx - Advanced Search Page
+// app/(customer)/cars/page.tsx - Advanced Search Page with Glassmorphism
 // ==========================================
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Card, CardBody } from '@heroui/card';
 import { Button } from '@heroui/button';
@@ -13,15 +13,14 @@ import { Select, SelectItem } from '@heroui/select';
 import { Slider } from '@heroui/slider';
 import { Checkbox } from '@heroui/checkbox';
 import { Chip } from '@heroui/chip';
-import { Image } from '@heroui/image';
 import { Spinner } from '@heroui/spinner';
 import {
-  Search, SlidersHorizontal, X, MapPin, Calendar,
-  Gauge, Fuel, Settings, Heart, Star
+  Search, SlidersHorizontal, X,
 } from 'lucide-react';
-import { apiService, getImageUrl } from '@/services/api';
+import { apiService } from '@/services/api';
 import { Car, Brand, SearchFilters } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
+import CarCard from '@/components/CarCard';
 
 export default function SearchCarsPage() {
   const router = useRouter();
@@ -34,6 +33,8 @@ export default function SearchCarsPage() {
   const [showFilters, setShowFilters] = useState(true);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
+
+  const resultsRef = useRef<HTMLDivElement>(null);
 
   const [filters, setFilters] = useState<SearchFilters>({
     q: searchParams.get('q') || undefined,
@@ -54,12 +55,34 @@ export default function SearchCarsPage() {
   const [yearRange, setYearRange] = useState<[number, number]>([2000, new Date().getFullYear()]);
 
   useEffect(() => {
-    loadBrands(); 
+    loadBrands();
+    setupScrollAnimations();
   }, []);
 
   useEffect(() => {
     searchCars();
   }, [filters.page, filters.sort]);
+
+  const setupScrollAnimations = () => {
+    const observerOptions = {
+      threshold: 0.1,
+      rootMargin: '0px 0px -50px 0px'
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('animate-fade-in-up');
+        }
+      });
+    }, observerOptions);
+
+    if (resultsRef.current) {
+      observer.observe(resultsRef.current);
+    }
+
+    return () => observer.disconnect();
+  };
 
   const loadBrands = async () => {
     try {
@@ -120,26 +143,6 @@ export default function SearchCarsPage() {
     searchCars();
   };
 
-  const handleAddToFavorites = async (carId: number) => {
-    if (!user) {
-      router.push('/auth/login');
-      return;
-    }
-
-    try {
-      await apiService.addToFavorites(carId);
-      setCars(prev =>
-        prev.map(car =>
-          car.id === carId
-            ? { ...car, favorite_count: (car.favorite_count || 0) + 1 }
-            : car
-        )
-      );
-    } catch (error) {
-      console.error('Error adding to favorites:', error);
-    }
-  };
-
   const formatPrice = (price: number, currency: string = 'PHP') => {
     return new Intl.NumberFormat('en-PH', {
       style: 'currency',
@@ -148,31 +151,30 @@ export default function SearchCarsPage() {
     }).format(price);
   };
 
-  const formatMileage = (mileage: number) => {
-    return new Intl.NumberFormat('en-US').format(mileage) + ' km';
-  };
-
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 px-4">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-            Search Cars
+    <div className="min-h-screen py-8 px-4 relative">
+      {/* Subtle background glow */}
+      <div className="absolute top-20 right-10 w-[400px] h-[400px] bg-primary-600/10 rounded-full blur-[120px] animate-pulse-red"></div>
+
+      <div className="max-w-7xl mx-auto relative z-10">
+        {/* Header with glassmorphism */}
+        <div className="mb-8 p-6 bg-black/20 backdrop-blur-2xl rounded-3xl border border-white/10">
+          <h1 className="text-4xl md:text-5xl font-black text-white mb-2">
+            Search <span className="text-gradient-red">Cars</span>
           </h1>
-          <p className="text-gray-600 dark:text-gray-400">
+          <p className="text-gray-300 text-lg">
             {totalItems} vehicle{totalItems !== 1 ? 's' : ''} found
           </p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Filters Sidebar */}
+          {/* Filters Sidebar with glassmorphism */}
           <div className={`lg:col-span-1 ${showFilters ? 'block' : 'hidden lg:block'}`}>
-            <Card className="sticky top-4">
+            <Card className="sticky top-4 bg-black/20 backdrop-blur-2xl border border-white/10">
               <CardBody className="space-y-4">
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-xl font-bold flex items-center gap-2">
-                    <SlidersHorizontal size={20} />
+                  <h2 className="text-xl font-bold flex items-center gap-2 text-white">
+                    <SlidersHorizontal size={20} className="text-primary-400" />
                     Filters
                   </h2>
                   <Button
@@ -180,6 +182,7 @@ export default function SearchCarsPage() {
                     variant="flat"
                     onPress={handleClearFilters}
                     startContent={<X size={16} />}
+                    className="bg-white/10 hover:bg-white/20 border border-white/20"
                   >
                     Clear
                   </Button>
@@ -191,15 +194,24 @@ export default function SearchCarsPage() {
                   value={filters.q || ''}
                   onChange={(e) => setFilters(prev => ({ ...prev, q: e.target.value }))}
                   onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                  startContent={<Search size={18} />}
+                  startContent={<Search size={18} className="text-primary-400" />}
+                  classNames={{
+                    input: "text-white",
+                    inputWrapper: "bg-white/5 border-white/10 hover:border-primary-500/50",
+                  }}
                 />
 
                 {/* Brand */}
-                <Select 
+                <Select
                   label="Brand"
                   placeholder="All Brands"
                   selectedKeys={filters.brand_id ? [String(filters.brand_id)] : []}
                   onChange={(e) => setFilters(prev => ({ ...prev, brand_id: e.target.value ? parseInt(e.target.value) : undefined }))}
+                  classNames={{
+                    trigger: "bg-white/5 border-white/10 hover:border-primary-500/50",
+                    label: "text-gray-300",
+                    value: "text-white",
+                  }}
                 >
                   {brands.map(brand => (
                     <SelectItem key={brand.id}>
@@ -210,7 +222,7 @@ export default function SearchCarsPage() {
 
                 {/* Price Range */}
                 <div>
-                  <label className="text-sm font-medium mb-2 block">
+                  <label className="text-sm font-medium mb-2 block text-gray-300">
                     Price Range
                   </label>
                   <Slider
@@ -222,8 +234,12 @@ export default function SearchCarsPage() {
                     onChange={(value) => setPriceRange(value as [number, number])}
                     formatOptions={{ style: 'currency', currency: 'PHP', maximumFractionDigits: 0 }}
                     className="max-w-md"
+                    classNames={{
+                      track: "bg-white/10",
+                      filler: "bg-gradient-to-r from-primary-600 to-primary-700",
+                    }}
                   />
-                  <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400 mt-2">
+                  <div className="flex justify-between text-sm text-gray-400 mt-2">
                     <span>{formatPrice(priceRange[0])}</span>
                     <span>{formatPrice(priceRange[1])}</span>
                   </div>
@@ -231,7 +247,7 @@ export default function SearchCarsPage() {
 
                 {/* Year Range */}
                 <div>
-                  <label className="text-sm font-medium mb-2 block">
+                  <label className="text-sm font-medium mb-2 block text-gray-300">
                     Year Range
                   </label>
                   <Slider
@@ -242,8 +258,12 @@ export default function SearchCarsPage() {
                     value={yearRange}
                     onChange={(value) => setYearRange(value as [number, number])}
                     className="max-w-md"
+                    classNames={{
+                      track: "bg-white/10",
+                      filler: "bg-gradient-to-r from-primary-600 to-primary-700",
+                    }}
                   />
-                  <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400 mt-2">
+                  <div className="flex justify-between text-sm text-gray-400 mt-2">
                     <span>{yearRange[0]}</span>
                     <span>{yearRange[1]}</span>
                   </div>
@@ -255,6 +275,11 @@ export default function SearchCarsPage() {
                   placeholder="All Types"
                   selectedKeys={filters.fuel_type ? [filters.fuel_type] : []}
                   onChange={(e) => setFilters(prev => ({ ...prev, fuel_type: e.target.value as any }))}
+                  classNames={{
+                    trigger: "bg-white/5 border-white/10 hover:border-primary-500/50",
+                    label: "text-gray-300",
+                    value: "text-white",
+                  }}
                 >
                   <SelectItem key="GASOLINE">Gasoline</SelectItem>
                   <SelectItem key="DIESEL">Diesel</SelectItem>
@@ -268,6 +293,11 @@ export default function SearchCarsPage() {
                   placeholder="All Types"
                   selectedKeys={filters.transmission ? [filters.transmission] : []}
                   onChange={(e) => setFilters(prev => ({ ...prev, transmission: e.target.value as any }))}
+                  classNames={{
+                    trigger: "bg-white/5 border-white/10 hover:border-primary-500/50",
+                    label: "text-gray-300",
+                    value: "text-white",
+                  }}
                 >
                   <SelectItem key="MANUAL">Manual</SelectItem>
                   <SelectItem key="AUTOMATIC">Automatic</SelectItem>
@@ -281,6 +311,11 @@ export default function SearchCarsPage() {
                   placeholder="All Conditions"
                   selectedKeys={filters.car_condition ? [filters.car_condition] : []}
                   onChange={(e) => setFilters(prev => ({ ...prev, car_condition: e.target.value as any }))}
+                  classNames={{
+                    trigger: "bg-white/5 border-white/10 hover:border-primary-500/50",
+                    label: "text-gray-300",
+                    value: "text-white",
+                  }}
                 >
                   <SelectItem key="BRAND_NEW">Brand New</SelectItem>
                   <SelectItem key="LIKE_NEW">Like New</SelectItem>
@@ -295,26 +330,34 @@ export default function SearchCarsPage() {
                   <Checkbox
                     isSelected={filters.is_featured}
                     onValueChange={(checked) => setFilters(prev => ({ ...prev, is_featured: checked || undefined }))}
+                    classNames={{
+                      label: "text-gray-300",
+                    }}
                   >
                     Featured only
                   </Checkbox>
                   <Checkbox
                     isSelected={filters.price_negotiable}
                     onValueChange={(checked) => setFilters(prev => ({ ...prev, price_negotiable: checked || undefined }))}
+                    classNames={{
+                      label: "text-gray-300",
+                    }}
                   >
                     Negotiable price
                   </Checkbox>
                   <Checkbox
                     isSelected={filters.financing_available}
                     onValueChange={(checked) => setFilters(prev => ({ ...prev, financing_available: checked || undefined }))}
+                    classNames={{
+                      label: "text-gray-300",
+                    }}
                   >
                     Financing available
                   </Checkbox>
                 </div>
 
                 <Button
-                  color="primary"
-                  className="w-full"
+                  className="w-full bg-gradient-to-r from-primary-600 to-primary-700 text-white font-bold shadow-2xl shadow-primary-600/30 hover:shadow-primary-600/50 hover:scale-105 transition-all duration-300"
                   onPress={handleSearch}
                   startContent={<Search size={18} />}
                 >
@@ -325,12 +368,12 @@ export default function SearchCarsPage() {
           </div>
 
           {/* Results */}
-          <div className="lg:col-span-3">
+          <div className="lg:col-span-3" ref={resultsRef}>
             {/* Sort & View Toggle */}
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between mb-6 p-4 bg-black/20 backdrop-blur-2xl rounded-2xl border border-white/10">
               <Button
                 variant="flat"
-                className="lg:hidden"
+                className="lg:hidden bg-white/10 hover:bg-white/20 border border-white/20"
                 onPress={() => setShowFilters(!showFilters)}
                 startContent={<SlidersHorizontal size={18} />}
               >
@@ -343,6 +386,11 @@ export default function SearchCarsPage() {
                 onChange={(e) => setFilters(prev => ({ ...prev, sort: e.target.value }))}
                 className="max-w-xs ml-auto"
                 size="sm"
+                classNames={{
+                  trigger: "bg-white/5 border-white/10 hover:border-primary-500/50",
+                  label: "text-gray-300",
+                  value: "text-white",
+                }}
               >
                 <SelectItem key="-created_at">Newest First</SelectItem>
                 <SelectItem key="price">Price: Low to High</SelectItem>
@@ -359,16 +407,20 @@ export default function SearchCarsPage() {
                 <Spinner size="lg" color="primary" />
               </div>
             ) : cars.length === 0 ? (
-              <Card>
-                <CardBody className="text-center py-12">
-                  <Search className="mx-auto text-gray-400 mb-4" size={64} />
-                  <h3 className="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">
+              <Card className="bg-black/20 backdrop-blur-2xl border border-white/10">
+                <CardBody className="text-center py-16">
+                  <Search className="mx-auto text-primary-400 mb-4" size={64} />
+                  <h3 className="text-2xl font-bold text-white mb-3">
                     No cars found
                   </h3>
-                  <p className="text-gray-600 dark:text-gray-400 mb-4">
+                  <p className="text-gray-300 mb-6 text-lg">
                     Try adjusting your filters or search terms
                   </p>
-                  <Button variant="flat" onPress={handleClearFilters}>
+                  <Button
+                    variant="flat"
+                    onPress={handleClearFilters}
+                    className="bg-white/10 hover:bg-white/20 border border-white/20"
+                  >
                     Clear Filters
                   </Button>
                 </CardBody>
@@ -377,104 +429,25 @@ export default function SearchCarsPage() {
               <>
                 {/* Car Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
-                  {cars.map((car) => (
-                    <Card
+                  {cars.map((car, index) => (
+                    <div
                       key={car.id}
-                      isPressable
-                      onPress={() => router.push(`/cars/${car.id}`)}
-                      className="group hover:shadow-xl transition-all duration-300"
+                      className="opacity-0 animate-fade-in-up"
+                      style={{ animationDelay: `${index * 0.05}s`, animationFillMode: 'forwards' }}
                     >
-                      <CardBody className="p-0">
-                        {/* Image */}
-                        <div className="relative aspect-[4/3] overflow-hidden">
-                          <Image
-                            src={getImageUrl(car.images?.[0]?.image_url)}
-                            alt={car.title}
-                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                          />
-
-                          {/* Badges */}
-                          <div className="absolute top-3 left-3 flex flex-col gap-2">
-                            {car.is_featured && (
-                              <Chip color="warning" size="sm" variant="solid">
-                                <Star size={12} className="inline mr-1" />
-                                Featured
-                              </Chip>
-                            )}
-                          </div>
-
-                          {/* Favorite Button - Fixed: Use div instead of Button to avoid nesting */}
-                          <div
-                            className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/90 backdrop-blur flex items-center justify-center hover:bg-white transition-colors cursor-pointer"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleAddToFavorites(car.id);
-                            }}
-                          >
-                            <Heart size={18} className="text-gray-700 hover:text-red-500 transition-colors" />
-                          </div>
-                        </div>
-
-                        {/* Content */}
-                        <div className="p-4">
-                          <div className="mb-3">
-                            <h3 className="font-bold text-lg text-gray-900 dark:text-white line-clamp-1">
-                              {car.title}
-                            </h3>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">
-                              {car.brand_rel?.name} {car.model_rel?.name}
-                            </p>
-                          </div>
-
-                          <div className="flex items-center justify-between mb-3">
-                            <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                              {formatPrice(car.price)}
-                            </span>
-                            {car.price_negotiable && (
-                              <Chip size="sm" variant="flat" color="success">
-                                Negotiable
-                              </Chip>
-                            )}
-                          </div>
-
-                          {/* Specs */}
-                          <div className="grid grid-cols-2 gap-2 text-sm text-gray-600 dark:text-gray-400 mb-3">
-                            <div className="flex items-center gap-1">
-                              <Calendar size={14} />
-                              <span>{car.year}</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Gauge size={14} />
-                              <span>{formatMileage(car.mileage)}</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Fuel size={14} />
-                              <span className="capitalize">{car.fuel_type}</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Settings size={14} />
-                              <span className="capitalize">{car.transmission}</span>
-                            </div>
-                          </div>
-
-                          {/* Location */}
-                          <div className="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-500">
-                            <MapPin size={14} />
-                            <span>{car.city?.name || 'Philippines'}</span>
-                          </div>
-                        </div>
-                      </CardBody>
-                    </Card>
+                      <CarCard car={car} onFavoriteChange={searchCars} />
+                    </div>
                   ))}
                 </div>
 
-                {/* Pagination */}
+                {/* Pagination with glassmorphism */}
                 {totalPages > 1 && (
-                  <div className="flex justify-center items-center gap-2">
+                  <div className="flex justify-center items-center gap-2 p-4 bg-black/20 backdrop-blur-2xl rounded-2xl border border-white/10">
                     <Button
                       variant="flat"
                       isDisabled={filters.page === 1}
                       onPress={() => setFilters(prev => ({ ...prev, page: (prev.page || 1) - 1 }))}
+                      className="bg-white/10 hover:bg-white/20 border border-white/20 disabled:opacity-50"
                     >
                       Previous
                     </Button>
@@ -486,7 +459,11 @@ export default function SearchCarsPage() {
                           <Button
                             key={page}
                             variant={filters.page === page ? 'solid' : 'flat'}
-                            color={filters.page === page ? 'primary' : 'default'}
+                            className={
+                              filters.page === page
+                                ? 'bg-gradient-to-r from-primary-600 to-primary-700 text-white'
+                                : 'bg-white/10 hover:bg-white/20 border border-white/20'
+                            }
                             onPress={() => setFilters(prev => ({ ...prev, page }))}
                             size="sm"
                           >
@@ -500,6 +477,7 @@ export default function SearchCarsPage() {
                       variant="flat"
                       isDisabled={filters.page === totalPages}
                       onPress={() => setFilters(prev => ({ ...prev, page: (prev.page || 1) + 1 }))}
+                      className="bg-white/10 hover:bg-white/20 border border-white/20 disabled:opacity-50"
                     >
                       Next
                     </Button>
