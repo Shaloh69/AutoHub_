@@ -159,6 +159,22 @@ class ApiService {
     });
   }
 
+  async forgotPassword(email: string): Promise<ApiResponse<{ message: string }>> {
+    return this.request('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+      headers: { 'Authorization': 'skip' },
+    });
+  }
+
+  async resetPassword(token: string, newPassword: string): Promise<ApiResponse<{ message: string }>> {
+    return this.request('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ token, new_password: newPassword }),
+      headers: { 'Authorization': 'skip' },
+    });
+  }
+
   async getProfile(): Promise<ApiResponse<User>> {
     return this.request<User>('/users/profile');
   }

@@ -33,20 +33,70 @@ Base = declarative_base()
 redis_client: Optional[redis.Redis] = None
 redis_available = False
 
-try:
-    redis_client = redis.from_url(
-        settings.REDIS_URL,
-        password=settings.REDIS_PASSWORD,
-        decode_responses=True,  # This ensures strings are returned, not bytes
-        socket_connect_timeout=5,
-        socket_timeout=5,
-    )
-    redis_available = True
-    print("✅ Redis connection established successfully")
-except Exception as e:
-    print(f"❌ Redis connection failed: {e}")
-    redis_client = None
-    redis_available = False
+
+def init_redis() -> tuple[Optional[redis.Redis], bool]:
+    """
+    Initialize Redis connection with proper error handling and health checks
+
+    Returns:
+        tuple: (redis_client, redis_available)
+    """
+    try:
+        client = redis.from_url(
+            settings.REDIS_URL,
+            password=settings.REDIS_PASSWORD,
+            decode_responses=True,  # This ensures strings are returned, not bytes
+            socket_connect_timeout=5,
+            socket_timeout=5,
+            retry_on_timeout=True,
+            health_check_interval=30,  # Health check every 30 seconds
+        )
+
+        # Test the connection with ping
+        client.ping()
+        print("✅ Redis connection established successfully")
+        return client, True
+
+    except redis.ConnectionError as e:
+        print(f"⚠️  Redis connection failed: {e}")
+        print("📝 Application will run without caching. Set REDIS_URL in .env to enable caching.")
+        return None, False
+    except redis.AuthenticationError as e:
+        print(f"⚠️  Redis authentication failed: {e}")
+        print("📝 Check REDIS_PASSWORD in .env file.")
+        return None, False
+    except Exception as e:
+        print(f"⚠️  Redis initialization error: {e}")
+        print("📝 Application will continue without Redis caching.")
+        return None, False
+
+
+# Initialize Redis on startup
+redis_client, redis_available = init_redis()
+
+
+def check_redis_health() -> bool:
+    """
+    Check if Redis connection is healthy and attempt reconnection if needed
+
+    Returns:
+        bool: True if Redis is available and responding
+    """
+    global redis_client, redis_available
+
+    if not redis_available or redis_client is None:
+        return False
+
+    try:
+        redis_client.ping()
+        return True
+    except Exception as e:
+        print(f"⚠️  Redis health check failed: {e}")
+        print("📝 Attempting to reconnect...")
+
+        # Try to reconnect
+        redis_client, redis_available = init_redis()
+        return redis_available
 
 
 def get_db() -> Generator[Session, None, None]:
@@ -62,9 +112,21 @@ def get_db() -> Generator[Session, None, None]:
 
 
 def get_redis() -> redis.Redis:
-    """Get Redis client instance"""
-    if not redis_available or redis_client is None:
+    """
+    Get Redis client instance with health check
+
+    Raises:
+        Exception: If Redis is not available
+    """
+    global redis_client, redis_available
+
+    # Check health before returning client
+    if not check_redis_health():
         raise Exception("Redis is not available")
+
+    if redis_client is None:
+        raise Exception("Redis client is None")
+
     return redis_client
 
 
@@ -94,18 +156,31 @@ def set_timezone(dbapi_conn, connection_record):
 
 # Cache utilities
 class CacheManager:
-    """Redis cache manager with common operations - COMPLETE FIXED VERSION v2"""
-    
+    """Redis cache manager with graceful failure handling - IMPROVED VERSION v3"""
+
     def __init__(self, redis_client: Optional[redis.Redis] = None):
         self.redis = redis_client
         self.enabled = redis_available and self.redis is not None
-    
+
+    def _check_connection(self) -> bool:
+        """Check if Redis connection is healthy"""
+        global redis_client, redis_available
+
+        if not redis_available or self.redis is None:
+            return False
+
+        # Update our reference if it was reconnected
+        if redis_client is not None and self.redis != redis_client:
+            self.redis = redis_client
+            self.enabled = True
+
+        return check_redis_health()
+
     def get(self, key: str) -> Optional[str]:
-        """Get value from cache - FIXED: Proper type handling for Pylance"""
-        if not self.enabled or self.redis is None:
-            print(f"DEBUG: Cache disabled, cannot get key: {key}")
+        """Get value from cache with graceful failure handling"""
+        if not self._check_connection():
             return None
-        
+
         try:
             # Redis with decode_responses=True returns str | None
             value: Union[str, bytes, None] = self.redis.get(key)  # type: ignore
@@ -125,16 +200,20 @@ class CacheManager:
                 # Fallback: convert to string
                 return str(value).strip()
                 
+        except redis.ConnectionError as e:
+            print(f"⚠️  Redis connection error for GET '{key}': {e}")
+            print("📝 Attempting reconnection...")
+            self._check_connection()
+            return None
         except Exception as e:
             print(f"❌ Redis GET error for key '{key}': {e}")
             return None
-    
+
     def set(self, key: str, value: str, ttl: Optional[int] = None) -> bool:
-        """Set value in cache with optional TTL - FIXED: Proper type handling"""
-        if not self.enabled or self.redis is None:
-            print(f"DEBUG: Cache disabled, cannot set key: {key}")
+        """Set value in cache with graceful failure handling"""
+        if not self._check_connection():
             return False
-        
+
         try:
             # FIX: Ensure value is a clean string before storage
             clean_value: str = str(value).strip()
@@ -165,11 +244,16 @@ class CacheManager:
                         return False
             
             return bool(result)
-            
+
+        except redis.ConnectionError as e:
+            print(f"⚠️  Redis connection error for SET '{key}': {e}")
+            print("📝 Attempting reconnection...")
+            self._check_connection()
+            return False
         except Exception as e:
             print(f"❌ Redis SET error for key '{key}': {e}")
             return False
-    
+
     def get_json(self, key: str) -> Optional[dict]:
         """Get JSON value from cache"""
         value = self.get(key)
