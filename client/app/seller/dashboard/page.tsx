@@ -153,7 +153,7 @@ export default function SellerDashboardPage() {
 
         {/* Verification Warning */}
         {!canListCars && (
-          <Card className="mb-6 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800">
+          <Card className="mb-6 bg-yellow-600/10 backdrop-blur-md border border-yellow-500/30">
             <CardBody>
               <div className="flex items-start gap-3">
                 <Clock size={24} className="text-yellow-600 flex-shrink-0" />
@@ -204,40 +204,40 @@ export default function SellerDashboardPage() {
         </div>
 
         {/* Quick Actions */}
-        <Card className="mb-6 border-2 border-orange-200 dark:border-orange-800">
+        <Card className="mb-6 bg-black/20 backdrop-blur-2xl border border-green-700/30">
           <CardBody className="p-6">
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-              <TrendingUp size={20} className="text-orange-500" />
+            <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+              <TrendingUp size={20} className="text-green-400" />
               Quick Actions
             </h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <Button
-                className="flex-col h-20 bg-orange-50 dark:bg-orange-900/20 hover:bg-orange-100 dark:hover:bg-orange-900/30 border border-orange-200 dark:border-orange-800"
+                className="flex-col h-20 bg-green-600/10 backdrop-blur-sm hover:bg-green-600/20 border border-green-500/30 transition-all"
                 onPress={() => router.push('/seller/new')}
               >
-                <Plus size={24} className="text-orange-600 dark:text-orange-400 mb-1" />
-                <span className="text-sm font-semibold">New Listing</span>
+                <Plus size={24} className="text-green-400 mb-1" />
+                <span className="text-sm font-semibold text-white">New Listing</span>
               </Button>
               <Button
-                className="flex-col h-20 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 border border-blue-200 dark:border-blue-800"
+                className="flex-col h-20 bg-blue-600/10 backdrop-blur-sm hover:bg-blue-600/20 border border-blue-500/30 transition-all"
                 onPress={() => router.push('/seller/inquiries')}
               >
-                <MessageCircle size={24} className="text-blue-600 dark:text-blue-400 mb-1" />
-                <span className="text-sm font-semibold">Inquiries</span>
+                <MessageCircle size={24} className="text-blue-400 mb-1" />
+                <span className="text-sm font-semibold text-white">Inquiries</span>
               </Button>
               <Button
-                className="flex-col h-20 bg-green-50 dark:bg-green-900/20 hover:bg-green-100 dark:hover:bg-green-900/30 border border-green-200 dark:border-green-800"
+                className="flex-col h-20 bg-emerald-600/10 backdrop-blur-sm hover:bg-emerald-600/20 border border-emerald-500/30 transition-all"
                 onPress={() => router.push('/seller/transactions')}
               >
-                <DollarSign size={24} className="text-green-600 dark:text-green-400 mb-1" />
-                <span className="text-sm font-semibold">Transactions</span>
+                <DollarSign size={24} className="text-emerald-400 mb-1" />
+                <span className="text-sm font-semibold text-white">Transactions</span>
               </Button>
               <Button
-                className="flex-col h-20 bg-purple-50 dark:bg-purple-900/20 hover:bg-purple-100 dark:hover:bg-purple-900/30 border border-purple-200 dark:border-purple-800"
+                className="flex-col h-20 bg-purple-600/10 backdrop-blur-sm hover:bg-purple-600/20 border border-purple-500/30 transition-all"
                 onPress={() => router.push('/subscription')}
               >
-                <Crown size={24} className="text-purple-600 dark:text-purple-400 mb-1" />
-                <span className="text-sm font-semibold">Subscription</span>
+                <Crown size={24} className="text-purple-400 mb-1" />
+                <span className="text-sm font-semibold text-white">Subscription</span>
               </Button>
             </div>
           </CardBody>
@@ -246,7 +246,7 @@ export default function SellerDashboardPage() {
         {/* Analytics Cards */}
         {analytics && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <Card className="border-l-4 border-blue-500">
+            <Card className="bg-gradient-to-br from-blue-600/20 to-blue-800/20 backdrop-blur-md border border-blue-500/30">
               <CardBody>
                 <div className="flex items-center justify-between">
                   <div>
@@ -264,7 +264,7 @@ export default function SellerDashboardPage() {
               </CardBody>
             </Card>
 
-            <Card className="border-l-4 border-green-500">
+            <Card className="bg-gradient-to-br from-green-600/20 to-green-800/20 backdrop-blur-md border border-green-500/30">
               <CardBody>
                 <div className="flex items-center justify-between">
                   <div>
@@ -282,7 +282,7 @@ export default function SellerDashboardPage() {
               </CardBody>
             </Card>
 
-            <Card className="border-l-4 border-purple-500">
+            <Card className="bg-gradient-to-br from-purple-600/20 to-purple-800/20 backdrop-blur-md border border-purple-500/30">
               <CardBody>
                 <div className="flex items-center justify-between">
                   <div>
@@ -300,7 +300,7 @@ export default function SellerDashboardPage() {
               </CardBody>
             </Card>
 
-            <Card className="border-l-4 border-orange-500">
+            <Card className="bg-gradient-to-br from-orange-600/20 to-orange-800/20 backdrop-blur-md border border-orange-500/30">
               <CardBody>
                 <div className="flex items-center justify-between">
                   <div>
@@ -321,9 +321,9 @@ export default function SellerDashboardPage() {
         )}
 
         {/* Listings */}
-        <Card>
+        <Card className="bg-black/20 backdrop-blur-2xl border border-green-700/30">
           <CardHeader>
-            <h2 className="text-2xl font-bold">My Listings</h2>
+            <h2 className="text-2xl font-bold text-white">My Listings</h2>
           </CardHeader>
           <CardBody>
             <Tabs
@@ -369,7 +369,7 @@ export default function SellerDashboardPage() {
             ) : (
               <div className="space-y-4">
                 {filteredCars.map(car => (
-                  <Card key={car.id} className="hover:shadow-lg transition-shadow">
+                  <Card key={car.id} className="bg-black/40 backdrop-blur-md border border-green-700/20 hover:border-green-500/40 transition-all">
                     <CardBody>
                       <div className="flex flex-col md:flex-row gap-4">
                         {/* Image */}

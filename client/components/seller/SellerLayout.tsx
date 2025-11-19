@@ -80,10 +80,21 @@ export default function SellerLayout({ children }: SellerLayoutProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900">
+    <div className="min-h-screen bg-black relative overflow-hidden">
+      {/* Green Animated Background - Seller Theme */}
+      <div className="fixed inset-0 z-0">
+        {/* Animated gradient blobs */}
+        <div className="absolute top-20 left-10 w-[600px] h-[600px] bg-green-600/20 rounded-full blur-[150px] animate-pulse-green"></div>
+        <div className="absolute top-40 right-10 w-[500px] h-[500px] bg-emerald-600/15 rounded-full blur-[150px] animate-pulse-green" style={{animationDelay: '1s'}}></div>
+        <div className="absolute bottom-20 left-1/3 w-[550px] h-[550px] bg-lime-600/15 rounded-full blur-[150px] animate-pulse-green" style={{animationDelay: '2s'}}></div>
+
+        {/* Gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-br from-black/80 via-black/70 to-black/80"></div>
+      </div>
+
       {/* Sidebar */}
       <aside
-        className={`fixed left-0 top-0 h-full bg-black/40 backdrop-blur-xl border-r border-gray-700 transition-all duration-300 z-50 flex flex-col ${
+        className={`fixed left-0 top-0 h-full bg-black/40 backdrop-blur-xl border-r border-green-700/30 transition-all duration-300 z-50 flex flex-col ${
           sidebarOpen ? 'w-72' : 'w-20'
         }`}
       >
@@ -92,7 +103,7 @@ export default function SellerLayout({ children }: SellerLayoutProps) {
           {sidebarOpen ? (
             <>
               <Link href="/seller/dashboard" className="flex items-center gap-2">
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-orange-600 to-red-800 flex items-center justify-center shadow-lg shadow-orange-500/30">
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-green-600 to-emerald-800 flex items-center justify-center shadow-lg shadow-green-500/30">
                   <Package className="text-white" size={22} />
                 </div>
                 <div>
@@ -126,10 +137,10 @@ export default function SellerLayout({ children }: SellerLayoutProps) {
         {sidebarOpen && (
           <div className="px-4 py-3 border-b border-gray-700 bg-black/20 space-y-2">
             <div className="flex items-center justify-between">
-              <Chip size="sm" className="bg-orange-600/20 border border-orange-500/30 font-medium">
+              <Chip size="sm" className="bg-green-600/20 border border-green-500/30 font-medium">
                 <div className="flex items-center gap-1">
-                  <Package size={12} className="text-orange-400" />
-                  <span className="text-orange-300">Seller Access</span>
+                  <Package size={12} className="text-green-400" />
+                  <span className="text-green-300">Seller Access</span>
                 </div>
               </Chip>
               <Button
@@ -160,7 +171,7 @@ export default function SellerLayout({ children }: SellerLayoutProps) {
                 href={item.href}
                 className={`flex items-center gap-3 px-3 py-3 rounded-lg transition-all group ${
                   active
-                    ? 'bg-gradient-to-r from-orange-600 to-red-700 text-white shadow-lg shadow-orange-500/30'
+                    ? 'bg-gradient-to-r from-green-600 to-emerald-700 text-white shadow-lg shadow-green-500/30'
                     : 'text-gray-400 hover:bg-white/5 hover:text-white'
                 }`}
               >
@@ -220,7 +231,7 @@ export default function SellerLayout({ children }: SellerLayoutProps) {
                   src={user?.avatar_url}
                   name={user?.full_name || user?.email}
                   size="sm"
-                  className="border-2 border-orange-500"
+                  className="border-2 border-green-500"
                 />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-white truncate">
@@ -255,7 +266,7 @@ export default function SellerLayout({ children }: SellerLayoutProps) {
       </aside>
 
       {/* Main Content */}
-      <main className={`transition-all duration-300 min-h-screen ${sidebarOpen ? 'ml-72' : 'ml-20'}`}>
+      <main className={`transition-all duration-300 min-h-screen relative z-10 ${sidebarOpen ? 'ml-72' : 'ml-20'}`}>
         {/* Page Content - No navbar */}
         <div className="p-6">
           {children}

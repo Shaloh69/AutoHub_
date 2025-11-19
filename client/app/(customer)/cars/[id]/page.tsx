@@ -212,7 +212,7 @@ export default function CarDetailPage() {
   const currentImage = images[selectedImage] || null;
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 px-4">
+    <div className="min-h-screen py-8 px-4">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
@@ -254,7 +254,7 @@ export default function CarDetailPage() {
           {/* Left Column - Images & Details */}
           <div className="lg:col-span-2 space-y-6">
             {/* Image Gallery */}
-            <Card className="overflow-hidden">
+            <Card className="bg-black/20 backdrop-blur-2xl border border-white/10 overflow-hidden">
               <CardBody className="p-0">
                 {/* Main Image */}
                 <div className="relative aspect-[16/10] bg-gray-100 dark:bg-gray-800">
@@ -370,9 +370,9 @@ export default function CarDetailPage() {
             </Card>
 
             {/* Specifications */}
-            <Card>
+            <Card className="bg-black/20 backdrop-blur-2xl border border-white/10">
               <CardHeader>
-                <h2 className="text-2xl font-bold">Specifications</h2>
+                <h2 className="text-2xl font-bold text-white">Specifications</h2>
               </CardHeader>
               <CardBody>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
@@ -461,9 +461,9 @@ export default function CarDetailPage() {
             </Card>
 
             {/* Description */}
-            <Card>
+            <Card className="bg-black/20 backdrop-blur-2xl border border-white/10">
               <CardHeader>
-                <h2 className="text-2xl font-bold">Description</h2>
+                <h2 className="text-2xl font-bold text-white">Description</h2>
               </CardHeader>
               <CardBody>
                 <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
@@ -474,9 +474,9 @@ export default function CarDetailPage() {
 
             {/* Features */}
             {car.features && car.features.length > 0 && (
-              <Card>
+              <Card className="bg-black/20 backdrop-blur-2xl border border-white/10">
                 <CardHeader>
-                  <h2 className="text-2xl font-bold">Features</h2>
+                  <h2 className="text-2xl font-bold text-white">Features</h2>
                 </CardHeader>
                 <CardBody>
                   <div className="flex flex-wrap gap-2">
@@ -491,9 +491,9 @@ export default function CarDetailPage() {
             )}
 
             {/* Vehicle History & Condition */}
-            <Card>
+            <Card className="bg-black/20 backdrop-blur-2xl border border-white/10">
               <CardHeader>
-                <h2 className="text-2xl font-bold">Vehicle History & Condition</h2>
+                <h2 className="text-2xl font-bold text-white">Vehicle History & Condition</h2>
               </CardHeader>
               <CardBody className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
@@ -546,7 +546,7 @@ export default function CarDetailPage() {
           {/* Right Column - Seller Info & Actions */}
           <div className="space-y-6">
             {/* Price Card */}
-            <Card>
+            <Card className="bg-gradient-to-br from-primary-600/20 to-primary-800/20 backdrop-blur-md border border-primary-500/30">
               <CardBody className="text-center py-8">
                 <p className="text-gray-600 dark:text-gray-400 mb-2">Asking Price</p>
                 <h2 className="text-4xl font-bold text-blue-600 dark:text-blue-400 mb-4">
@@ -565,7 +565,7 @@ export default function CarDetailPage() {
               <Card
                 isPressable
                 onPress={() => router.push(`/seller/${car.seller_id}`)}
-                className="hover:shadow-lg transition-shadow cursor-pointer"
+                className="bg-black/20 backdrop-blur-2xl border border-white/10 hover:border-primary-500/40 transition-all cursor-pointer"
               >
                 <CardHeader>
                   <h3 className="font-bold text-lg">Seller Information</h3>

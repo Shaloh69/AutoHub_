@@ -78,10 +78,21 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900">
+    <div className="min-h-screen bg-black relative overflow-hidden">
+      {/* Purple Animated Background - Admin Theme */}
+      <div className="fixed inset-0 z-0">
+        {/* Animated gradient blobs */}
+        <div className="absolute top-20 left-10 w-[600px] h-[600px] bg-purple-600/20 rounded-full blur-[150px] animate-pulse-purple"></div>
+        <div className="absolute top-40 right-10 w-[500px] h-[500px] bg-violet-600/15 rounded-full blur-[150px] animate-pulse-purple" style={{animationDelay: '1s'}}></div>
+        <div className="absolute bottom-20 left-1/3 w-[550px] h-[550px] bg-indigo-600/15 rounded-full blur-[150px] animate-pulse-purple" style={{animationDelay: '2s'}}></div>
+
+        {/* Gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-br from-black/80 via-black/70 to-black/80"></div>
+      </div>
+
       {/* Sidebar */}
       <aside
-        className={`fixed left-0 top-0 h-full bg-black/40 backdrop-blur-xl border-r border-gray-700 transition-all duration-300 z-50 flex flex-col ${
+        className={`fixed left-0 top-0 h-full bg-black/40 backdrop-blur-xl border-r border-purple-700/30 transition-all duration-300 z-50 flex flex-col ${
           sidebarOpen ? 'w-72' : 'w-20'
         }`}
       >
@@ -90,7 +101,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           {sidebarOpen ? (
             <>
               <Link href="/admin" className="flex items-center gap-2">
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-red-600 to-red-800 flex items-center justify-center shadow-lg shadow-red-500/30">
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-600 to-violet-800 flex items-center justify-center shadow-lg shadow-purple-500/30">
                   <Shield className="text-white" size={22} />
                 </div>
                 <div>
@@ -124,8 +135,11 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         {sidebarOpen && (
           <div className="px-4 py-3 border-b border-gray-700 bg-black/20 space-y-2">
             <div className="flex items-center justify-between">
-              <Chip size="sm" color="success" variant="flat" className="font-medium">
-                Admin Access
+              <Chip size="sm" className="bg-purple-600/20 border border-purple-500/30 font-medium">
+                <div className="flex items-center gap-1">
+                  <Shield size={12} className="text-purple-400" />
+                  <span className="text-purple-300">Admin Access</span>
+                </div>
               </Chip>
               <Button
                 isIconOnly
@@ -155,7 +169,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 href={item.href}
                 className={`flex items-center gap-3 px-3 py-3 rounded-lg transition-all group ${
                   active
-                    ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg shadow-red-500/30'
+                    ? 'bg-gradient-to-r from-purple-600 to-violet-700 text-white shadow-lg shadow-purple-500/30'
                     : 'text-gray-400 hover:bg-white/5 hover:text-white'
                 }`}
               >
@@ -208,7 +222,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                   src={user?.avatar_url}
                   name={user?.full_name || user?.email}
                   size="sm"
-                  className="border-2 border-red-500"
+                  className="border-2 border-purple-500"
                 />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-white truncate">
@@ -243,7 +257,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       </aside>
 
       {/* Main Content */}
-      <main className={`transition-all duration-300 min-h-screen ${sidebarOpen ? 'ml-72' : 'ml-20'}`}>
+      <main className={`transition-all duration-300 min-h-screen relative z-10 ${sidebarOpen ? 'ml-72' : 'ml-20'}`}>
         {/* Page Content - No navbar */}
         <div className="p-6">
           {children}
