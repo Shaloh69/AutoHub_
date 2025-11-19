@@ -39,13 +39,13 @@ export default function SellerInquiriesPage() {
     if (user) {
       loadInquiries();
     }
-  }, [user, selectedTab]);
+  }, [user]);
 
   const loadInquiries = async () => {
     try {
       setLoading(true);
-      const status = selectedTab === 'all' ? undefined : selectedTab;
-      const response = await apiService.getInquiries('received', status);
+      // Don't send status filter to backend - we'll filter client-side
+      const response = await apiService.getInquiries('received', undefined);
 
       if (response.success && response.data) {
         setInquiries(Array.isArray(response.data) ? response.data : []);
@@ -150,6 +150,23 @@ export default function SellerInquiriesPage() {
     });
   };
 
+  // Filter inquiries based on selected tab
+  const filteredInquiries = inquiries.filter(inquiry => {
+    if (selectedTab === 'all') return true;
+
+    const status = inquiry.status?.toUpperCase();
+
+    if (selectedTab === 'open') {
+      return status === 'NEW' || status === 'OPEN';
+    } else if (selectedTab === 'replied') {
+      return status === 'REPLIED' || status === 'READ';
+    } else if (selectedTab === 'closed') {
+      return status === 'CLOSED' || status === 'CONVERTED';
+    }
+
+    return true;
+  });
+
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -209,19 +226,19 @@ export default function SellerInquiriesPage() {
           </CardHeader>
 
           <CardBody>
-            {inquiries.length === 0 ? (
+            {filteredInquiries.length === 0 ? (
               <div className="text-center py-12">
                 <MessageCircle className="mx-auto text-gray-400 mb-4" size={64} />
                 <h3 className="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                  No inquiries yet
+                  {inquiries.length === 0 ? 'No inquiries yet' : `No ${selectedTab} inquiries`}
                 </h3>
                 <p className="text-gray-600 dark:text-gray-400">
-                  Customer inquiries will appear here
+                  {inquiries.length === 0 ? 'Customer inquiries will appear here' : `No inquiries in ${selectedTab} status`}
                 </p>
               </div>
             ) : (
               <div className="space-y-4">
-                {inquiries.map(inquiry => (
+                {filteredInquiries.map(inquiry => (
                   <Card
                     key={inquiry.id}
                     isPressable

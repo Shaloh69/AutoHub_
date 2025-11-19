@@ -163,7 +163,7 @@ async def get_inquiry(
     """Get inquiry details with responses"""
     # FIX: Use getattr
     user_id = int(getattr(current_user, 'id', 0))
-    
+
     inquiry = db.query(Inquiry).options(
         joinedload(Inquiry.responses),
         joinedload(Inquiry.car),
@@ -175,19 +175,73 @@ async def get_inquiry(
             Inquiry.seller_id == user_id
         )
     ).first()
-    
+
     if not inquiry:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Inquiry not found")
-    
+
     # Mark as read if seller is viewing - FIX: Use getattr and setattr
     seller_id = int(getattr(inquiry, 'seller_id', 0))
     is_read = getattr(inquiry, 'is_read', False)
-    
+
     if seller_id == user_id and not is_read:
         setattr(inquiry, 'is_read', True)
         db.commit()
-    
-    return InquiryDetailResponse.model_validate(inquiry)
+
+    # Manually serialize related objects to avoid Pydantic validation issues
+    inquiry_dict = {
+        "id": inquiry.id,
+        "car_id": inquiry.car_id,
+        "buyer_id": inquiry.buyer_id,
+        "seller_id": inquiry.seller_id,
+        "subject": inquiry.subject,
+        "message": inquiry.message,
+        "buyer_name": inquiry.buyer_name,
+        "buyer_email": inquiry.buyer_email,
+        "buyer_phone": inquiry.buyer_phone,
+        "inquiry_type": inquiry.inquiry_type.value if inquiry.inquiry_type else "GENERAL",
+        "offered_price": inquiry.offered_price,
+        "test_drive_requested": inquiry.test_drive_requested or False,
+        "inspection_requested": inquiry.inspection_requested or False,
+        "financing_needed": inquiry.financing_needed or False,
+        "trade_in_vehicle": inquiry.trade_in_vehicle or False,
+        "status": inquiry.status.value if inquiry.status else "NEW",
+        "is_read": inquiry.is_read or False,
+        "priority": inquiry.priority if inquiry.priority else "MEDIUM",
+        "response_count": inquiry.response_count or 0,
+        "last_response_at": inquiry.last_response_at,
+        "buyer_rating": inquiry.buyer_rating,
+        "seller_rating": inquiry.seller_rating,
+        "created_at": inquiry.created_at,
+        "updated_at": inquiry.updated_at,
+        "closed_at": inquiry.closed_at,
+        "responses": [
+            {
+                "id": r.id,
+                "inquiry_id": r.inquiry_id,
+                "user_id": r.user_id,
+                "message": r.message,
+                "response_type": "MESSAGE",
+                "counter_offer_price": None,
+                "is_automated": False,
+                "created_at": r.created_at,
+                "is_seller_response": r.is_from_seller if hasattr(r, 'is_from_seller') else (r.user_id == seller_id)
+            }
+            for r in (inquiry.responses or [])
+        ],
+        "car": {
+            "id": inquiry.car.id,
+            "title": inquiry.car.title,
+            "images": [{"image_url": img.image_url} for img in (inquiry.car.images or [])] if inquiry.car and hasattr(inquiry.car, 'images') else []
+        } if inquiry.car else None,
+        "buyer": {
+            "id": inquiry.buyer.id,
+            "first_name": inquiry.buyer.first_name,
+            "last_name": inquiry.buyer.last_name,
+            "email": inquiry.buyer.email
+        } if inquiry.buyer else None,
+    }
+
+    return InquiryDetailResponse(**inquiry_dict)
 
 
 @router.post("/{inquiry_id}/respond", response_model=InquiryResponseResponse, status_code=status.HTTP_201_CREATED)
