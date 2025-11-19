@@ -15,6 +15,9 @@ export default function LayoutContent({ children }: { children: React.ReactNode 
                         pathname.startsWith('/seller') ||
                         pathname.startsWith('/dealer');
 
+  // Check if it's the homepage to allow full-width layout
+  const isHomePage = pathname === '/';
+
   return (
     <div className="relative flex flex-col min-h-screen z-10">
       {/* Conditional Navigation */}
@@ -22,8 +25,8 @@ export default function LayoutContent({ children }: { children: React.ReactNode 
 
       {/* Main Content */}
       {!shouldHideNav ? (
-        <main className="container mx-auto pt-6 px-6 flex-grow max-w-7xl">
-          <div className="animate-fade-in">
+        <main className={isHomePage ? "flex-grow w-full" : "container mx-auto pt-6 px-6 flex-grow max-w-7xl"}>
+          <div className={isHomePage ? "" : "animate-fade-in"}>
             {children}
           </div>
         </main>
