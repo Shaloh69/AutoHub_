@@ -460,16 +460,24 @@ export interface QRCodePaymentResponse {
 }
 
 export interface Notification {
-  id: number;
-  user_id: number;
+  id: string | number;
+  user_id?: number;
+  userId?: number;
   title: string;
   message: string;
-  notification_type: string;
+  notification_type?: string;
+  type?: string;
+  notificationType?: string;
   related_id?: number;
+  relatedId?: number;
   related_type?: string;
-  is_read: boolean;
+  relatedType?: string;
+  is_read?: boolean;
+  isRead: boolean;
   read_at?: string;
-  created_at: string;
+  readAt?: string;
+  created_at?: string;
+  createdAt: string;
 }
 
 export interface PaginatedResponse<T> {

@@ -551,16 +551,43 @@ class ApiService {
 
   // ==================== NOTIFICATIONS ====================
   
+  // Transform notification from snake_case to camelCase
+  private transformNotification(notification: any): Notification {
+    return {
+      id: notification.id,
+      userId: notification.user_id,
+      title: notification.title,
+      message: notification.message,
+      type: notification.notification_type,
+      notificationType: notification.notification_type,
+      relatedId: notification.related_id,
+      relatedType: notification.related_type,
+      isRead: notification.is_read,
+      readAt: notification.read_at,
+      createdAt: notification.created_at,
+    };
+  }
+
   async getNotifications(unreadOnly: boolean = false): Promise<ApiResponse<Notification[]>> {
     const params = unreadOnly ? '?unread_only=true' : '';
-    return this.request<Notification[]>(`/users/notifications${params}`);
+    const response = await this.request<any[]>(`/users/notifications${params}`);
+
+    if (response.success && response.data) {
+      response.data = response.data.map((n: any) => this.transformNotification(n));
+    }
+
+    return response as ApiResponse<Notification[]>;
+  }
+
+  async getUnreadNotifications(): Promise<ApiResponse<Notification[]>> {
+    return this.getNotifications(true);
   }
 
   async getUnreadCount(): Promise<ApiResponse<{ unread_count: number }>> {
     return this.request<{ unread_count: number }>('/users/notifications/unread-count');
   }
 
-  async markNotificationAsRead(id: number): Promise<ApiResponse<any>> {
+  async markNotificationAsRead(id: string | number): Promise<ApiResponse<any>> {
     return this.request(`/users/notifications/${id}`, {
       method: 'PUT',
     });
@@ -572,7 +599,7 @@ class ApiService {
     });
   }
 
-  async deleteNotification(id: number): Promise<ApiResponse<any>> {
+  async deleteNotification(id: string | number): Promise<ApiResponse<any>> {
     return this.request(`/users/notifications/${id}`, {
       method: 'DELETE',
     });

@@ -442,7 +442,7 @@ async def get_notifications(
     return [NotificationResponse.model_validate(notif) for notif in notifications]
 
 
-@router.put("/notifications/{notification_id}/read", response_model=MessageResponse)
+@router.put("/notifications/{notification_id}", response_model=MessageResponse)
 async def mark_notification_read(
     notification_id: int,
     current_user: User = Depends(get_current_user),
@@ -450,33 +450,33 @@ async def mark_notification_read(
 ):
     """Mark notification as read"""
     user_id = int(getattr(current_user, 'id', 0))
-    
+
     notification = db.query(Notification).filter(
         Notification.id == notification_id,
         Notification.user_id == user_id
     ).first()
-    
+
     if not notification:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Notification not found"
         )
-    
+
     setattr(notification, 'is_read', True)
     setattr(notification, 'read_at', datetime.utcnow())
     db.commit()
-    
+
     return MessageResponse(message="Notification marked as read", success=True)
 
 
-@router.put("/notifications/read-all", response_model=MessageResponse)
+@router.post("/notifications/mark-all-read", response_model=MessageResponse)
 async def mark_all_notifications_read(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Mark all notifications as read"""
     user_id = int(getattr(current_user, 'id', 0))
-    
+
     db.query(Notification).filter(
         Notification.user_id == user_id,
         Notification.is_read == False  # noqa: E712
@@ -484,10 +484,36 @@ async def mark_all_notifications_read(
         "is_read": True,
         "read_at": datetime.utcnow()
     })
-    
+
     db.commit()
 
     return MessageResponse(message="All notifications marked as read", success=True)
+
+
+@router.delete("/notifications/{notification_id}", response_model=MessageResponse)
+async def delete_notification(
+    notification_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Delete notification"""
+    user_id = int(getattr(current_user, 'id', 0))
+
+    notification = db.query(Notification).filter(
+        Notification.id == notification_id,
+        Notification.user_id == user_id
+    ).first()
+
+    if not notification:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Notification not found"
+        )
+
+    db.delete(notification)
+    db.commit()
+
+    return MessageResponse(message="Notification deleted successfully", success=True)
 
 
 @router.get("/statistics")
