@@ -3,7 +3,11 @@
 
 import { useEffect, useRef } from 'react';
 
-export function AnimatedBackground() {
+interface AnimatedBackgroundProps {
+  colorScheme?: 'red' | 'green' | 'purple';
+}
+
+export function AnimatedBackground({ colorScheme = 'red' }: AnimatedBackgroundProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -12,6 +16,36 @@ export function AnimatedBackground() {
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
+
+    // Color palettes based on scheme
+    const colorPalettes = {
+      red: {
+        particles: ['rgba(230, 0, 0, ', 'rgba(255, 51, 51, ', 'rgba(255, 107, 107, ', 'rgba(204, 0, 0, '],
+        gradientStart: 'rgba(230, 0, 0, 0.15)',
+        gradientMid: 'rgba(255, 51, 51, 0.08)',
+        gradientEnd: 'rgba(230, 0, 0, 0)',
+        backgroundMid: 'rgba(20, 5, 5, 1)',
+        lineColor: 'rgba(230, 0, 0, '
+      },
+      green: {
+        particles: ['rgba(34, 197, 94, ', 'rgba(74, 222, 128, ', 'rgba(134, 239, 172, ', 'rgba(22, 163, 74, '],
+        gradientStart: 'rgba(34, 197, 94, 0.15)',
+        gradientMid: 'rgba(74, 222, 128, 0.08)',
+        gradientEnd: 'rgba(34, 197, 94, 0)',
+        backgroundMid: 'rgba(5, 20, 10, 1)',
+        lineColor: 'rgba(34, 197, 94, '
+      },
+      purple: {
+        particles: ['rgba(168, 85, 247, ', 'rgba(192, 132, 252, ', 'rgba(216, 180, 254, ', 'rgba(147, 51, 234, '],
+        gradientStart: 'rgba(168, 85, 247, 0.15)',
+        gradientMid: 'rgba(192, 132, 252, 0.08)',
+        gradientEnd: 'rgba(168, 85, 247, 0)',
+        backgroundMid: 'rgba(15, 5, 20, 1)',
+        lineColor: 'rgba(168, 85, 247, '
+      }
+    };
+
+    const colors = colorPalettes[colorScheme];
 
     // Set canvas size
     const resizeCanvas = () => {
@@ -40,9 +74,8 @@ export function AnimatedBackground() {
         this.speedX = (Math.random() - 0.5) * 0.5;
         this.speedY = (Math.random() - 0.5) * 0.5;
         this.opacity = Math.random() * 0.5 + 0.1;
-        // Red shades
-        const reds = ['rgba(230, 0, 0, ', 'rgba(255, 51, 51, ', 'rgba(255, 107, 107, ', 'rgba(204, 0, 0, '];
-        this.color = reds[Math.floor(Math.random() * reds.length)];
+        // Use color scheme particles
+        this.color = colors.particles[Math.floor(Math.random() * colors.particles.length)];
         this.pulse = 0;
         this.pulseSpeed = Math.random() * 0.02 + 0.01;
       }
@@ -84,7 +117,7 @@ export function AnimatedBackground() {
         this.radius = Math.random() * 200 + 100;
         this.speedX = (Math.random() - 0.5) * 0.3;
         this.speedY = (Math.random() - 0.5) * 0.3;
-        this.hue = 0; // Red hue
+        this.hue = 0;
       }
 
       update() {
@@ -102,9 +135,9 @@ export function AnimatedBackground() {
           this.x, this.y, 0,
           this.x, this.y, this.radius
         );
-        gradient.addColorStop(0, 'rgba(230, 0, 0, 0.15)');
-        gradient.addColorStop(0.5, 'rgba(255, 51, 51, 0.08)');
-        gradient.addColorStop(1, 'rgba(230, 0, 0, 0)');
+        gradient.addColorStop(0, colors.gradientStart);
+        gradient.addColorStop(0.5, colors.gradientMid);
+        gradient.addColorStop(1, colors.gradientEnd);
 
         ctx.fillStyle = gradient;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -134,7 +167,7 @@ export function AnimatedBackground() {
       // Draw gradient mesh background
       const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
       gradient.addColorStop(0, 'rgba(10, 10, 10, 1)');
-      gradient.addColorStop(0.5, 'rgba(20, 5, 5, 1)');
+      gradient.addColorStop(0.5, colors.backgroundMid);
       gradient.addColorStop(1, 'rgba(10, 10, 10, 1)');
       ctx.fillStyle = gradient;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -159,7 +192,7 @@ export function AnimatedBackground() {
           const distance = Math.sqrt(dx * dx + dy * dy);
 
           if (distance < 150) {
-            ctx.strokeStyle = `rgba(230, 0, 0, ${0.15 * (1 - distance / 150)})`;
+            ctx.strokeStyle = `${colors.lineColor}${0.15 * (1 - distance / 150)})`;
             ctx.lineWidth = 0.5;
             ctx.beginPath();
             ctx.moveTo(p1.x, p1.y);
@@ -178,7 +211,7 @@ export function AnimatedBackground() {
       window.removeEventListener('resize', resizeCanvas);
       cancelAnimationFrame(animationId);
     };
-  }, []);
+  }, [colorScheme]);
 
   return (
     <canvas

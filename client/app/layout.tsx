@@ -12,7 +12,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 
 import { siteConfig } from "@/config/site";
 import { fontSans } from "@/config/fonts";
-import { AnimatedBackground } from "@/components/background";
+import { DynamicAnimatedBackground } from "@/components/background";
 import LayoutContent from "@/components/LayoutContent";
 
 export const metadata: Metadata = {
@@ -100,16 +100,25 @@ export default function RootLayout({
           fontSans.variable,
         )}
       >
-        {/* Animated Background - Applied to all pages */}
-        <AnimatedBackground />
+        {/* Animated Background - Applied to all pages with dynamic colors */}
+        <DynamicAnimatedBackground />
 
         <Providers themeProps={{ attribute: "class", defaultTheme: "dark" }}>
           <AuthProvider>
             <LayoutContent>
               {children}
+            </LayoutContent>
+          </AuthProvider>
+        </Providers>
+      </body>
+    </html>
+  );
+}
 
-              {/* Premium Footer */}
-              <footer className="w-full bg-black/80 backdrop-blur-sm border-t border-dark-700">
+// Footer Component - Moved to LayoutContent for conditional rendering
+function Footer() {
+  return (
+    <footer className="w-full bg-black/80 backdrop-blur-sm border-t border-dark-700">
                 <div className="container mx-auto px-6 py-16 max-w-7xl">
                   {/* Main Footer Content */}
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-12">
@@ -333,10 +342,7 @@ export default function RootLayout({
                   </div>
                 </div>
               </footer>
-            </LayoutContent>
-          </AuthProvider>
-        </Providers>
-      </body>
-    </html>
   );
 }
+
+export { Footer };
