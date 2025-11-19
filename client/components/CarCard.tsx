@@ -66,40 +66,28 @@ export default function CarCard({ car, onFavoriteChange }: CarCardProps) {
   // 1. car.main_image field
   // 2. Image with is_main: true
   // 3. First image in the array
+  // 4. Placeholder if no images available
+  //
+  // NOTE: Currently the backend search/list endpoint returns empty images array.
+  // The main_image field needs to be populated by the backend for listing pages.
   const getMainImage = (): string => {
-    // Debug logging
-    console.log(`CarCard for ${car.title}:`, {
-      hasMainImage: !!car.main_image,
-      mainImage: car.main_image,
-      hasImages: !!car.images,
-      imagesLength: car.images?.length,
-      firstImage: car.images?.[0]
-    });
-
     // First, check if main_image field exists on the car object
     if (car.main_image) {
-      const url = getImageUrl(car.main_image);
-      console.log(`Using car.main_image: ${url}`);
-      return url;
+      return getImageUrl(car.main_image);
     }
 
     // Second, find the image marked as main
     if (car.images && car.images.length > 0) {
       const mainImageObj = car.images.find(img => img.is_main);
       if (mainImageObj) {
-        const url = getImageUrl(mainImageObj.image_url);
-        console.log(`Using main image from array: ${url}`);
-        return url;
+        return getImageUrl(mainImageObj.image_url);
       }
 
       // Fall back to first image
-      const url = getImageUrl(car.images[0].image_url);
-      console.log(`Using first image from array: ${url}`);
-      return url;
+      return getImageUrl(car.images[0].image_url);
     }
 
     // No images available, return placeholder
-    console.log('No images available, using placeholder');
     return getImageUrl(null);
   };
 
