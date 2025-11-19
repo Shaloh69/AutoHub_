@@ -6,10 +6,9 @@ import { Card, CardHeader, CardBody } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { Input } from "@heroui/input";
 import { Textarea } from "@heroui/input";
-import { Image } from "@heroui/image";
 import { Spinner } from "@heroui/spinner";
 import { Upload, Save, X } from 'lucide-react';
-import { getImageUrl } from '@/services/api';
+import ResponsiveImage from '../ResponsiveImage';
 
 interface QRCodeSettingsProps {
   apiBaseUrl?: string;
@@ -211,19 +210,13 @@ export default function QRCodeSettings({ apiBaseUrl = process.env.NEXT_PUBLIC_AP
           {qrCodeUrl ? (
             <div className="flex justify-center">
               <div className="bg-white p-4 rounded-lg shadow-md border-2 border-autohub-primary-200 w-full max-w-sm">
-                <div className="relative w-full aspect-square">
-                  <Image
-                    src={getImageUrl(qrCodeUrl)}
-                    alt="Current GCash QR Code"
-                    width={300}
-                    height={300}
-                    className="w-full h-full object-contain rounded"
-                    classNames={{
-                      wrapper: "w-full h-full",
-                      img: "w-full h-full object-contain"
-                    }}
-                  />
-                </div>
+                <ResponsiveImage
+                  src={qrCodeUrl}
+                  alt="Current GCash QR Code"
+                  aspectRatio="square"
+                  objectFit="contain"
+                  className="rounded"
+                />
               </div>
             </div>
           ) : (
@@ -280,19 +273,14 @@ export default function QRCodeSettings({ apiBaseUrl = process.env.NEXT_PUBLIC_AP
             {previewUrl && (
               <div className="flex justify-center">
                 <div className="bg-white p-4 rounded-lg shadow-md border-2 border-dashed border-autohub-primary-300 w-full max-w-xs">
-                  <div className="relative w-full aspect-square">
-                    <Image
-                      src={previewUrl}
-                      alt="Preview"
-                      width={250}
-                      height={250}
-                      className="w-full h-full object-contain rounded"
-                      classNames={{
-                        wrapper: "w-full h-full",
-                        img: "w-full h-full object-contain"
-                      }}
-                    />
-                  </div>
+                  <ResponsiveImage
+                    src={previewUrl}
+                    alt="Preview"
+                    aspectRatio="square"
+                    objectFit="contain"
+                    className="rounded"
+                    showSpinner={false}
+                  />
                   <p className="text-xs text-center text-autohub-accent1-600 mt-2">Preview</p>
                 </div>
               </div>

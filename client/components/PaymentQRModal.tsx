@@ -11,9 +11,9 @@ import {
 } from "@heroui/modal";
 import { Button } from "@heroui/button";
 import { Input } from "@heroui/input";
-import { Image } from "@heroui/image";
 import { Spinner } from "@heroui/spinner";
-import { apiService, getImageUrl } from '@/services/api';
+import { apiService } from '@/services/api';
+import ResponsiveImage from './ResponsiveImage';
 
 interface PaymentQRModalProps {
   isOpen: boolean;
@@ -136,19 +136,14 @@ export default function PaymentQRModal({
               {/* QR Code */}
               <div className="flex flex-col items-center space-y-3 sm:space-y-4">
                 <div className="bg-white dark:bg-gray-100 p-3 sm:p-4 md:p-6 rounded-lg shadow-lg border-2 border-autohub-primary-200 dark:border-autohub-primary-400 w-full max-w-xs sm:max-w-sm md:max-w-md mx-auto">
-                  <div className="relative w-full aspect-square">
-                    <Image
-                      src={getImageUrl(qrCodeUrl)}
-                      alt="GCash Payment QR Code"
-                      width={400}
-                      height={400}
-                      className="w-full h-full object-contain rounded-lg"
-                      classNames={{
-                        wrapper: "w-full h-full",
-                        img: "w-full h-full object-contain"
-                      }}
-                    />
-                  </div>
+                  <ResponsiveImage
+                    src={qrCodeUrl}
+                    alt="GCash Payment QR Code"
+                    aspectRatio="square"
+                    objectFit="contain"
+                    className="rounded-lg"
+                    priority={true}
+                  />
                 </div>
                 <p className="text-xs sm:text-sm text-autohub-accent1-600 dark:text-gray-400 text-center px-4">
                   Scan this QR code with your GCash app to make payment

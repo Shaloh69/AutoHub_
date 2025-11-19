@@ -14,6 +14,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import PaymentQRModal from '@/components/PaymentQRModal';
 import { ActiveSubscriptionCard } from '@/components/subscription/ActiveSubscriptionCard';
+import ResponsiveImage from '@/components/ResponsiveImage';
 import { Crown, Sparkles, Zap, TrendingUp } from 'lucide-react';
 
 interface PaymentHistory {
@@ -655,13 +656,13 @@ function PendingPaymentCard({
             ) : qrCodeUrl ? (
               <div className="flex flex-col items-center space-y-4">
                 <div className="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg border-2 border-primary-200 dark:border-primary-700 w-full max-w-md mx-auto">
-                  <div className="relative w-full aspect-square">
-                    <img
-                      src={getImageUrl(qrCodeUrl)}
-                      alt="GCash Payment QR Code"
-                      className="w-full h-full object-contain rounded-lg"
-                    />
-                  </div>
+                  <ResponsiveImage
+                    src={qrCodeUrl}
+                    alt="GCash Payment QR Code"
+                    aspectRatio="square"
+                    objectFit="contain"
+                    className="rounded-lg"
+                  />
                 </div>
                 <p className="text-sm text-gray-600 dark:text-gray-400 text-center px-4">
                   Scan this QR code with your GCash app to make payment
