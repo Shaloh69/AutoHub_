@@ -139,30 +139,30 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center p-4">
       <div className="w-full max-w-2xl">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
+          <h1 className="text-4xl font-bold text-white mb-2">
             Join AutoHub
           </h1>
-          <p className="text-gray-600 dark:text-gray-400">
+          <p className="text-gray-300">
             Create your account to buy or sell cars
           </p>
         </div>
 
-        <Card className="shadow-xl">
+        <Card className="bg-black/20 backdrop-blur-2xl border border-white/10 shadow-2xl">
           <CardHeader className="flex flex-col gap-3 px-6 pt-6">
             <div className="flex items-center justify-center w-full">
-              <UserPlus className="text-blue-600" size={32} />
+              <UserPlus className="text-primary-500" size={32} />
             </div>
-            <h2 className="text-2xl font-bold text-center">Create Account</h2>
+            <h2 className="text-2xl font-bold text-center text-white">Create Account</h2>
           </CardHeader>
 
           <form onSubmit={handleSubmit}>
             <CardBody className="gap-4 px-6">
               {error && (
-                <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-                  <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+                <div className="p-3 bg-red-600/10 backdrop-blur-md border border-red-500/30 rounded-lg">
+                  <p className="text-sm text-red-400">{error}</p>
                 </div>
               )}
 
