@@ -107,7 +107,19 @@ export default function SearchCarsPage() {
       });
 
       if (response.success && response.data) {
-        setCars(response.data.items || []);
+        const cars = response.data.items || [];
+        // Debug: Log first car to see what data we're getting
+        if (cars.length > 0) {
+          console.log('First car data:', {
+            id: cars[0].id,
+            title: cars[0].title,
+            main_image: cars[0].main_image,
+            images: cars[0].images,
+            hasImages: !!cars[0].images,
+            imagesLength: cars[0].images?.length
+          });
+        }
+        setCars(cars);
         setTotalPages(response.data.total_pages || 1);
         setTotalItems(response.data.total || 0);
       }
