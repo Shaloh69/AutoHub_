@@ -100,11 +100,11 @@ export default function RootLayout({
           fontSans.variable,
         )}
       >
-        {/* Animated Background - Applied to all pages with dynamic colors */}
-        <DynamicAnimatedBackground />
-
         <Providers themeProps={{ attribute: "class", defaultTheme: "dark" }}>
           <AuthProvider>
+            {/* Animated Background - Applied to all pages with dynamic colors */}
+            <DynamicAnimatedBackground />
+
             <LayoutContent>
               {children}
             </LayoutContent>
