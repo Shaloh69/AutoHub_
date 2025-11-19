@@ -974,16 +974,25 @@ async def upload_car_image(
         if is_main:
             db.query(CarImage).filter(CarImage.car_id == car_id).update({"is_main": False})
 
+        # Determine if this image should be main
+        should_be_main = is_main or image_count == 0  # First image is always main
+
         # Create image record - Only use fields that exist in database
         car_image = CarImage(
             car_id=car_id,
             image_url=result["file_url"],
             image_type=image_type,
-            is_main=is_main or image_count == 0,  # First image is always main
+            is_main=should_be_main,
             display_order=image_count
         )
-        
+
         db.add(car_image)
+
+        # FIX: Update car.main_image field for frontend display
+        if should_be_main:
+            setattr(car, 'main_image', result["file_url"])
+            setattr(car, 'total_images', image_count + 1)
+
         db.commit()
         db.refresh(car_image)
         
@@ -1020,15 +1029,38 @@ async def delete_car_image(
     if not image:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Image not found")
     
+    # Check if this is the main image
+    was_main = getattr(image, 'is_main', False)
+
     # Delete file from storage - FIX: Use getattr
     image_url_value = getattr(image, 'image_url', None)
     if image_url_value is not None:
         FileService.delete_image(str(image_url_value))
-    
+
     # Delete from database
     db.delete(image)
+
+    # FIX: If deleted image was main, update car.main_image to next available image
+    if was_main:
+        # Get the first remaining image
+        next_main_image = db.query(CarImage).filter(
+            CarImage.car_id == car_id
+        ).order_by(CarImage.display_order).first()
+
+        if next_main_image:
+            # Set new main image
+            setattr(next_main_image, 'is_main', True)
+            setattr(car, 'main_image', getattr(next_main_image, 'image_url', None))
+        else:
+            # No images left, clear main_image
+            setattr(car, 'main_image', None)
+
+    # Update total images count
+    remaining_count = db.query(CarImage).filter(CarImage.car_id == car_id).count() - 1
+    setattr(car, 'total_images', max(0, remaining_count))
+
     db.commit()
-    
+
     return MessageResponse(message="Image deleted successfully")
 
 
