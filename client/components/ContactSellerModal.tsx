@@ -117,54 +117,59 @@ export default function ContactSellerModal({ carId, carPrice, isOpen, onClose }:
       isOpen={isOpen}
       onClose={handleClose}
       size="2xl"
+      scrollBehavior="inside"
+      isDismissable={!loading}
       classNames={{
-        base: "max-h-[90vh]",
+        base: "max-w-full mx-4 sm:mx-6 md:max-w-2xl",
+        wrapper: "overflow-y-auto",
       }}
     >
-      <ModalContent>
+      <ModalContent className="max-h-[90vh]">
         <ModalHeader className="flex flex-col gap-1">
           Contact Seller
         </ModalHeader>
-        <ModalBody>
+        <ModalBody className="overflow-y-auto py-4 px-4 sm:px-6">
           {success ? (
             <div className="flex flex-col items-center justify-center py-8 text-center">
               <CheckCircle size={64} className="text-green-500 mb-4" />
-              <h3 className="text-2xl font-bold mb-2">
+              <h3 className="text-xl sm:text-2xl font-bold mb-2">
                 {activeTab === 'offer' ? 'Offer Sent!' : 'Message Sent!'}
               </h3>
-              <p className="text-gray-600 dark:text-gray-400">
+              <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
                 {activeTab === 'offer'
                   ? 'The seller will review your offer and respond shortly.'
                   : 'The seller will respond to your inquiry shortly.'}
               </p>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-4 pb-2">
               <Tabs
                 selectedKey={activeTab}
                 onSelectionChange={(key) => setActiveTab(key as string)}
                 aria-label="Contact options"
+                fullWidth
                 classNames={{
-                  tabList: "w-full",
+                  tabList: "w-full gap-2",
                   cursor: "w-full",
-                  tab: "max-w-fit px-6",
+                  tab: "px-3 sm:px-6",
+                  panel: "pt-4",
                 }}
               >
                 <Tab
                   key="message"
                   title={
-                    <div className="flex items-center gap-2">
-                      <MessageSquare size={18} />
-                      <span>Send Message</span>
+                    <div className="flex items-center gap-1 sm:gap-2">
+                      <MessageSquare size={16} className="sm:w-[18px] sm:h-[18px]" />
+                      <span className="text-xs sm:text-sm">Send Message</span>
                     </div>
                   }
                 />
                 <Tab
                   key="offer"
                   title={
-                    <div className="flex items-center gap-2">
-                      <DollarSign size={18} />
-                      <span>Make an Offer</span>
+                    <div className="flex items-center gap-1 sm:gap-2">
+                      <DollarSign size={16} className="sm:w-[18px] sm:h-[18px]" />
+                      <span className="text-xs sm:text-sm">Make an Offer</span>
                     </div>
                   }
                 />
@@ -274,11 +279,12 @@ export default function ContactSellerModal({ carId, carPrice, isOpen, onClose }:
           )}
         </ModalBody>
         {!success && (
-          <ModalFooter>
+          <ModalFooter className="flex flex-col sm:flex-row gap-2 px-4 sm:px-6 py-4">
             <Button
               variant="flat"
               onPress={handleClose}
               isDisabled={loading}
+              className="w-full sm:w-auto order-2 sm:order-1"
             >
               Cancel
             </Button>
@@ -286,6 +292,7 @@ export default function ContactSellerModal({ carId, carPrice, isOpen, onClose }:
               color="primary"
               onPress={handleSubmit}
               isLoading={loading}
+              className="w-full sm:w-auto order-1 sm:order-2"
             >
               {activeTab === 'offer' ? 'Send Offer' : 'Send Message'}
             </Button>

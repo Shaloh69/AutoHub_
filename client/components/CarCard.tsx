@@ -95,11 +95,12 @@ export default function CarCard({ car, onFavoriteChange }: CarCardProps) {
 
   return (
     <Card
-      className="group relative overflow-hidden bg-black/40 backdrop-blur-md border border-dark-700 hover:border-primary-600 transition-all duration-300 hover:shadow-red-glow"
+      className="group relative overflow-hidden bg-black/40 backdrop-blur-md border border-dark-700 hover:border-primary-600 transition-all duration-300 hover:shadow-red-glow w-full"
+      isPressable={false}
     >
       {/* Image Section - Clickable */}
       <div
-        className="relative h-56 overflow-hidden bg-black/50 cursor-pointer"
+        className="relative h-48 sm:h-52 md:h-56 overflow-hidden bg-black/50 cursor-pointer"
         onClick={() => router.push(`/cars/${car.id}`)}
       >
         <Image
@@ -171,66 +172,74 @@ export default function CarCard({ car, onFavoriteChange }: CarCardProps) {
         )} */}
       </div>
 
-      <CardBody
-        className="p-5 bg-black/40 backdrop-blur-sm border-t border-dark-800/50 cursor-pointer"
-        onClick={() => router.push(`/cars/${car.id}`)}
-      >
-        {/* Title */}
-        <h3 className="text-lg font-bold mb-2 line-clamp-1 text-white group-hover:text-primary-500 transition-colors">
-          {car.title}
-        </h3>
+      <CardBody className="p-4 sm:p-5 bg-black/40 backdrop-blur-sm border-t border-dark-800/50">
+        {/* Clickable overlay for the entire card body */}
+        <div
+          className="absolute inset-0 cursor-pointer z-0"
+          onClick={() => router.push(`/cars/${car.id}`)}
+          aria-label={`View details for ${car.title}`}
+        />
 
-        {/* Brand & Model */}
-        <p className="text-sm text-gray-400 mb-3">
-          {car.brand?.name} {car.model?.name} • {car.year}
-        </p>
+        {/* Content with relative positioning to stay above clickable overlay */}
+        <div className="relative z-10 pointer-events-none">
+          {/* Title */}
+          <h3 className="text-base sm:text-lg font-bold mb-2 line-clamp-1 text-white group-hover:text-primary-500 transition-colors">
+            {car.title}
+          </h3>
 
-        {/* Price */}
-        <div className="mb-4">
-          <p className="text-2xl font-black text-gradient-red">
-            {formatPrice(car.price)}
+          {/* Brand & Model */}
+          <p className="text-xs sm:text-sm text-gray-400 mb-3">
+            {car.brand?.name} {car.model?.name} • {car.year}
           </p>
-          {car.original_price && car.original_price > car.price && (
-            <p className="text-sm text-gray-500 line-through">
-              {formatPrice(car.original_price)}
+
+          {/* Price */}
+          <div className="mb-4">
+            <p className="text-xl sm:text-2xl font-black text-gradient-red">
+              {formatPrice(car.price)}
             </p>
+            {car.original_price && car.original_price > car.price && (
+              <p className="text-xs sm:text-sm text-gray-500 line-through">
+                {formatPrice(car.original_price)}
+              </p>
+            )}
+          </div>
+
+          {/* Key Specs */}
+          <div className="grid grid-cols-2 gap-2 text-xs sm:text-sm mb-3">
+            <div className="flex items-center gap-1.5 sm:gap-2 text-gray-400">
+              <Gauge className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary-500 flex-shrink-0" />
+              <span className="truncate">{formatMileage(car.mileage)}</span>
+            </div>
+            <div className="flex items-center gap-1.5 sm:gap-2 text-gray-400">
+              <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary-500 flex-shrink-0" />
+              <span>{car.year}</span>
+            </div>
+            <div className="flex items-center gap-1.5 sm:gap-2 text-gray-400">
+              <Settings2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary-500 flex-shrink-0" />
+              <span className="capitalize truncate">{car.transmission}</span>
+            </div>
+            <div className="flex items-center gap-1.5 sm:gap-2 text-gray-400">
+              <Fuel className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary-500 flex-shrink-0" />
+              <span className="capitalize truncate">{car.fuel_type}</span>
+            </div>
+          </div>
+
+          {/* Location */}
+          {car.city && (
+            <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-gray-500 pt-2 border-t border-dark-800">
+              <MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary-500 flex-shrink-0" />
+              <span className="truncate">{car.city.name}</span>
+            </div>
           )}
         </div>
-
-        {/* Key Specs */}
-        <div className="grid grid-cols-2 gap-2 text-sm mb-3">
-          <div className="flex items-center gap-2 text-gray-400">
-            <Gauge className="w-4 h-4 text-primary-500" />
-            <span>{formatMileage(car.mileage)}</span>
-          </div>
-          <div className="flex items-center gap-2 text-gray-400">
-            <Calendar className="w-4 h-4 text-primary-500" />
-            <span>{car.year}</span>
-          </div>
-          <div className="flex items-center gap-2 text-gray-400">
-            <Settings2 className="w-4 h-4 text-primary-500" />
-            <span className="capitalize">{car.transmission}</span>
-          </div>
-          <div className="flex items-center gap-2 text-gray-400">
-            <Fuel className="w-4 h-4 text-primary-500" />
-            <span className="capitalize">{car.fuel_type}</span>
-          </div>
-        </div>
-
-        {/* Location */}
-        {car.city && (
-          <div className="flex items-center gap-2 text-sm text-gray-500 pt-2 border-t border-dark-800">
-            <MapPin className="w-4 h-4 text-primary-500" />
-            <span>{car.city.name}</span>
-          </div>
-        )}
       </CardBody>
 
-      <CardFooter className="p-4 pt-0 bg-black/40 backdrop-blur-sm">
+      <CardFooter className="p-3 sm:p-4 pt-0 bg-black/40 backdrop-blur-sm">
         <Button
           fullWidth
-          className="bg-gradient-red-dark text-white font-bold hover:shadow-red-glow transition-all"
+          className="bg-gradient-red-dark text-white font-bold hover:shadow-red-glow transition-all pointer-events-auto relative z-20 text-sm sm:text-base"
           onPress={() => router.push(`/cars/${car.id}`)}
+          size="md"
         >
           View Details
         </Button>

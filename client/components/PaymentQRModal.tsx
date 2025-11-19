@@ -85,53 +85,57 @@ export default function PaymentQRModal({
       size="2xl"
       scrollBehavior="inside"
       isDismissable={!submitting}
+      classNames={{
+        base: "max-w-full mx-4 sm:mx-6 md:max-w-2xl",
+        wrapper: "overflow-y-auto",
+      }}
     >
-      <ModalContent>
-        <ModalHeader className="flex flex-col gap-1">
-          <h3 className="text-2xl font-bold text-autohub-secondary-900 dark:text-autohub-neutral-50">
+      <ModalContent className="max-h-[90vh]">
+        <ModalHeader className="flex flex-col gap-1 px-4 sm:px-6">
+          <h3 className="text-xl sm:text-2xl font-bold text-autohub-secondary-900 dark:text-autohub-neutral-50">
             Complete Your Payment
           </h3>
-          <p className="text-sm text-autohub-accent1-600">
-            {planName} - ₱{amount}
+          <p className="text-xs sm:text-sm text-autohub-accent1-600">
+            {planName} - ₱{amount.toLocaleString()}
           </p>
         </ModalHeader>
 
-        <ModalBody>
+        <ModalBody className="overflow-y-auto py-4 px-4 sm:px-6">
           {success ? (
-            <div className="text-center py-12 space-y-4">
-              <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto">
-                <svg className="w-10 h-10 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="text-center py-8 sm:py-12 space-y-3 sm:space-y-4">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+                <svg className="w-8 h-8 sm:w-10 sm:h-10 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <h4 className="text-xl font-bold text-autohub-secondary-900 dark:text-autohub-neutral-50">
+              <h4 className="text-lg sm:text-xl font-bold text-autohub-secondary-900 dark:text-autohub-neutral-50 px-4">
                 Payment Reference Submitted!
               </h4>
-              <p className="text-autohub-accent1-600">
+              <p className="text-sm sm:text-base text-autohub-accent1-600 px-4">
                 Your payment is being verified by our admin team. You'll be notified once approved.
               </p>
             </div>
           ) : (
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6 pb-2">
               {error && (
-                <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded">
-                  <p className="font-medium">{error}</p>
+                <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-3 sm:p-4 rounded">
+                  <p className="text-sm sm:text-base font-medium break-words">{error}</p>
                 </div>
               )}
 
               {/* Instructions */}
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h4 className="font-semibold text-autohub-secondary-900 mb-2">
+              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 sm:p-4">
+                <h4 className="text-sm sm:text-base font-semibold text-autohub-secondary-900 dark:text-white mb-2">
                   Payment Instructions:
                 </h4>
-                <p className="text-sm text-autohub-accent1-700 whitespace-pre-line">
+                <p className="text-xs sm:text-sm text-autohub-accent1-700 dark:text-gray-300 whitespace-pre-line">
                   {instructions}
                 </p>
               </div>
 
               {/* QR Code */}
-              <div className="flex flex-col items-center space-y-4">
-                <div className="bg-white p-4 sm:p-6 rounded-lg shadow-lg border-2 border-autohub-primary-200 w-full max-w-md mx-auto">
+              <div className="flex flex-col items-center space-y-3 sm:space-y-4">
+                <div className="bg-white dark:bg-gray-100 p-3 sm:p-4 md:p-6 rounded-lg shadow-lg border-2 border-autohub-primary-200 dark:border-autohub-primary-400 w-full max-w-xs sm:max-w-sm md:max-w-md mx-auto">
                   <div className="relative w-full aspect-square">
                     <Image
                       src={qrCodeUrl}
@@ -146,14 +150,14 @@ export default function PaymentQRModal({
                     />
                   </div>
                 </div>
-                <p className="text-sm text-autohub-accent1-600 text-center px-4">
+                <p className="text-xs sm:text-sm text-autohub-accent1-600 dark:text-gray-400 text-center px-4">
                   Scan this QR code with your GCash app to make payment
                 </p>
               </div>
 
               {/* Reference Number Input */}
               <div className="space-y-2">
-                <label className="block text-sm font-medium text-autohub-secondary-900 dark:text-autohub-neutral-50">
+                <label className="block text-xs sm:text-sm font-medium text-autohub-secondary-900 dark:text-autohub-neutral-50">
                   Enter Payment Reference Number
                 </label>
                 <Input
@@ -162,12 +166,13 @@ export default function PaymentQRModal({
                   value={referenceNumber}
                   onChange={(e) => setReferenceNumber(e.target.value)}
                   disabled={submitting}
+                  size="lg"
                   classNames={{
-                    input: "text-autohub-secondary-900",
-                    inputWrapper: "border-autohub-accent1-300"
+                    input: "text-autohub-secondary-900 dark:text-white text-sm sm:text-base",
+                    inputWrapper: "border-autohub-accent1-300 dark:border-gray-600"
                   }}
                 />
-                <p className="text-xs text-autohub-accent1-600">
+                <p className="text-xs text-autohub-accent1-600 dark:text-gray-400">
                   After completing payment via GCash, enter the reference number from your payment confirmation
                 </p>
               </div>
@@ -176,16 +181,17 @@ export default function PaymentQRModal({
         </ModalBody>
 
         {!success && (
-          <ModalFooter>
+          <ModalFooter className="flex flex-col sm:flex-row gap-2 px-4 sm:px-6 py-4">
             <Button
               variant="light"
               onPress={onClose}
               disabled={submitting}
+              className="w-full sm:w-auto order-2 sm:order-1"
             >
               Cancel
             </Button>
             <Button
-              className="bg-autohub-primary-500 text-white"
+              className="bg-autohub-primary-500 hover:bg-autohub-primary-600 text-white w-full sm:w-auto order-1 sm:order-2"
               onPress={handleSubmit}
               isLoading={submitting}
               disabled={!referenceNumber.trim()}

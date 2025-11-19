@@ -36,22 +36,23 @@ export function ActiveSubscriptionCard({
   if (!subscription || !subscription.plan) {
     // Free Plan State
     return (
-      <Card className="border-2 border-dashed border-gray-300 dark:border-gray-700">
-        <CardBody className="text-center py-12">
-          <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Sparkles size={32} className="text-gray-400" />
+      <Card className="border-2 border-dashed border-gray-300 dark:border-gray-700 w-full">
+        <CardBody className="text-center py-8 sm:py-12 px-4 sm:px-6">
+          <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Sparkles size={28} className="sm:w-8 sm:h-8 text-gray-400" />
           </div>
-          <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+          <h3 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-2">
             You're on the Free Plan
           </h3>
-          <p className="text-gray-600 dark:text-gray-400 mb-6">
+          <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mb-6 max-w-md mx-auto">
             Upgrade to unlock more features and grow your business
           </p>
           <Button
             color="primary"
             size="lg"
             onPress={() => router.push('/subscription')}
-            startContent={<Crown size={20} />}
+            startContent={<Crown size={18} className="sm:w-5 sm:h-5" />}
+            className="w-full sm:w-auto"
           >
             View Premium Plans
           </Button>
@@ -116,27 +117,27 @@ export function ActiveSubscriptionCard({
   return (
     <Card className={`border-2 bg-gradient-to-br ${getPlanGradient()} ${
       isExpiringSoon ? 'border-orange-400' : isExpired ? 'border-red-400' : 'border-primary-400'
-    }`}>
-      <CardHeader className="flex-col items-start gap-3 pb-4">
-        <div className="flex w-full items-start justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-14 h-14 bg-white dark:bg-gray-800 rounded-xl flex items-center justify-center shadow-lg">
+    } w-full`}>
+      <CardHeader className="flex-col items-start gap-3 pb-4 px-4 sm:px-6">
+        <div className="flex w-full flex-col sm:flex-row items-start sm:items-start justify-between gap-3">
+          <div className="flex items-start gap-3 w-full sm:w-auto">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 bg-white dark:bg-gray-800 rounded-xl flex items-center justify-center shadow-lg flex-shrink-0">
               {getPlanIcon()}
             </div>
-            <div>
-              <h3 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                {subscription.plan.name} Plan
+            <div className="flex-1 min-w-0">
+              <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 dark:text-white flex flex-wrap items-center gap-2">
+                <span className="truncate">{subscription.plan.name} Plan</span>
                 {subscription.status === 'ACTIVE' && !isExpired && (
                   <Chip size="sm" color="success" variant="flat">
                     <div className="flex items-center gap-1">
                       <CheckCircle size={12} />
-                      Active
+                      <span className="text-xs">Active</span>
                     </div>
                   </Chip>
                 )}
               </h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                {subscription.plan.description || `₱${subscription.plan.price} per ${subscription.billing_cycle.toLowerCase()}`}
+              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1">
+                {subscription.plan.description || `₱${subscription.plan.price.toLocaleString()} per ${subscription.billing_cycle.toLowerCase()}`}
               </p>
             </div>
           </div>
@@ -147,6 +148,7 @@ export function ActiveSubscriptionCard({
               color="primary"
               variant="flat"
               onPress={onUpgrade}
+              className="w-full sm:w-auto flex-shrink-0"
             >
               Upgrade
             </Button>
@@ -156,9 +158,9 @@ export function ActiveSubscriptionCard({
         {/* Expiry Warning */}
         {isExpiringSoon && subscription.status === 'ACTIVE' && (
           <div className="w-full bg-orange-100 dark:bg-orange-900/30 border border-orange-300 dark:border-orange-700 rounded-lg p-3">
-            <div className="flex items-center gap-2 text-orange-800 dark:text-orange-300">
-              <AlertCircle size={18} />
-              <span className="text-sm font-medium">
+            <div className="flex items-start gap-2 text-orange-800 dark:text-orange-300">
+              <AlertCircle size={16} className="flex-shrink-0 mt-0.5 sm:w-[18px] sm:h-[18px]" />
+              <span className="text-xs sm:text-sm font-medium">
                 Your subscription expires in {daysRemaining} day{daysRemaining !== 1 ? 's' : ''}
               </span>
             </div>
@@ -167,9 +169,9 @@ export function ActiveSubscriptionCard({
 
         {isExpired && (
           <div className="w-full bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 rounded-lg p-3">
-            <div className="flex items-center gap-2 text-red-800 dark:text-red-300">
-              <XCircle size={18} />
-              <span className="text-sm font-medium">
+            <div className="flex items-start gap-2 text-red-800 dark:text-red-300">
+              <XCircle size={16} className="flex-shrink-0 mt-0.5 sm:w-[18px] sm:h-[18px]" />
+              <span className="text-xs sm:text-sm font-medium">
                 Your subscription has expired
               </span>
             </div>
@@ -178,9 +180,9 @@ export function ActiveSubscriptionCard({
 
         {subscription.cancelled_at && subscription.status !== 'CANCELLED' && (
           <div className="w-full bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-300 dark:border-yellow-700 rounded-lg p-3">
-            <div className="flex items-center gap-2 text-yellow-800 dark:text-yellow-300">
-              <AlertCircle size={18} />
-              <span className="text-sm font-medium">
+            <div className="flex items-start gap-2 text-yellow-800 dark:text-yellow-300">
+              <AlertCircle size={16} className="flex-shrink-0 mt-0.5 sm:w-[18px] sm:h-[18px]" />
+              <span className="text-xs sm:text-sm font-medium break-words">
                 Subscription will cancel at period end ({formatDate(subscription.current_period_end)})
               </span>
             </div>
@@ -188,25 +190,25 @@ export function ActiveSubscriptionCard({
         )}
       </CardHeader>
 
-      <CardBody className="space-y-6">
+      <CardBody className="space-y-4 sm:space-y-6 px-4 sm:px-6">
         {/* Subscription Details Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
           <div>
-            <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400 mb-1">
-              <Calendar size={14} />
-              Billing
+            <div className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400 mb-1">
+              <Calendar size={12} className="sm:w-[14px] sm:h-[14px]" />
+              <span>Billing</span>
             </div>
-            <div className="font-semibold text-gray-900 dark:text-white capitalize">
+            <div className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white capitalize truncate">
               {subscription.billing_cycle.toLowerCase()}
             </div>
           </div>
 
           <div>
-            <div className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400 mb-1">
-              <Clock size={14} />
-              {subscription.status === 'ACTIVE' ? 'Renews' : 'Expires'}
+            <div className="flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400 mb-1">
+              <Clock size={12} className="sm:w-[14px] sm:h-[14px]" />
+              <span>{subscription.status === 'ACTIVE' ? 'Renews' : 'Expires'}</span>
             </div>
-            <div className="font-semibold text-gray-900 dark:text-white">
+            <div className="text-xs sm:text-sm md:text-base font-semibold text-gray-900 dark:text-white break-words">
               {formatDate(subscription.current_period_end || subscription.expires_at)}
             </div>
           </div>
@@ -215,8 +217,8 @@ export function ActiveSubscriptionCard({
             <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">
               Price
             </div>
-            <div className="font-semibold text-gray-900 dark:text-white">
-              ₱{subscription.plan.price}
+            <div className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">
+              ₱{subscription.plan.price.toLocaleString()}
             </div>
           </div>
 
@@ -224,7 +226,7 @@ export function ActiveSubscriptionCard({
             <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">
               Auto-Renew
             </div>
-            <div className="font-semibold text-gray-900 dark:text-white">
+            <div className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">
               {subscription.auto_renew ? 'On' : 'Off'}
             </div>
           </div>
@@ -232,14 +234,14 @@ export function ActiveSubscriptionCard({
 
         {/* Usage Statistics */}
         {userLimits && (
-          <div className="space-y-4">
-            <h4 className="font-semibold text-gray-900 dark:text-white">Usage</h4>
+          <div className="space-y-3 sm:space-y-4">
+            <h4 className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">Usage</h4>
 
             {/* Listings Usage */}
             <div className="space-y-2">
-              <div className="flex justify-between text-sm">
+              <div className="flex justify-between text-xs sm:text-sm gap-2">
                 <span className="text-gray-600 dark:text-gray-400">Active Listings</span>
-                <span className="font-medium text-gray-900 dark:text-white">
+                <span className="font-medium text-gray-900 dark:text-white flex-shrink-0">
                   {userLimits.usedListings} / {subscription.plan.max_listings === -1 ? '∞' : subscription.plan.max_listings}
                 </span>
               </div>
@@ -256,9 +258,9 @@ export function ActiveSubscriptionCard({
             {/* Featured Listings Usage */}
             {subscription.plan.max_featured_listings > 0 && (
               <div className="space-y-2">
-                <div className="flex justify-between text-sm">
+                <div className="flex justify-between text-xs sm:text-sm gap-2">
                   <span className="text-gray-600 dark:text-gray-400">Featured Listings</span>
-                  <span className="font-medium text-gray-900 dark:text-white">
+                  <span className="font-medium text-gray-900 dark:text-white flex-shrink-0">
                     {userLimits.usedFeatured} / {subscription.plan.max_featured_listings}
                   </span>
                 </div>
@@ -275,14 +277,14 @@ export function ActiveSubscriptionCard({
 
         {/* Actions */}
         {subscription.status === 'ACTIVE' && !subscription.cancelled_at && onCancel && (
-          <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+          <div className="pt-3 sm:pt-4 border-t border-gray-200 dark:border-gray-700">
             <Button
-              size="sm"
+              size="md"
               variant="bordered"
               color="danger"
               onPress={onCancel}
               isLoading={loading}
-              className="w-full"
+              className="w-full text-sm sm:text-base"
             >
               Cancel Subscription
             </Button>
@@ -290,12 +292,12 @@ export function ActiveSubscriptionCard({
         )}
 
         {isExpired && (
-          <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+          <div className="pt-3 sm:pt-4 border-t border-gray-200 dark:border-gray-700">
             <Button
               size="lg"
               color="primary"
               onPress={() => router.push('/subscription')}
-              className="w-full"
+              className="w-full text-sm sm:text-base"
             >
               Renew Subscription
             </Button>
