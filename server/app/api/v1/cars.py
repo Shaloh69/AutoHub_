@@ -271,6 +271,8 @@ async def search_cars(
                 "average_rating": car.average_rating,
                 "created_at": car.created_at,
                 "updated_at": car.updated_at,
+                # Media - Include main_image for frontend display
+                "main_image": car.main_image,  # FIX: Include main_image for car cards
                 # Convert related objects to simple dicts/lists to avoid ORM serialization issues
                 "images": [],  # Empty for list view to improve performance
                 "brand_rel": None,
@@ -891,6 +893,8 @@ async def update_car(
             "average_rating": car.average_rating,
             "created_at": car.created_at,
             "updated_at": car.updated_at,
+            # Media - Include main_image for frontend display
+            "main_image": car.main_image,  # FIX: Include main_image
             "images": [],
             "brand_rel": None,
             "model_rel": None,
@@ -1037,7 +1041,7 @@ async def boost_car(
 ):
     """
     Boost car listing for increased visibility
-    
+
     Requires active subscription with available boost credits.
     Increases ranking score and priority in search results.
     """
@@ -1079,6 +1083,8 @@ async def boost_car(
             "average_rating": car.average_rating,
             "created_at": car.created_at,
             "updated_at": car.updated_at,
+            # Media - Include main_image for frontend display
+            "main_image": car.main_image,  # FIX: Include main_image
             "images": [],
             "brand_rel": None,
             "model_rel": None,
@@ -1185,6 +1191,8 @@ async def feature_car(
         "average_rating": car.average_rating,
         "created_at": car.created_at,
         "updated_at": car.updated_at,
+        # Media - Include main_image for frontend display
+        "main_image": car.main_image,  # FIX: Include main_image
         "images": [],
         "brand_rel": None,
         "model_rel": None,
