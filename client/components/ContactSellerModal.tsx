@@ -39,7 +39,7 @@ export default function ContactSellerModal({ carId, carPrice, isOpen, onClose }:
     message: '',
     buyer_name: user ? `${user.first_name} ${user.last_name}` : '',
     buyer_email: user?.email || '',
-    buyer_phone: user?.phone_number || '',
+    buyer_phone: user?.phone || user?.phone_number || '',
     inquiry_type: 'GENERAL',
     offered_price: '',
   });
@@ -72,9 +72,9 @@ export default function ContactSellerModal({ carId, carPrice, isOpen, onClose }:
         car_id: carId,
         subject: activeTab === 'offer' ? 'Offer for your vehicle' : formData.subject,
         message: formData.message,
-        buyer_name: user ? undefined : formData.buyer_name,
-        buyer_email: user ? undefined : formData.buyer_email,
-        buyer_phone: user ? undefined : formData.buyer_phone,
+        buyer_name: formData.buyer_name,
+        buyer_email: formData.buyer_email,
+        buyer_phone: formData.buyer_phone || undefined,
         inquiry_type: activeTab === 'offer' ? 'PRICE_NEGOTIATION' : formData.inquiry_type,
         offered_price: activeTab === 'offer' && formData.offered_price
           ? parseFloat(formData.offered_price)

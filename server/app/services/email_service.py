@@ -578,9 +578,9 @@ Hello {seller_name},
 Great news! You've received a new {email_type.lower()} for your car listing on AutoHub.
 
 Car: {car_title}
-From: {buyer_name}
-Email: {buyer_email}
-Phone: {buyer_phone}
+From: {buyer_name or 'Unknown'}
+Email: {buyer_email or 'Not provided'}
+Phone: {buyer_phone or 'Not provided'}
 Type: {inquiry_type.replace('_', ' ').title()}{offer_section}
 
 Message:
@@ -673,7 +673,7 @@ Need help? Contact us at support@autohub.ph
                                             Name:
                                         </td>
                                         <td style="padding: 10px 0; color: #111827; font-size: 15px; font-weight: 500;">
-                                            {buyer_name}
+                                            {buyer_name or 'Unknown'}
                                         </td>
                                     </tr>
                                     <tr>
@@ -681,9 +681,7 @@ Need help? Contact us at support@autohub.ph
                                             Email:
                                         </td>
                                         <td style="padding: 10px 0; color: #111827; font-size: 15px;">
-                                            <a href="mailto:{buyer_email}" style="color: #3B82F6; text-decoration: none; font-weight: 500;">
-                                                {buyer_email}
-                                            </a>
+                                            {f'<a href="mailto:{buyer_email}" style="color: #3B82F6; text-decoration: none; font-weight: 500;">{buyer_email}</a>' if buyer_email else '<span style="color: #9CA3AF;">Not provided</span>'}
                                         </td>
                                     </tr>
                                     <tr>
@@ -691,9 +689,7 @@ Need help? Contact us at support@autohub.ph
                                             Phone:
                                         </td>
                                         <td style="padding: 10px 0; color: #111827; font-size: 15px;">
-                                            <a href="tel:{buyer_phone}" style="color: #3B82F6; text-decoration: none; font-weight: 500;">
-                                                {buyer_phone}
-                                            </a>
+                                            {f'<a href="tel:{buyer_phone}" style="color: #3B82F6; text-decoration: none; font-weight: 500;">{buyer_phone}</a>' if buyer_phone else '<span style="color: #9CA3AF;">Not provided</span>'}
                                         </td>
                                     </tr>
                                     <tr>

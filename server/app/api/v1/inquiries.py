@@ -44,11 +44,18 @@ async def create_inquiry(
                 detail="Cannot inquire about your own listing"
             )
     
-    # FIX: Use getattr for buyer info
+    # FIX: Use getattr for buyer info - construct full name from first_name + last_name
     buyer_id = int(getattr(current_user, 'id', 0)) if current_user else None
-    buyer_full_name = getattr(current_user, 'full_name', None) if current_user else None
-    buyer_email = getattr(current_user, 'email', None) if current_user else None
-    buyer_phone = getattr(current_user, 'phone', None) if current_user else None
+    if current_user:
+        first_name = getattr(current_user, 'first_name', '')
+        last_name = getattr(current_user, 'last_name', '')
+        buyer_full_name = f"{first_name} {last_name}".strip() if first_name or last_name else None
+        buyer_email = getattr(current_user, 'email', None)
+        buyer_phone = getattr(current_user, 'phone', None)
+    else:
+        buyer_full_name = None
+        buyer_email = None
+        buyer_phone = None
     
     # Create inquiry
     inquiry = Inquiry(
