@@ -137,6 +137,25 @@ export default function Navigation() {
 
   const RoleIcon = theme.roleIcon;
 
+  // Render text with individual letter scatter animation
+  const renderScatteredText = (text: string, className: string) => {
+    return (
+      <span className={className}>
+        {text.split('').map((letter, index) => (
+          <span
+            key={index}
+            className={`inline-block ${isAnimating ? 'animate-scatter-letter' : ''}`}
+            style={{
+              animationDelay: `${index * 0.05}s`,
+            }}
+          >
+            {letter}
+          </span>
+        ))}
+      </span>
+    );
+  };
+
   return (
     <>
       {/* Top gradient line */}
@@ -176,9 +195,10 @@ export default function Navigation() {
                   strokeWidth={2.5}
                 />
               </div>
-              <span className={`font-black text-xl bg-gradient-to-r from-gray-900 to-gray-700 dark:from-white dark:to-gray-300 bg-clip-text text-transparent ${isAnimating ? 'animate-scatter' : ''}`}>
-                AutoHub
-              </span>
+              {renderScatteredText(
+                'AutoHub',
+                'font-black text-xl bg-gradient-to-r from-gray-900 to-gray-700 dark:from-white dark:to-gray-300 bg-clip-text text-transparent'
+              )}
             </Link>
           </NavbarBrand>
         </NavbarContent>
@@ -200,9 +220,10 @@ export default function Navigation() {
                 </div>
               </div>
               <div className="flex flex-col">
-                <span className={`font-black text-2xl bg-gradient-to-r from-gray-900 to-gray-700 dark:from-white dark:to-gray-300 bg-clip-text text-transparent leading-none ${isAnimating ? 'animate-scatter' : ''}`}>
-                  AutoHub
-                </span>
+                {renderScatteredText(
+                  'AutoHub',
+                  'font-black text-2xl bg-gradient-to-r from-gray-900 to-gray-700 dark:from-white dark:to-gray-300 bg-clip-text text-transparent leading-none'
+                )}
                 <span className={`text-[10px] font-semibold ${theme.accent} tracking-wider uppercase`}>
                   Philippines
                 </span>
@@ -656,48 +677,45 @@ export default function Navigation() {
           animation: drive 3s ease-in-out;
         }
 
-        @keyframes scatter {
+        @keyframes scatter-letter {
           0% {
-            transform: translate(0, 0) scale(1);
+            transform: translate(0, 0) rotate(0deg) scale(1);
             opacity: 1;
-            letter-spacing: normal;
           }
-          15% {
-            transform: translate(2px, -3px) scale(1.05);
-            opacity: 0.9;
-            letter-spacing: 0.05em;
-          }
-          30% {
-            transform: translate(-3px, 2px) scale(0.95);
+          20% {
+            transform: translate(var(--scatter-x, 0), -15px) rotate(var(--scatter-rotate, 0deg)) scale(1.2);
             opacity: 0.8;
-            letter-spacing: 0.1em;
           }
-          45% {
-            transform: translate(4px, 1px) scale(1.08);
-            opacity: 0.85;
-            letter-spacing: 0.15em;
+          40% {
+            transform: translate(calc(var(--scatter-x, 0) * 1.5), -25px) rotate(calc(var(--scatter-rotate, 0deg) * 1.5)) scale(1.1);
+            opacity: 0.6;
           }
           60% {
-            transform: translate(-2px, -2px) scale(0.98);
-            opacity: 0.9;
-            letter-spacing: 0.1em;
+            transform: translate(var(--scatter-x, 0), -10px) rotate(var(--scatter-rotate, 0deg)) scale(1.15);
+            opacity: 0.8;
           }
-          75% {
-            transform: translate(1px, 2px) scale(1.02);
+          80% {
+            transform: translate(calc(var(--scatter-x, 0) * 0.3), -2px) rotate(calc(var(--scatter-rotate, 0deg) * 0.3)) scale(1.05);
             opacity: 0.95;
-            letter-spacing: 0.05em;
           }
           100% {
-            transform: translate(0, 0) scale(1);
+            transform: translate(0, 0) rotate(0deg) scale(1);
             opacity: 1;
-            letter-spacing: normal;
           }
         }
 
-        .animate-scatter {
-          animation: scatter 3s ease-in-out;
+        .animate-scatter-letter {
+          animation: scatter-letter 0.8s ease-in-out;
           display: inline-block;
         }
+
+        .animate-scatter-letter:nth-child(1) { --scatter-x: -8px; --scatter-rotate: -15deg; }
+        .animate-scatter-letter:nth-child(2) { --scatter-x: 5px; --scatter-rotate: 10deg; }
+        .animate-scatter-letter:nth-child(3) { --scatter-x: -6px; --scatter-rotate: -8deg; }
+        .animate-scatter-letter:nth-child(4) { --scatter-x: 7px; --scatter-rotate: 12deg; }
+        .animate-scatter-letter:nth-child(5) { --scatter-x: -5px; --scatter-rotate: -10deg; }
+        .animate-scatter-letter:nth-child(6) { --scatter-x: 6px; --scatter-rotate: 8deg; }
+        .animate-scatter-letter:nth-child(7) { --scatter-x: -7px; --scatter-rotate: -12deg; }
       `}</style>
     </>
   );
