@@ -80,18 +80,7 @@ export default function SellerLayout({ children }: SellerLayoutProps) {
   };
 
   return (
-    <div className="min-h-screen bg-black relative overflow-hidden">
-      {/* Green Animated Background - Seller Theme */}
-      <div className="fixed inset-0 z-0">
-        {/* Animated gradient blobs */}
-        <div className="absolute top-20 left-10 w-[600px] h-[600px] bg-green-600/20 rounded-full blur-[150px] animate-pulse-green"></div>
-        <div className="absolute top-40 right-10 w-[500px] h-[500px] bg-emerald-600/15 rounded-full blur-[150px] animate-pulse-green" style={{animationDelay: '1s'}}></div>
-        <div className="absolute bottom-20 left-1/3 w-[550px] h-[550px] bg-lime-600/15 rounded-full blur-[150px] animate-pulse-green" style={{animationDelay: '2s'}}></div>
-
-        {/* Gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-br from-black/80 via-black/70 to-black/80"></div>
-      </div>
-
+    <div className="min-h-screen bg-transparent relative overflow-hidden">
       {/* Sidebar */}
       <aside
         className={`fixed left-0 top-0 h-full bg-black/40 backdrop-blur-xl border-r border-green-700/30 transition-all duration-300 z-50 flex flex-col ${

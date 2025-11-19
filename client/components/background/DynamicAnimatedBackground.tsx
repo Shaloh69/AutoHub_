@@ -1,21 +1,33 @@
 // components/background/DynamicAnimatedBackground.tsx
 'use client';
 
-import { usePathname } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
 import { AnimatedBackground } from './AnimatedBackground';
 
 export function DynamicAnimatedBackground() {
-  const pathname = usePathname();
+  const { user, loading } = useAuth();
 
-  // Determine color scheme based on current route
+  // Determine color scheme based on user role
   const getColorScheme = (): 'red' | 'green' | 'purple' => {
-    if (pathname.startsWith('/seller') || pathname.startsWith('/dealer')) {
-      return 'green';
+    // Wait for auth to load before determining color
+    if (loading || !user) {
+      return 'red'; // Default for non-authenticated users
     }
-    if (pathname.startsWith('/admin')) {
+
+    const userRole = user.role?.toUpperCase();
+
+    // Admin gets purple theme
+    if (userRole === 'ADMIN' || userRole === 'MODERATOR') {
       return 'purple';
     }
-    return 'red'; // Default for customer pages
+
+    // Sellers and Dealers get green theme
+    if (userRole === 'SELLER' || userRole === 'DEALER') {
+      return 'green';
+    }
+
+    // Customers and everyone else get red theme
+    return 'red';
   };
 
   return <AnimatedBackground colorScheme={getColorScheme()} />;
