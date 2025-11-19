@@ -6,7 +6,7 @@
 
 import { usePathname } from 'next/navigation';
 import Navigation from '@/components/Navigation';
-import { Footer } from '@/app/layout';
+import { Footer } from '@/components/Footer';
 
 export default function LayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
