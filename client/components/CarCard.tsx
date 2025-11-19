@@ -19,6 +19,7 @@ export default function CarCard({ car, onFavoriteChange }: CarCardProps) {
   const router = useRouter();
   const [isFavorite, setIsFavorite] = useState(false); // Initialize as false, will be fetched separately if needed
   const [isLoading, setIsLoading] = useState(false);
+  const [imageError, setImageError] = useState(false);
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('en-PH', {
@@ -61,7 +62,32 @@ export default function CarCard({ car, onFavoriteChange }: CarCardProps) {
     }
   };
 
-  const mainImage = getImageUrl(car.images?.[0]?.image_url);
+  // Get main image - priority order:
+  // 1. car.main_image field
+  // 2. Image with is_main: true
+  // 3. First image in the array
+  const getMainImage = (): string => {
+    // First, check if main_image field exists on the car object
+    if (car.main_image) {
+      return getImageUrl(car.main_image);
+    }
+
+    // Second, find the image marked as main
+    if (car.images && car.images.length > 0) {
+      const mainImageObj = car.images.find(img => img.is_main);
+      if (mainImageObj) {
+        return getImageUrl(mainImageObj.image_url);
+      }
+
+      // Fall back to first image
+      return getImageUrl(car.images[0].image_url);
+    }
+
+    // No images available, return placeholder
+    return getImageUrl(null);
+  };
+
+  const mainImage = getMainImage();
 
   return (
     <Card
@@ -73,10 +99,11 @@ export default function CarCard({ car, onFavoriteChange }: CarCardProps) {
         onClick={() => router.push(`/cars/${car.id}`)}
       >
         <Image
-          src={mainImage}
+          src={imageError ? '/placeholder-car.jpg' : mainImage}
           alt={car.title}
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
           removeWrapper
+          onError={() => setImageError(true)}
         />
 
         {/* Overlay Gradient */}
