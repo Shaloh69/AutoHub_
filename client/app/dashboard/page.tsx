@@ -5,7 +5,6 @@ import { useState, useEffect } from 'react';
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { Chip } from "@heroui/chip";
-import { Image } from "@heroui/image";
 import { Spinner } from "@heroui/spinner";
 import { Tabs, Tab } from "@heroui/tabs";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure } from "@heroui/modal";
@@ -15,6 +14,7 @@ import { apiService, getImageUrl } from '@/services/api';
 import { Car } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
+import ResponsiveImage from '@/components/ResponsiveImage';
 
 function formatPrice(price: number): string {
   return new Intl.NumberFormat('en-US', {
@@ -226,11 +226,14 @@ export default function DashboardPage() {
             className="group hover:shadow-autohub transition-all duration-300 hover:-translate-y-1 border border-autohub-accent1-200 hover:border-autohub-primary-500/50"
               >
             <CardBody className="p-0">
-              <div className="relative">
-                <Image
-              src={getImageUrl(car.images?.[0]?.image_url)}
+              <div className="relative h-48">
+                <ResponsiveImage
+              src={car.images?.[0]?.image_url}
               alt={`${car.year} ${car.make} ${car.model}`}
-              className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+              aspectRatio="auto"
+              objectFit="cover"
+              className="group-hover:scale-105 transition-transform duration-300"
+              showSpinner={false}
               radius="none"
                 />
                 <div className="absolute top-3 left-3 flex gap-2">

@@ -9,7 +9,6 @@ import { useParams, useRouter } from 'next/navigation';
 import { Card, CardHeader, CardBody } from '@heroui/card';
 import { Button } from '@heroui/button';
 import { Chip } from '@heroui/chip';
-import { Image } from '@heroui/image';
 import { Spinner } from '@heroui/spinner';
 import { Tabs, Tab } from '@heroui/tabs';
 import { Divider } from '@heroui/divider';
@@ -24,6 +23,7 @@ import { Car } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import ContactSellerModal from '@/components/ContactSellerModal';
 import CarReviews from '@/components/CarReviews';
+import ResponsiveImage from '@/components/ResponsiveImage';
 
 export default function CarDetailPage() {
   const params = useParams();
@@ -258,10 +258,11 @@ export default function CarDetailPage() {
               <CardBody className="p-0">
                 {/* Main Image */}
                 <div className="relative aspect-[16/10] bg-gray-100 dark:bg-gray-800">
-                  <Image
-                    src={getImageUrl(currentImage?.image_url)}
+                  <ResponsiveImage
+                    src={currentImage?.image_url}
                     alt={car.title}
-                    className="w-full h-full object-cover"
+                    aspectRatio="auto"
+                    objectFit="cover"
                   />
 
                   {/* Navigation Arrows */}
@@ -345,10 +346,12 @@ export default function CarDetailPage() {
                             : 'border-transparent hover:border-gray-300'
                         }`}
                       >
-                        <Image
-                          src={getImageUrl(img.image_url)}
+                        <ResponsiveImage
+                          src={img.image_url}
                           alt={`View ${idx + 1}`}
-                          className="w-full h-full object-cover"
+                          aspectRatio="square"
+                          objectFit="cover"
+                          showSpinner={false}
                         />
                         {/* Main photo indicator */}
                         {img.is_main && (

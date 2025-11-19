@@ -21,6 +21,7 @@ import { apiService, getImageUrl } from '@/services/api';
 import { Inquiry } from '@/types';
 import { useRequireSeller } from '@/contexts/AuthContext';
 import SellerLayout from '@/components/seller/SellerLayout';
+import ResponsiveImage from '@/components/ResponsiveImage';
 
 export default function SellerInquiriesPage() {
   const router = useRouter();
@@ -250,10 +251,12 @@ export default function SellerInquiriesPage() {
                         {/* Car Image */}
                         <div className="w-full md:w-32 h-24 bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden flex-shrink-0">
                           {inquiry.car?.images?.[0] ? (
-                            <img
-                              src={getImageUrl(inquiry.car.images[0].image_url)}
+                            <ResponsiveImage
+                              src={inquiry.car.images[0].image_url}
                               alt={inquiry.car.title}
-                              className="w-full h-full object-cover"
+                              aspectRatio="auto"
+                              objectFit="cover"
+                              showSpinner={false}
                             />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center">

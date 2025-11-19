@@ -1,7 +1,6 @@
 'use client';
 
 import {Card, CardBody, CardFooter} from "@heroui/card";
-import {Image} from "@heroui/image";
 import {Button} from "@heroui/button";
 import {Chip} from "@heroui/chip";
 import { Heart, MapPin, Calendar, Gauge, Fuel, Settings2 } from 'lucide-react';
@@ -9,6 +8,7 @@ import { Car } from '@/types';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { apiService, getImageUrl } from '@/services/api';
+import ResponsiveImage from './ResponsiveImage';
 
 interface CarCardProps {
   car: Car;
@@ -103,12 +103,13 @@ export default function CarCard({ car, onFavoriteChange }: CarCardProps) {
         className="relative h-48 sm:h-52 md:h-56 overflow-hidden bg-black/50 cursor-pointer"
         onClick={() => router.push(`/cars/${car.id}`)}
       >
-        <Image
+        <ResponsiveImage
           src={imageError ? '/placeholder-car.svg' : mainImage}
           alt={car.title}
-          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-          removeWrapper
-          onError={() => setImageError(true)}
+          aspectRatio="auto"
+          objectFit="cover"
+          className="transition-transform duration-500 group-hover:scale-110"
+          showSpinner={false}
         />
 
         {/* Overlay Gradient */}
