@@ -244,7 +244,7 @@ async def get_inquiry(
     return InquiryDetailResponse(**inquiry_dict)
 
 
-@router.post("/{inquiry_id}/respond", response_model=InquiryResponseResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/{inquiry_id}/responses", response_model=InquiryResponseResponse, status_code=status.HTTP_201_CREATED)
 async def respond_to_inquiry(
     inquiry_id: int,
     response_data: InquiryResponseCreate,
