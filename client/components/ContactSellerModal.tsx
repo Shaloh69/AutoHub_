@@ -45,13 +45,14 @@ export default function ContactSellerModal({ carId, carPrice, isOpen, onClose }:
   });
 
   const handleSubmit = async () => {
-    if (!formData.message.trim()) {
-      setError('Please enter a message');
+    // Require login for inquiries
+    if (!user) {
+      setError('Please log in or sign up to send an inquiry. This helps us protect our sellers from spam and ensures better communication.');
       return;
     }
 
-    if (!user && (!formData.buyer_name || !formData.buyer_email)) {
-      setError('Please provide your name and email');
+    if (!formData.message.trim()) {
+      setError('Please enter a message');
       return;
     }
 
@@ -141,6 +142,36 @@ export default function ContactSellerModal({ carId, carPrice, isOpen, onClose }:
                   : 'The seller will respond to your inquiry shortly.'}
               </p>
             </div>
+          ) : !user ? (
+            <div className="text-center py-8">
+              <div className="mb-4">
+                <div className="w-16 h-16 mx-auto bg-blue-100 dark:bg-blue-900/20 rounded-full flex items-center justify-center mb-4">
+                  <MessageCircle className="text-blue-600 dark:text-blue-400" size={32} />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                  Login Required
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+                  Please log in or sign up to send an inquiry to the seller. This helps us protect our sellers from spam and ensures better communication.
+                </p>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <Button
+                  color="primary"
+                  onPress={() => window.location.href = '/auth/login'}
+                  className="min-w-[120px]"
+                >
+                  Log In
+                </Button>
+                <Button
+                  variant="bordered"
+                  onPress={() => window.location.href = '/auth/register'}
+                  className="min-w-[120px]"
+                >
+                  Sign Up
+                </Button>
+              </div>
+            </div>
           ) : (
             <div className="space-y-4 pb-2">
               <Tabs
@@ -176,34 +207,6 @@ export default function ContactSellerModal({ carId, carPrice, isOpen, onClose }:
               </Tabs>
 
               <div className="space-y-4 pt-2">
-                {!user && (
-                  <>
-                    <Input
-                      label="Your Name"
-                      placeholder="Enter your full name"
-                      value={formData.buyer_name}
-                      onChange={(e) => setFormData(prev => ({ ...prev, buyer_name: e.target.value }))}
-                      isRequired
-                    />
-
-                    <Input
-                      label="Your Email"
-                      type="email"
-                      placeholder="your.email@example.com"
-                      value={formData.buyer_email}
-                      onChange={(e) => setFormData(prev => ({ ...prev, buyer_email: e.target.value }))}
-                      isRequired
-                    />
-
-                    <Input
-                      label="Your Phone"
-                      type="tel"
-                      placeholder="+63 xxx xxx xxxx"
-                      value={formData.buyer_phone}
-                      onChange={(e) => setFormData(prev => ({ ...prev, buyer_phone: e.target.value }))}
-                    />
-                  </>
-                )}
 
                 {activeTab === 'message' ? (
                   <>
@@ -278,7 +281,7 @@ export default function ContactSellerModal({ carId, carPrice, isOpen, onClose }:
             </div>
           )}
         </ModalBody>
-        {!success && (
+        {!success && user && (
           <ModalFooter className="flex flex-col sm:flex-row gap-2 px-4 sm:px-6 py-4">
             <Button
               variant="flat"

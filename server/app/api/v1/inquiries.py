@@ -23,10 +23,10 @@ router = APIRouter()
 @router.post("", response_model=IDResponse, status_code=status.HTTP_201_CREATED)
 async def create_inquiry(
     inquiry_data: InquiryCreate,
-    current_user: User = Depends(get_optional_user),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Create new inquiry for a car (authenticated or guest)"""
+    """Create new inquiry for a car (authentication required)"""
     # Get car
     car = db.query(Car).filter(Car.id == inquiry_data.car_id).first()
     if not car:
@@ -34,28 +34,22 @@ async def create_inquiry(
     
     # FIX: Use getattr for seller_id
     seller_id_value = int(getattr(car, 'seller_id', 0))
-    
+    user_id_value = int(getattr(current_user, 'id', 0))
+
     # Cannot inquire about own car
-    if current_user:
-        user_id_value = int(getattr(current_user, 'id', 0))
-        if seller_id_value == user_id_value:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Cannot inquire about your own listing"
-            )
-    
-    # FIX: Use getattr for buyer info - construct full name from first_name + last_name
-    buyer_id = int(getattr(current_user, 'id', 0)) if current_user else None
-    if current_user:
-        first_name = getattr(current_user, 'first_name', '')
-        last_name = getattr(current_user, 'last_name', '')
-        buyer_full_name = f"{first_name} {last_name}".strip() if first_name or last_name else None
-        buyer_email = getattr(current_user, 'email', None)
-        buyer_phone = getattr(current_user, 'phone', None)
-    else:
-        buyer_full_name = None
-        buyer_email = None
-        buyer_phone = None
+    if seller_id_value == user_id_value:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot inquire about your own listing"
+        )
+
+    # Get buyer info from authenticated user - construct full name from first_name + last_name
+    buyer_id = user_id_value
+    first_name = getattr(current_user, 'first_name', '')
+    last_name = getattr(current_user, 'last_name', '')
+    buyer_full_name = f"{first_name} {last_name}".strip() if first_name or last_name else None
+    buyer_email = getattr(current_user, 'email', None)
+    buyer_phone = getattr(current_user, 'phone', None)
     
     # Create inquiry
     inquiry = Inquiry(

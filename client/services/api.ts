@@ -406,11 +406,11 @@ class ApiService {
   async getInquiries(
     type: 'sent' | 'received',
     status?: string
-  ): Promise<ApiResponse<PaginatedResponse<Inquiry>>> {
-    const params = new URLSearchParams({ type });
+  ): Promise<ApiResponse<Inquiry[]>> {
+    const params = new URLSearchParams({ role: type });
     if (status) params.append('status', status);
-    
-    return this.request<PaginatedResponse<Inquiry>>(`/inquiries?${params.toString()}`);
+
+    return this.request<Inquiry[]>(`/inquiries?${params.toString()}`);
   }
 
   async getInquiry(id: number): Promise<ApiResponse<Inquiry>> {

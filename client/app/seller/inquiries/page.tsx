@@ -48,7 +48,7 @@ export default function SellerInquiriesPage() {
       const response = await apiService.getInquiries('received', status);
 
       if (response.success && response.data) {
-        setInquiries(response.data.items || []);
+        setInquiries(Array.isArray(response.data) ? response.data : []);
       }
     } catch (error) {
       console.error('Error loading inquiries:', error);
