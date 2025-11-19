@@ -1,0 +1,31 @@
+<svg width="800" height="600" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="800" height="600" fill="#1a1a1a"/>
+
+  <!-- Gradient overlay -->
+  <defs>
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#e60000;stop-opacity:0.1" />
+      <stop offset="100%" style="stop-color:#990000;stop-opacity:0.2" />
+    </linearGradient>
+  </defs>
+  <rect width="800" height="600" fill="url(#grad1)"/>
+
+  <!-- Car icon -->
+  <g transform="translate(200, 200)">
+    <path d="M100 150 L120 100 L180 100 L220 100 L260 100 L280 150 Z" fill="#e60000" opacity="0.3"/>
+    <rect x="80" y="150" width="240" height="80" rx="10" fill="#e60000" opacity="0.3"/>
+    <circle cx="130" cy="230" r="25" fill="#666" stroke="#e60000" stroke-width="3"/>
+    <circle cx="270" cy="230" r="25" fill="#666" stroke="#e60000" stroke-width="3"/>
+    <rect x="140" y="120" width="50" height="30" fill="#333"/>
+    <rect x="210" y="120" width="50" height="30" fill="#333"/>
+  </g>
+
+  <!-- Text -->
+  <text x="400" y="400" font-family="Arial, sans-serif" font-size="32" fill="#666" text-anchor="middle" font-weight="bold">
+    No Image Available
+  </text>
+  <text x="400" y="440" font-family="Arial, sans-serif" font-size="18" fill="#999" text-anchor="middle">
+    AutoHub Elite
+  </text>
+</svg>

@@ -876,7 +876,7 @@ class ApiService {
 export function getImageUrl(relativeUrl: string | null | undefined): string {
   // Return placeholder if no URL provided
   if (!relativeUrl) {
-    return '/placeholder-car.jpg';
+    return '/placeholder-car.svg';
   }
 
   // Return as-is if already a full URL (http/https) or a local placeholder

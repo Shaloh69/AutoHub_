@@ -99,7 +99,7 @@ export default function CarCard({ car, onFavoriteChange }: CarCardProps) {
         onClick={() => router.push(`/cars/${car.id}`)}
       >
         <Image
-          src={imageError ? '/placeholder-car.jpg' : mainImage}
+          src={imageError ? '/placeholder-car.svg' : mainImage}
           alt={car.title}
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
           removeWrapper
