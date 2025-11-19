@@ -161,9 +161,13 @@ First car data: {
 ## ✅ FIX IMPLEMENTED
 
 **Date Fixed**: 2025-11-19
-**Commit**: `fix: Include main_image field in car list responses for frontend display`
+**Commits**:
+1. `fix: Include main_image field in car list responses for frontend display`
+2. `fix: Update car.main_image field when uploading/deleting images`
 
 ### Changes Made
+
+#### Part 1: Include main_image in List Responses
 
 Updated `server/app/api/v1/cars.py` to include `main_image` in all car response dictionaries:
 
@@ -175,6 +179,33 @@ Updated `server/app/api/v1/cars.py` to include `main_image` in all car response 
 ```python
 # Added to all car_dict responses:
 "main_image": car.main_image,  # FIX: Include main_image for car cards
+```
+
+#### Part 2: Update main_image Field on Image Upload/Delete
+
+Fixed image upload and delete endpoints to maintain the `car.main_image` field:
+
+**upload_car_image** endpoint:
+```python
+# When image is marked as main, update car's main_image field
+if should_be_main:
+    setattr(car, 'main_image', result["file_url"])
+    setattr(car, 'total_images', image_count + 1)
+```
+
+**delete_car_image** endpoint:
+```python
+# If deleted image was main, update to next available image
+if was_main:
+    next_main_image = db.query(CarImage).filter(
+        CarImage.car_id == car_id
+    ).order_by(CarImage.display_order).first()
+
+    if next_main_image:
+        setattr(next_main_image, 'is_main', True)
+        setattr(car, 'main_image', getattr(next_main_image, 'image_url', None))
+    else:
+        setattr(car, 'main_image', None)
 ```
 
 ### Verification
