@@ -45,11 +45,9 @@ class InquiryResponseResponse(BaseModel):
     inquiry_id: int
     user_id: int
     message: str
-    response_type: str
-    counter_offer_price: Optional[Decimal] = None
-    is_automated: bool = False
+    is_from_seller: bool = False
     created_at: datetime
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 

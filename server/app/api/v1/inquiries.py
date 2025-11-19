@@ -13,7 +13,7 @@ from app.schemas.common import MessageResponse, PaginatedResponse, IDResponse
 from app.core.dependencies import get_current_user, get_optional_user
 from app.models.user import User
 from app.models.car import Car
-from app.models.inquiry import Inquiry, InquiryResponse as InquiryResponseModel
+from app.models.inquiry import Inquiry, InquiryResponse as InquiryResponseModel, InquiryStatus
 from app.services.notification_service import NotificationService
 from app.services.email_service import EmailService
 
@@ -220,11 +220,8 @@ async def get_inquiry(
                 "inquiry_id": r.inquiry_id,
                 "user_id": r.user_id,
                 "message": r.message,
-                "response_type": "MESSAGE",
-                "counter_offer_price": None,
-                "is_automated": False,
-                "created_at": r.created_at,
-                "is_seller_response": r.is_from_seller if hasattr(r, 'is_from_seller') else (r.user_id == seller_id)
+                "is_from_seller": r.is_from_seller if hasattr(r, 'is_from_seller') else (r.user_id == seller_id),
+                "created_at": r.created_at
             }
             for r in (inquiry.responses or [])
         ],
@@ -270,8 +267,7 @@ async def respond_to_inquiry(
         inquiry_id=inquiry_id,
         user_id=user_id,
         message=response_data.message,
-        response_type=response_data.response_type,
-        counter_offer_price=response_data.counter_offer_price,
+        is_from_seller=(user_id == seller_id),
         created_at=datetime.utcnow()
     )
     
@@ -282,7 +278,7 @@ async def respond_to_inquiry(
     setattr(inquiry, 'response_count', response_count + 1)
     setattr(inquiry, 'last_response_at', datetime.utcnow())
     setattr(inquiry, 'last_response_by', user_id)
-    setattr(inquiry, 'status', 'replied')
+    setattr(inquiry, 'status', InquiryStatus.REPLIED)
     
     db.commit()
     db.refresh(response)
@@ -301,9 +297,16 @@ async def respond_to_inquiry(
             car = db.query(Car).filter(Car.id == car_id).first()
 
             if buyer and car:
-                buyer_name = getattr(buyer, 'full_name', 'Buyer')
+                # Construct full name from first_name + last_name
+                buyer_first = getattr(buyer, 'first_name', '')
+                buyer_last = getattr(buyer, 'last_name', '')
+                buyer_name = f"{buyer_first} {buyer_last}".strip() if buyer_first or buyer_last else 'Buyer'
                 buyer_email = getattr(buyer, 'email', '')
-                seller_name = getattr(current_user, 'full_name', 'Seller')
+
+                seller_first = getattr(current_user, 'first_name', '')
+                seller_last = getattr(current_user, 'last_name', '')
+                seller_name = f"{seller_first} {seller_last}".strip() if seller_first or seller_last else 'Seller'
+
                 car_title = getattr(car, 'title', 'Car Listing')
                 response_message = getattr(response, 'message', '')
 
