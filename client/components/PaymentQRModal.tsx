@@ -13,7 +13,7 @@ import { Button } from "@heroui/button";
 import { Input } from "@heroui/input";
 import { Image } from "@heroui/image";
 import { Spinner } from "@heroui/spinner";
-import { apiService } from '@/services/api';
+import { apiService, getImageUrl } from '@/services/api';
 
 interface PaymentQRModalProps {
   isOpen: boolean;
@@ -138,7 +138,7 @@ export default function PaymentQRModal({
                 <div className="bg-white dark:bg-gray-100 p-3 sm:p-4 md:p-6 rounded-lg shadow-lg border-2 border-autohub-primary-200 dark:border-autohub-primary-400 w-full max-w-xs sm:max-w-sm md:max-w-md mx-auto">
                   <div className="relative w-full aspect-square">
                     <Image
-                      src={qrCodeUrl}
+                      src={getImageUrl(qrCodeUrl)}
                       alt="GCash Payment QR Code"
                       width={400}
                       height={400}

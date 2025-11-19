@@ -9,6 +9,7 @@ import { Textarea } from "@heroui/input";
 import { Image } from "@heroui/image";
 import { Spinner } from "@heroui/spinner";
 import { Upload, Save, X } from 'lucide-react';
+import { getImageUrl } from '@/services/api';
 
 interface QRCodeSettingsProps {
   apiBaseUrl?: string;
@@ -212,7 +213,7 @@ export default function QRCodeSettings({ apiBaseUrl = process.env.NEXT_PUBLIC_AP
               <div className="bg-white p-4 rounded-lg shadow-md border-2 border-autohub-primary-200 w-full max-w-sm">
                 <div className="relative w-full aspect-square">
                   <Image
-                    src={qrCodeUrl}
+                    src={getImageUrl(qrCodeUrl)}
                     alt="Current GCash QR Code"
                     width={300}
                     height={300}
