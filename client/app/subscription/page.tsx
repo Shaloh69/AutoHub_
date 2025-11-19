@@ -8,7 +8,7 @@ import { Chip } from "@heroui/chip";
 import { Spinner } from "@heroui/spinner";
 import { Divider } from "@heroui/divider";
 import { CheckIcon } from "@/components/icons";
-import { apiService } from '@/services/api';
+import { apiService, getImageUrl } from '@/services/api';
 import { SubscriptionPlan, Subscription } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
@@ -657,7 +657,7 @@ function PendingPaymentCard({
                 <div className="bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg border-2 border-primary-200 dark:border-primary-700 w-full max-w-md mx-auto">
                   <div className="relative w-full aspect-square">
                     <img
-                      src={qrCodeUrl}
+                      src={getImageUrl(qrCodeUrl)}
                       alt="GCash Payment QR Code"
                       className="w-full h-full object-contain rounded-lg"
                     />
