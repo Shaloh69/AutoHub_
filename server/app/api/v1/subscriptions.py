@@ -410,17 +410,27 @@ async def get_qr_code_settings(request: Request, db: Session = Depends(get_db)):
     """
     Get QR code payment settings (GCash QR code image and instructions)
 
-    Returns the GCash QR code image URL and payment instructions configured by admin
+    Returns the raw QR code relative path and payment instructions for frontend URL handling
     """
     try:
-        # Get QR code settings
-        qr_settings = SubscriptionService.get_qr_code_settings(db)
+        # Get raw settings from database (not constructed URLs)
+        qr_image = db.query(PaymentSetting).filter(
+            PaymentSetting.setting_key == "payment_qr_code_image"
+        ).first()
+
+        instructions = db.query(PaymentSetting).filter(
+            PaymentSetting.setting_key == "payment_instructions"
+        ).first()
+
+        # Return raw relative path for frontend to handle URL conversion
+        qr_code_path = getattr(qr_image, 'setting_value', '/uploads/qr/default_payment_qr.svg') if qr_image else '/uploads/qr/default_payment_qr.svg'
+        instructions_text = getattr(instructions, 'setting_value', 'Please scan the QR code and enter the reference number from your payment confirmation.') if instructions else 'Please scan the QR code and enter the reference number from your payment confirmation.'
 
         return {
             "success": True,
             "data": {
-                "qr_code_url": qr_settings["qr_code_image_url"],
-                "instructions": qr_settings["payment_instructions"]
+                "qr_code_url": qr_code_path,  # Raw relative path
+                "instructions": instructions_text
             }
         }
     except Exception as e:

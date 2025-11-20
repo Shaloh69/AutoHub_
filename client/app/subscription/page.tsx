@@ -552,32 +552,13 @@ function PendingPaymentCard({
       try {
         setLoadingQR(true);
 
-        // Fetch settings the same way as admin page
-        const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
-        const token = localStorage.getItem('token');
+        // Use public subscription QR code endpoint (no auth required)
+        const response = await apiService.getPaymentQRCode();
 
-        const response = await fetch(`${apiBaseUrl}/admin/settings/payment`, {
-          headers: token ? {
-            'Authorization': `Bearer ${token}`,
-          } : {},
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to load QR code settings');
-        }
-
-        const data = await response.json();
-
-        // Extract QR code and instructions from settings array
-        const qrSetting = data.find((s: any) => s.setting_key === 'payment_qr_code_image');
-        const instructionsSetting = data.find((s: any) => s.setting_key === 'payment_instructions');
-
-        if (qrSetting) {
-          setQrCodeUrl(qrSetting.setting_value); // This is the relative path
-        }
-
-        if (instructionsSetting) {
-          setInstructions(instructionsSetting.setting_value);
+        if (response.success && response.data) {
+          // Backend now returns raw relative path for frontend URL handling
+          setQrCodeUrl(response.data.qr_code_url); // Raw relative path like '/uploads/qr/file.png'
+          setInstructions(response.data.instructions);
         }
       } catch (err) {
         console.error('Failed to load QR code:', err);
