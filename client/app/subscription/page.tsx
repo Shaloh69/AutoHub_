@@ -558,12 +558,17 @@ function PendingPaymentCard({
         console.log('QR Code API Response:', response);
 
         if (response.success && response.data) {
-          console.log('QR Code URL received:', response.data.qr_code_url);
-          console.log('Instructions received:', response.data.instructions);
+          // Backend returns { success: true, data: {...} }
+          // Frontend wraps it again, so we need response.data.data
+          const qrData = response.data.data || response.data;
+
+          console.log('QR Data:', qrData);
+          console.log('QR Code URL received:', qrData.qr_code_url);
+          console.log('Instructions received:', qrData.instructions);
 
           // Backend now returns raw relative path for frontend URL handling
-          setQrCodeUrl(response.data.qr_code_url); // Raw relative path like '/uploads/qr/file.png'
-          setInstructions(response.data.instructions);
+          setQrCodeUrl(qrData.qr_code_url); // Raw relative path like '/uploads/qr/file.png'
+          setInstructions(qrData.instructions);
         } else {
           console.error('QR Code fetch unsuccessful:', response);
         }
