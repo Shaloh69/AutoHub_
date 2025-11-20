@@ -555,10 +555,17 @@ function PendingPaymentCard({
         // Use public subscription QR code endpoint (no auth required)
         const response = await apiService.getPaymentQRCode();
 
+        console.log('QR Code API Response:', response);
+
         if (response.success && response.data) {
+          console.log('QR Code URL received:', response.data.qr_code_url);
+          console.log('Instructions received:', response.data.instructions);
+
           // Backend now returns raw relative path for frontend URL handling
           setQrCodeUrl(response.data.qr_code_url); // Raw relative path like '/uploads/qr/file.png'
           setInstructions(response.data.instructions);
+        } else {
+          console.error('QR Code fetch unsuccessful:', response);
         }
       } catch (err) {
         console.error('Failed to load QR code:', err);
@@ -673,9 +680,12 @@ function PendingPaymentCard({
                 </p>
               </div>
             ) : (
-              <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-lg p-4">
-                <p className="text-sm text-red-700 dark:text-red-300">
-                  QR code not available. Please contact support.
+              <div className="bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-700 rounded-lg p-4">
+                <p className="text-sm text-yellow-700 dark:text-yellow-300 font-semibold mb-2">
+                  QR Code Not Configured
+                </p>
+                <p className="text-xs text-yellow-600 dark:text-yellow-400">
+                  The admin hasn't uploaded a payment QR code yet. Please contact support to complete your payment or wait for the QR code to be configured.
                 </p>
               </div>
             )}

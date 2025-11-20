@@ -422,14 +422,22 @@ async def get_qr_code_settings(request: Request, db: Session = Depends(get_db)):
             PaymentSetting.setting_key == "payment_instructions"
         ).first()
 
-        # Return raw relative path for frontend to handle URL conversion
-        qr_code_path = getattr(qr_image, 'setting_value', '/uploads/qr/default_payment_qr.svg') if qr_image else '/uploads/qr/default_payment_qr.svg'
+        # Get the raw path value (return None if no QR code uploaded yet)
+        qr_code_path = None
+        if qr_image:
+            setting_value = getattr(qr_image, 'setting_value', None)
+            # Only set if we have a valid path
+            if setting_value and setting_value.strip():
+                qr_code_path = setting_value
+
         instructions_text = getattr(instructions, 'setting_value', 'Please scan the QR code and enter the reference number from your payment confirmation.') if instructions else 'Please scan the QR code and enter the reference number from your payment confirmation.'
+
+        logger.info(f"QR Code settings - Path: {qr_code_path}, Instructions length: {len(instructions_text)}")
 
         return {
             "success": True,
             "data": {
-                "qr_code_url": qr_code_path,  # Raw relative path
+                "qr_code_url": qr_code_path,  # Raw relative path or None
                 "instructions": instructions_text
             }
         }
