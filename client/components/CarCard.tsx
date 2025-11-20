@@ -110,6 +110,7 @@ export default function CarCard({ car, onFavoriteChange }: CarCardProps) {
           objectFit="cover"
           className="transition-transform duration-500 group-hover:scale-110"
           showSpinner={false}
+          enableFullscreen={true}
         />
 
         {/* Overlay Gradient */}

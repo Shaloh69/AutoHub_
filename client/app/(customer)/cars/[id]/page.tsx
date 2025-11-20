@@ -256,13 +256,14 @@ export default function CarDetailPage() {
             {/* Image Gallery */}
             <Card className="bg-black/20 backdrop-blur-2xl border border-white/10 overflow-hidden">
               <CardBody className="p-0">
-                {/* Main Image */}
-                <div className="relative aspect-[16/10] bg-gray-100 dark:bg-gray-800">
+                {/* Main Image - Made smaller for better fit */}
+                <div className="relative aspect-[16/9] md:aspect-[16/10] max-h-[50vh] md:max-h-[60vh] bg-gray-100 dark:bg-gray-800">
                   <ResponsiveImage
                     src={currentImage?.image_url}
                     alt={car.title}
                     aspectRatio="auto"
                     objectFit="cover"
+                    enableFullscreen={true}
                   />
 
                   {/* Navigation Arrows */}
@@ -330,9 +331,9 @@ export default function CarDetailPage() {
                   </div>
                 </div>
 
-                {/* Thumbnail Grid */}
+                {/* Thumbnail Grid - Responsive sizing */}
                 {images.length > 1 && (
-                  <div className="grid grid-cols-6 gap-2 p-4">
+                  <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2 p-3 md:p-4">
                     {images.map((img, idx) => (
                       <div
                         key={img.id}
@@ -352,6 +353,7 @@ export default function CarDetailPage() {
                           aspectRatio="square"
                           objectFit="cover"
                           showSpinner={false}
+                          enableFullscreen={true}
                         />
                         {/* Main photo indicator */}
                         {img.is_main && (
