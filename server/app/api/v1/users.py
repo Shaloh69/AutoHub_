@@ -337,8 +337,8 @@ async def get_favorites(
     # Join with Car table to get full car details
     favorites = db.query(Favorite)\
         .options(
-            joinedload(Favorite.car).joinedload(Car.brand),
-            joinedload(Favorite.car).joinedload(Car.model),
+            joinedload(Favorite.car).joinedload(Car.brand_rel),
+            joinedload(Favorite.car).joinedload(Car.model_rel),
             joinedload(Favorite.car).joinedload(Car.category),
             joinedload(Favorite.car).joinedload(Car.seller),
             joinedload(Favorite.car).joinedload(Car.images)
