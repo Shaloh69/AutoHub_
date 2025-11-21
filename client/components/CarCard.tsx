@@ -38,9 +38,7 @@ export default function CarCard({ car, onFavoriteChange }: CarCardProps) {
     return new Intl.NumberFormat('en-US').format(km) + ' km';
   };
 
-  const handleFavoriteToggle = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-
+  const handleFavoriteToggle = async () => {
     // Redirect to login if not authenticated
     if (!user) {
       router.push('/auth/login');
@@ -124,22 +122,27 @@ export default function CarCard({ car, onFavoriteChange }: CarCardProps) {
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
         {/* Favorite Button */}
-        <Button
-          isIconOnly
-          size="sm"
-          variant="flat"
-          className="absolute top-3 right-3 bg-black/70 dark:bg-black/90 backdrop-blur-sm z-10 border border-primary-900/50 hover:bg-primary-600 hover:border-primary-500 transition-all"
-          onPress={handleFavoriteToggle}
-          isLoading={isLoading}
+        <div
+          onClick={(e) => e.stopPropagation()}
+          className="absolute top-3 right-3 z-10"
         >
-          <Heart
-            className={`w-4 h-4 transition-all ${
-              isCarFavorite
-                ? 'fill-primary-500 text-primary-500'
-                : 'text-gray-300 hover:text-primary-500'
-            }`}
-          />
-        </Button>
+          <Button
+            isIconOnly
+            size="sm"
+            variant="flat"
+            className="bg-black/70 dark:bg-black/90 backdrop-blur-sm border border-primary-900/50 hover:bg-primary-600 hover:border-primary-500 transition-all"
+            onPress={handleFavoriteToggle}
+            isLoading={isLoading}
+          >
+            <Heart
+              className={`w-4 h-4 transition-all ${
+                isCarFavorite
+                  ? 'fill-primary-500 text-primary-500'
+                  : 'text-gray-300 hover:text-primary-500'
+              }`}
+            />
+          </Button>
+        </div>
 
         {/* Status Badge */}
         <div className="absolute top-3 left-3 z-10">
