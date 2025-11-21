@@ -334,20 +334,60 @@ async def get_favorites(
     """Get user's favorite cars with full car details"""
     user_id = int(getattr(current_user, 'id', 0))
 
-    # Join with Car table to get full car details
+    # Query favorites
     favorites = db.query(Favorite)\
-        .options(
-            joinedload(Favorite.car).joinedload(Car.brand_rel),
-            joinedload(Favorite.car).joinedload(Car.model_rel),
-            joinedload(Favorite.car).joinedload(Car.category),
-            joinedload(Favorite.car).joinedload(Car.seller),
-            joinedload(Favorite.car).joinedload(Car.images)
-        )\
         .filter(Favorite.user_id == user_id)\
         .all()
 
-    # Return full car details
-    return [CarResponse.model_validate(fav.car) for fav in favorites if fav.car]
+    # Get full car details for each favorite
+    items = []
+    for fav in favorites:
+        if not fav.car:
+            continue
+
+        car = fav.car
+        car_dict = {
+            "id": car.id,
+            "seller_id": car.seller_id,
+            "brand_id": car.brand_id,
+            "model_id": car.model_id,
+            "category_id": car.category_id,
+            "color_id": car.color_id,
+            "interior_color_id": car.interior_color_id,
+            "title": car.title,
+            "description": car.description,
+            "year": car.year,
+            "price": car.price,
+            "currency_id": car.currency_id,
+            "mileage": car.mileage,
+            "fuel_type": car.fuel_type if isinstance(car.fuel_type, str) else car.fuel_type.value,
+            "transmission": car.transmission if isinstance(car.transmission, str) else car.transmission.value,
+            "car_condition": car.car_condition if isinstance(car.car_condition, str) else car.car_condition.value,
+            "city_id": car.city_id,
+            "province_id": car.province_id,
+            "region_id": car.region_id,
+            "status": car.status if isinstance(car.status, str) else car.status.value,
+            "approval_status": car.approval_status if isinstance(car.approval_status, str) else car.approval_status.value,
+            "is_featured": car.is_featured,
+            "is_premium": car.is_premium,
+            "is_active": car.is_active,
+            "views_count": car.views_count,
+            "contact_count": car.contact_count,
+            "favorite_count": car.favorite_count,
+            "average_rating": car.average_rating,
+            "created_at": car.created_at,
+            "updated_at": car.updated_at,
+            # Media - Include main_image for frontend display
+            "main_image": car.main_image,
+            # Convert related objects to avoid ORM serialization issues
+            "images": [],
+            "brand_rel": None,
+            "model_rel": None,
+            "city": None,
+        }
+        items.append(CarResponse.model_validate(car_dict))
+
+    return items
 
 
 @router.post("/favorites/{car_id}", response_model=IDResponse)
