@@ -1286,9 +1286,10 @@ async def verify_payment(
 ):
     """
     Verify or reject a payment
-    
+
     This is the main admin action for QR code payment verification
     """
+    logger.info(f"DEBUG SERVER: Received verify request: payment_id={verify_request.payment_id}, action={verify_request.action}")
     try:
         admin_id = int(getattr(current_admin, 'id', 0))
         

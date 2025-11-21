@@ -727,12 +727,14 @@ class ApiService {
     rejection_reason?: string;
   }): Promise<ApiResponse<any>> {
     // Verify payment by admin - sends payment_id, action, and optional notes
+    const requestBody = {
+      payment_id: paymentId,
+      ...data,
+    };
+    console.log('DEBUG API: Sending verify request', requestBody);
     return this.request('/admin/payments/verify', {
       method: 'POST',
-      body: JSON.stringify({
-        payment_id: paymentId,
-        ...data,
-      }),
+      body: JSON.stringify(requestBody),
     });
   }
 
@@ -938,5 +940,6 @@ export function getImageUrl(relativeUrl: string | null | undefined): string {
   return `${baseUrl}${relativeUrl}`;
 }
 
+// Export singleton instance - Version 2.1 (Payment fix applied)
 export const apiService = new ApiService();
 export default apiService;

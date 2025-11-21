@@ -99,10 +99,16 @@ export default function AdminPaymentsPage() {
 
     try {
       setActionLoading(true);
+      console.log('DEBUG: Verifying payment', {
+        paymentId: selectedPayment.id,
+        action: 'approve',
+        admin_notes: adminNotes
+      });
       const response = await apiService.verifyPayment(selectedPayment.id, {
         action: 'approve',
         admin_notes: adminNotes,
       });
+      console.log('DEBUG: Response received', response);
 
       if (response.success) {
         setPayments(prev => prev.filter(p => p.id !== selectedPayment.id));
