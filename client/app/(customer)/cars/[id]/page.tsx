@@ -69,13 +69,18 @@ export default function CarDetailPage() {
     const handleKeyPress = (e: KeyboardEvent) => {
       if (!car || !car.images || car.images.length <= 1) return;
 
-      if (e.key === 'ArrowLeft') {
+      // Check if user is typing in an input/textarea
+      const activeElement = document.activeElement;
+      const isTyping = activeElement instanceof HTMLInputElement ||
+                      activeElement instanceof HTMLTextAreaElement;
+
+      if (e.key === 'ArrowLeft' && !isTyping) {
         previousImage();
         setIsAutoPlaying(false); // Pause on manual navigation
-      } else if (e.key === 'ArrowRight') {
+      } else if (e.key === 'ArrowRight' && !isTyping) {
         nextImage();
         setIsAutoPlaying(false); // Pause on manual navigation
-      } else if (e.key === ' ') {
+      } else if (e.key === ' ' && !isTyping) {
         e.preventDefault(); // Prevent page scroll
         toggleAutoPlay();
       }
