@@ -266,6 +266,9 @@ class CarResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
+    # Media
+    main_image: Optional[str] = None
+
     # Related data (populated by eager loading or joins)
     images: List[Any] = []
     brand_rel: Optional[Any] = None
