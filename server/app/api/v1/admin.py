@@ -44,6 +44,7 @@ from app.schemas.admin import (
     AdminDashboardResponse
 )
 from app.schemas.common import MessageResponse, PaginatedResponse
+from app.schemas.car import CarResponse
 from app.core.dependencies import get_current_admin, get_current_moderator
 from app.models.user import User, UserRole
 from app.models.car import Car
@@ -805,9 +806,6 @@ async def list_pending_cars(
 ):
     """List all cars pending approval with full details for display"""
     try:
-        from app.schemas.car import CarResponse
-        from app.utils.enum_helpers import normalize_enum_value
-
         # Fixed: Use UPPERCASE for Car.status to match SQL schema
         query = db.query(Car).filter(Car.status == "PENDING")
 
