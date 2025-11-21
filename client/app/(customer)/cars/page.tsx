@@ -59,9 +59,29 @@ export default function SearchCarsPage() {
     setupScrollAnimations();
   }, []);
 
+  // Search when page or sort changes (immediate)
   useEffect(() => {
     searchCars();
   }, [filters.page, filters.sort]);
+
+  // Search immediately when dropdown filters change (brand, fuel_type, transmission, condition, checkboxes)
+  useEffect(() => {
+    // Skip on initial mount
+    if (filters.page === 1) {
+      searchCars();
+    }
+  }, [filters.brand_id, filters.fuel_type, filters.transmission, filters.car_condition, filters.is_featured, filters.price_negotiable, filters.financing_available]);
+
+  // Debounce search for price and year range changes
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (filters.page === 1) {
+        searchCars();
+      }
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [priceRange, yearRange]);
 
   const setupScrollAnimations = () => {
     const observerOptions = {
@@ -206,7 +226,14 @@ export default function SearchCarsPage() {
                   label="Brand"
                   placeholder="All Brands"
                   selectedKeys={filters.brand_id ? [String(filters.brand_id)] : []}
-                  onChange={(e) => setFilters(prev => ({ ...prev, brand_id: e.target.value ? parseInt(e.target.value) : undefined }))}
+                  onSelectionChange={(keys) => {
+                    const selectedKey = Array.from(keys)[0];
+                    setFilters(prev => ({
+                      ...prev,
+                      brand_id: selectedKey ? parseInt(String(selectedKey)) : undefined,
+                      page: 1
+                    }));
+                  }}
                   classNames={{
                     trigger: "bg-white/5 border-white/10 hover:border-primary-500/50",
                     label: "text-gray-300",
@@ -274,7 +301,14 @@ export default function SearchCarsPage() {
                   label="Fuel Type"
                   placeholder="All Types"
                   selectedKeys={filters.fuel_type ? [filters.fuel_type] : []}
-                  onChange={(e) => setFilters(prev => ({ ...prev, fuel_type: e.target.value as any }))}
+                  onSelectionChange={(keys) => {
+                    const selectedKey = Array.from(keys)[0];
+                    setFilters(prev => ({
+                      ...prev,
+                      fuel_type: selectedKey ? String(selectedKey) as any : undefined,
+                      page: 1
+                    }));
+                  }}
                   classNames={{
                     trigger: "bg-white/5 border-white/10 hover:border-primary-500/50",
                     label: "text-gray-300",
@@ -292,7 +326,14 @@ export default function SearchCarsPage() {
                   label="Transmission"
                   placeholder="All Types"
                   selectedKeys={filters.transmission ? [filters.transmission] : []}
-                  onChange={(e) => setFilters(prev => ({ ...prev, transmission: e.target.value as any }))}
+                  onSelectionChange={(keys) => {
+                    const selectedKey = Array.from(keys)[0];
+                    setFilters(prev => ({
+                      ...prev,
+                      transmission: selectedKey ? String(selectedKey) as any : undefined,
+                      page: 1
+                    }));
+                  }}
                   classNames={{
                     trigger: "bg-white/5 border-white/10 hover:border-primary-500/50",
                     label: "text-gray-300",
@@ -310,7 +351,14 @@ export default function SearchCarsPage() {
                   label="Condition"
                   placeholder="All Conditions"
                   selectedKeys={filters.car_condition ? [filters.car_condition] : []}
-                  onChange={(e) => setFilters(prev => ({ ...prev, car_condition: e.target.value as any }))}
+                  onSelectionChange={(keys) => {
+                    const selectedKey = Array.from(keys)[0];
+                    setFilters(prev => ({
+                      ...prev,
+                      car_condition: selectedKey ? String(selectedKey) as any : undefined,
+                      page: 1
+                    }));
+                  }}
                   classNames={{
                     trigger: "bg-white/5 border-white/10 hover:border-primary-500/50",
                     label: "text-gray-300",
@@ -383,7 +431,10 @@ export default function SearchCarsPage() {
               <Select
                 label="Sort by"
                 selectedKeys={[filters.sort || '-created_at']}
-                onChange={(e) => setFilters(prev => ({ ...prev, sort: e.target.value }))}
+                onSelectionChange={(keys) => {
+                  const selectedKey = Array.from(keys)[0];
+                  setFilters(prev => ({ ...prev, sort: String(selectedKey) || '-created_at' }));
+                }}
                 className="max-w-xs ml-auto"
                 size="sm"
                 classNames={{
