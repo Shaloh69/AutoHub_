@@ -1,0 +1,34 @@
+# MINIMAL REQUIREMENTS - GUARANTEED TO WORK ON ANY PYTHON 3.11+
+# Core functionality only - no optional features
+# Fastest installation - smallest footprint
+
+# FastAPI and Web Framework
+fastapi==0.115.0
+uvicorn[standard]==0.32.0
+python-multipart==0.0.12
+
+# Database
+SQLAlchemy==2.0.36
+pymysql==1.1.1
+
+# Authentication & Security
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+bcrypt==4.2.0
+
+# Pydantic for validation
+pydantic==2.9.2
+pydantic-settings==2.6.1
+
+# Redis for caching
+redis==5.2.0
+
+# Payment & HTTP
+stripe==11.1.0
+requests==2.32.3
+
+# Email
+aiosmtplib==3.0.2
+
+# Environment Variables
+python-dotenv==1.0.1

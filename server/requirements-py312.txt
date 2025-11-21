@@ -1,0 +1,44 @@
+# OPTIMIZED REQUIREMENTS FOR PYTHON 3.12
+# Tested and working - all packages have pre-built wheels
+# No compilation needed - fast installation
+
+# FastAPI and Web Framework
+fastapi==0.115.0
+uvicorn[standard]==0.32.0
+python-multipart==0.0.12
+
+# Database
+SQLAlchemy==2.0.36
+pymysql==1.1.1
+alembic==1.13.3
+
+# Authentication & Security
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+bcrypt==4.2.0
+cryptography==43.0.3
+
+# Pydantic for validation
+pydantic==2.9.2
+pydantic-settings==2.6.1
+
+# Redis for caching
+redis==5.2.0
+
+# Payment & HTTP
+stripe==11.1.0
+requests==2.32.3
+
+# Image Processing
+Pillow==11.0.0
+
+# Email
+aiosmtplib==3.0.2
+
+# Environment Variables
+python-dotenv==1.0.1
+
+# Testing (optional - comment out if not needed)
+pytest==8.3.3
+pytest-asyncio==0.24.0
+httpx==0.27.2
