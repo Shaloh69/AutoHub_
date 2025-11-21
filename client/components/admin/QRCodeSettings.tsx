@@ -211,6 +211,7 @@ export default function QRCodeSettings({ apiBaseUrl = process.env.NEXT_PUBLIC_AP
             <div className="flex justify-center">
               <div className="bg-white p-4 rounded-lg shadow-md border-2 border-autohub-primary-200 w-full max-w-sm">
                 <ResponsiveImage
+                  key={qrCodeUrl}
                   src={qrCodeUrl}
                   alt="Current GCash QR Code"
                   aspectRatio="square"
@@ -274,6 +275,7 @@ export default function QRCodeSettings({ apiBaseUrl = process.env.NEXT_PUBLIC_AP
               <div className="flex justify-center">
                 <div className="bg-white p-4 rounded-lg shadow-md border-2 border-dashed border-autohub-primary-300 w-full max-w-xs">
                   <ResponsiveImage
+                    key={previewUrl}
                     src={previewUrl}
                     alt="Preview"
                     aspectRatio="square"

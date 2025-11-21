@@ -1,7 +1,7 @@
 // components/ResponsiveImage.tsx
 "use client";
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Spinner } from "@heroui/spinner";
 import { getImageUrl } from '@/services/api';
 import FullscreenImageViewer from './FullscreenImageViewer';
@@ -58,8 +58,11 @@ export default function ResponsiveImage({
   const [isFullscreenOpen, setIsFullscreenOpen] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
 
-  // Convert relative URLs to full backend URLs
-  const imageUrl = error ? getImageUrl(fallbackSrc) : getImageUrl(src);
+  // Convert relative URLs to full backend URLs - memoized to prevent recalculation on every render
+  const imageUrl = useMemo(() =>
+    error ? getImageUrl(fallbackSrc) : getImageUrl(src),
+    [error, fallbackSrc, src]
+  );
 
   // Aspect ratio mapping
   const aspectRatioClasses = {

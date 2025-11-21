@@ -726,6 +726,7 @@ class ApiService {
     admin_notes?: string;
     rejection_reason?: string;
   }): Promise<ApiResponse<any>> {
+    // Verify payment by admin - sends payment_id, action, and optional notes
     return this.request('/admin/payments/verify', {
       method: 'POST',
       body: JSON.stringify({
