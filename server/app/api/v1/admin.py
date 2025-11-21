@@ -803,36 +803,65 @@ async def list_pending_cars(
     current_moderator: User = Depends(get_current_moderator),
     db: Session = Depends(get_db)
 ):
-    """List all cars pending approval"""
+    """List all cars pending approval with full details for display"""
     try:
+        from app.schemas.car import CarResponse
+        from app.utils.enum_helpers import normalize_enum_value
+
         # Fixed: Use UPPERCASE for Car.status to match SQL schema
         query = db.query(Car).filter(Car.status == "PENDING")
-        
+
         # Get total count
         total = query.count()
-        
+
         # Apply pagination
         offset = (page - 1) * page_size
         cars = query.order_by(desc(Car.created_at)).offset(offset).limit(page_size).all()
-        
-        # Format response
+
+        # Format response with full CarResponse objects to include main_image
         items = []
         for car in cars:
-            seller = db.query(User).filter(User.id == getattr(car, 'seller_id', 0)).first()
-            
-            items.append(CarModerationListResponse(
-                id=int(getattr(car, 'id', 0)),
-                title=str(getattr(car, 'title', '')),
-                brand=str(getattr(car, 'brand', '')),
-                model=str(getattr(car, 'model', '')),
-                year=int(getattr(car, 'year', 0)),
-                price=float(getattr(car, 'price', 0)),
-                seller_id=int(getattr(car, 'seller_id', 0)),
-                seller_name=f"{getattr(seller, 'first_name', '')} {getattr(seller, 'last_name', '')}".strip() if seller else "Unknown",
-                status=str(getattr(car, 'status', 'pending')),
-                created_at=getattr(car, 'created_at', datetime.utcnow())
-            ))
-        
+            car_dict = {
+                "id": car.id,
+                "seller_id": car.seller_id,
+                "brand_id": car.brand_id,
+                "model_id": car.model_id,
+                "category_id": car.category_id,
+                "color_id": car.color_id,
+                "interior_color_id": car.interior_color_id,
+                "title": car.title,
+                "description": car.description,
+                "year": car.year,
+                "price": car.price,
+                "currency_id": car.currency_id,
+                "mileage": car.mileage,
+                "fuel_type": car.fuel_type if isinstance(car.fuel_type, str) else car.fuel_type.value,
+                "transmission": car.transmission if isinstance(car.transmission, str) else car.transmission.value,
+                "car_condition": car.car_condition if isinstance(car.car_condition, str) else car.car_condition.value,
+                "city_id": car.city_id,
+                "province_id": car.province_id,
+                "region_id": car.region_id,
+                "status": car.status if isinstance(car.status, str) else car.status.value,
+                "approval_status": car.approval_status if isinstance(car.approval_status, str) else car.approval_status.value,
+                "is_featured": car.is_featured,
+                "is_premium": car.is_premium,
+                "is_active": car.is_active,
+                "views_count": car.views_count,
+                "contact_count": car.contact_count,
+                "favorite_count": car.favorite_count,
+                "average_rating": car.average_rating,
+                "created_at": car.created_at,
+                "updated_at": car.updated_at,
+                # Media - Include main_image for frontend display
+                "main_image": car.main_image,
+                # Convert related objects to avoid ORM serialization issues
+                "images": [],  # Empty for list view to improve performance
+                "brand_rel": None,
+                "model_rel": None,
+                "city": None,
+            }
+            items.append(CarResponse.model_validate(car_dict))
+
         total_pages = (total + page_size - 1) // page_size
         return PaginatedResponse(
             items=items,

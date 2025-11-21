@@ -313,6 +313,8 @@ async def get_my_listings(
             "average_rating": car.average_rating,
             "created_at": car.created_at,
             "updated_at": car.updated_at,
+            # Media - Include main_image for frontend display
+            "main_image": car.main_image,
             # Convert related objects to avoid ORM serialization issues
             "images": [],  # Empty for list view to improve performance
             "brand_rel": None,
