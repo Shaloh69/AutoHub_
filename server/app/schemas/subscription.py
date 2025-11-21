@@ -257,10 +257,12 @@ class PendingPaymentSummary(BaseModel):
     amount: Decimal
     currency: str
     reference_number: Optional[str] = None
+    payment_method: Optional[str] = None
+    status: str
     submitted_at: Optional[datetime] = None
     created_at: datetime
     days_pending: int
-    
+
     model_config = ConfigDict(from_attributes=True)
 
 

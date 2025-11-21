@@ -25,7 +25,7 @@ import LoadingSpinner from '@/components/LoadingSpinner';
 import QRCodeSettings from '@/components/admin/QRCodeSettings';
 
 interface Payment {
-  id: number;
+  payment_id: number;
   user_id: number;
   user_name: string;
   user_email: string;
@@ -100,18 +100,18 @@ export default function AdminPaymentsPage() {
     try {
       setActionLoading(true);
       console.log('DEBUG: Verifying payment', {
-        paymentId: selectedPayment.id,
+        paymentId: selectedPayment.payment_id,
         action: 'approve',
         admin_notes: adminNotes
       });
-      const response = await apiService.verifyPayment(selectedPayment.id, {
+      const response = await apiService.verifyPayment(selectedPayment.payment_id, {
         action: 'approve',
         admin_notes: adminNotes,
       });
       console.log('DEBUG: Response received', response);
 
       if (response.success) {
-        setPayments(prev => prev.filter(p => p.id !== selectedPayment.id));
+        setPayments(prev => prev.filter(p => p.payment_id !== selectedPayment.payment_id));
         setAdminNotes('');
         setSelectedPayment(null);
         onVerifyOpenChange();
@@ -142,14 +142,14 @@ export default function AdminPaymentsPage() {
 
     try {
       setActionLoading(true);
-      const response = await apiService.verifyPayment(selectedPayment.id, {
+      const response = await apiService.verifyPayment(selectedPayment.payment_id, {
         action: 'reject',
         rejection_reason: rejectionReason,
         admin_notes: adminNotes,
       });
 
       if (response.success) {
-        setPayments(prev => prev.filter(p => p.id !== selectedPayment.id));
+        setPayments(prev => prev.filter(p => p.payment_id !== selectedPayment.payment_id));
         setRejectionReason('');
         setAdminNotes('');
         setSelectedPayment(null);
@@ -367,7 +367,7 @@ export default function AdminPaymentsPage() {
                         <TableBody>
                           {payments.map((payment) => (
                             <TableRow
-                              key={payment.id}
+                              key={payment.payment_id}
                               className="border-b border-gray-800 hover:bg-white/5 transition-colors"
                             >
                               <TableCell>
@@ -489,7 +489,7 @@ export default function AdminPaymentsPage() {
                 <div>
                   <h3 className="text-lg font-bold">Verify Payment</h3>
                   <p className="text-sm text-gray-400 font-normal">
-                    Payment #{selectedPayment?.id}
+                    Payment #{selectedPayment?.payment_id}
                   </p>
                 </div>
               </ModalHeader>
@@ -606,7 +606,7 @@ export default function AdminPaymentsPage() {
                 <div>
                   <h3 className="text-lg font-bold">Reject Payment</h3>
                   <p className="text-sm text-gray-400 font-normal">
-                    Payment #{selectedPayment?.id}
+                    Payment #{selectedPayment?.payment_id}
                   </p>
                 </div>
               </ModalHeader>
@@ -801,7 +801,7 @@ export default function AdminPaymentsPage() {
                           </div>
                           <div>
                             <p className="text-gray-400 mb-1">Payment ID</p>
-                            <code className="text-white font-mono text-sm">#{selectedPayment.id}</code>
+                            <code className="text-white font-mono text-sm">#{selectedPayment.payment_id}</code>
                           </div>
                         </div>
                       </CardBody>

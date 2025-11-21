@@ -379,6 +379,8 @@ class SubscriptionService:
                 "amount": Decimal(str(getattr(payment, 'amount', 0))),
                 "currency": str(getattr(payment, 'currency', 'PHP')),
                 "reference_number": str(getattr(payment, 'reference_number', '')),
+                "payment_method": str(getattr(payment, 'payment_method', 'qr_code')),
+                "status": str(getattr(payment, 'status', 'PENDING')),
                 "submitted_at": getattr(payment, 'submitted_at', None),
                 "created_at": created_at,
                 "days_pending": days_pending
