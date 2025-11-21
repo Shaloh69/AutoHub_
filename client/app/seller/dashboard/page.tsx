@@ -374,9 +374,9 @@ export default function SellerDashboardPage() {
                       <div className="flex flex-col md:flex-row gap-4">
                         {/* Image */}
                         <div className="w-full md:w-48 h-32 bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden flex-shrink-0">
-                          {car.images?.[0] ? (
+                          {car.main_image || car.images?.[0] ? (
                             <img
-                              src={getImageUrl(car.images[0].image_url)}
+                              src={getImageUrl(car.main_image || car.images?.[0]?.image_url)}
                               alt={car.title}
                               className="w-full h-full object-cover"
                             />

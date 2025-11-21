@@ -344,9 +344,9 @@ export default function SellerProfilePage() {
                         <CardBody className="p-0">
                           {/* Car Image */}
                           <div className="h-48 bg-gray-200 dark:bg-gray-800 overflow-hidden">
-                            {car.images?.[0] ? (
+                            {car.main_image || car.images?.[0] ? (
                               <img
-                                src={getImageUrl(car.images[0].image_url)}
+                                src={getImageUrl(car.main_image || car.images?.[0]?.image_url)}
                                 alt={car.title}
                                 className="w-full h-full object-cover"
                               />

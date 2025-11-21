@@ -403,9 +403,9 @@ export default function AdminDashboardPage() {
                             <div className="flex flex-col md:flex-row gap-6">
                               {/* Image */}
                               <div className="w-full md:w-56 h-40 bg-black/20 rounded-xl overflow-hidden flex-shrink-0">
-                                {car.images?.[0] ? (
+                                {car.main_image || car.images?.[0] ? (
                                   <img
-                                    src={getImageUrl(car.images[0].image_url)}
+                                    src={getImageUrl(car.main_image || car.images?.[0]?.image_url)}
                                     alt={car.title}
                                     className="w-full h-full object-cover"
                                   />

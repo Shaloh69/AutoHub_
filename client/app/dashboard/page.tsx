@@ -228,7 +228,7 @@ export default function DashboardPage() {
             <CardBody className="p-0">
               <div className="relative h-48">
                 <ResponsiveImage
-              src={car.images?.[0]?.image_url}
+              src={car.main_image || car.images?.[0]?.image_url}
               alt={`${car.year} ${car.make} ${car.model}`}
               aspectRatio="auto"
               objectFit="cover"

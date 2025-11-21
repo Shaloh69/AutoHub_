@@ -269,7 +269,7 @@ export default function HomePage() {
                       {/* Image */}
                       <div className="relative aspect-[4/3] overflow-hidden">
                         <Image
-                          src={getImageUrl(car.images?.[0]?.image_url)}
+                          src={getImageUrl(car.main_image || car.images?.[0]?.image_url)}
                           alt={car.title}
                           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                         />
