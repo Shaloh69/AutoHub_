@@ -1,0 +1,26 @@
+# These packages were removed from requirements.txt
+# Reason: Not used in the codebase
+
+# REDUNDANT PACKAGES (duplicates functionality):
+pyjwt==2.8.0              # Duplicate of python-jose
+fastapi-cors==0.0.6       # FastAPI has built-in CORSMiddleware
+hiredis==2.3.2            # Redis C extension (optional, causing install issues)
+
+# NOT IMPLEMENTED FEATURES:
+jinja2==3.1.3             # Email templates are hardcoded, not using Jinja2
+python-magic==0.4.27      # File type detection not implemented
+boto3==1.34.34            # AWS S3 not being used (local storage enabled)
+websockets==12.0          # WebSocket support not implemented
+celery==5.3.6             # Background tasks not implemented
+flower==2.0.1             # Celery monitoring (depends on celery)
+slowapi==0.1.9            # Rate limiting not implemented
+openpyxl==3.1.2           # Excel processing not implemented
+geopy==2.4.1              # Geocoding not implemented
+shapely==2.0.2            # Geographic calculations not implemented
+phonenumbers==8.13.27     # Phone validation feature removed
+python-dateutil==2.8.2    # Using datetime directly
+pytz==2024.1              # Using datetime directly
+python-json-logger==2.0.7 # Standard logging used
+email-validator==2.1.0    # Pydantic email validation not actively used
+
+# Note: If you need any of these features in the future, you can add them back
