@@ -9,6 +9,7 @@ import clsx from "clsx";
 
 import { Providers } from "./providers";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { FavoritesProvider } from "@/contexts/FavoritesContext";
 
 import { siteConfig } from "@/config/site";
 import { fontSans } from "@/config/fonts";
@@ -102,12 +103,14 @@ export default function RootLayout({
       >
         <Providers themeProps={{ attribute: "class", defaultTheme: "dark" }}>
           <AuthProvider>
-            {/* Animated Background - Applied to all pages with dynamic colors */}
-            <DynamicAnimatedBackground />
+            <FavoritesProvider>
+              {/* Animated Background - Applied to all pages with dynamic colors */}
+              <DynamicAnimatedBackground />
 
-            <LayoutContent>
-              {children}
-            </LayoutContent>
+              <LayoutContent>
+                {children}
+              </LayoutContent>
+            </FavoritesProvider>
           </AuthProvider>
         </Providers>
       </body>

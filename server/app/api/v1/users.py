@@ -6,7 +6,7 @@ NEW FEATURE: Buyer can upgrade to seller/dealer role
 ===========================================
 """
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Query
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from typing import List, Optional
 from datetime import datetime
 from app.database import get_db
@@ -324,16 +324,28 @@ async def get_my_listings(
     return items
 
 
-@router.get("/favorites", response_model=List[FavoriteResponse])
+@router.get("/favorites", response_model=List[CarResponse])
 async def get_favorites(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Get user's favorite cars"""
+    """Get user's favorite cars with full car details"""
     user_id = int(getattr(current_user, 'id', 0))
-    
-    favorites = db.query(Favorite).filter(Favorite.user_id == user_id).all()
-    return [FavoriteResponse.model_validate(fav) for fav in favorites]
+
+    # Join with Car table to get full car details
+    favorites = db.query(Favorite)\
+        .options(
+            joinedload(Favorite.car).joinedload(Car.brand),
+            joinedload(Favorite.car).joinedload(Car.model),
+            joinedload(Favorite.car).joinedload(Car.category),
+            joinedload(Favorite.car).joinedload(Car.seller),
+            joinedload(Favorite.car).joinedload(Car.images)
+        )\
+        .filter(Favorite.user_id == user_id)\
+        .all()
+
+    # Return full car details
+    return [CarResponse.model_validate(fav.car) for fav in favorites if fav.car]
 
 
 @router.post("/favorites/{car_id}", response_model=IDResponse)
@@ -371,11 +383,14 @@ async def add_favorite(
         car_id=car_id,
         created_at=datetime.utcnow()
     )
-    
+
+    # Increment favorite count on car
+    car.favorite_count = (car.favorite_count or 0) + 1
+
     db.add(favorite)
     db.commit()
     db.refresh(favorite)
-    
+
     favorite_id = int(getattr(favorite, 'id', 0))
     return IDResponse(id=favorite_id, message="Car added to favorites")
 
@@ -393,16 +408,21 @@ async def remove_favorite(
         Favorite.user_id == user_id,
         Favorite.car_id == car_id
     ).first()
-    
+
     if not favorite:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Favorite not found"
         )
-    
+
+    # Decrement favorite count on car
+    car = db.query(Car).filter(Car.id == car_id).first()
+    if car:
+        car.favorite_count = max(0, (car.favorite_count or 0) - 1)
+
     db.delete(favorite)
     db.commit()
-    
+
     return MessageResponse(message="Car removed from favorites", success=True)
 
 

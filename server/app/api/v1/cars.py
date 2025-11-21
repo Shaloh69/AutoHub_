@@ -8,12 +8,14 @@ from app.schemas.car import (
     CarImageUpload, CarBoost, BrandResponse, ModelResponse, CategoryResponse, FeatureResponse,
     PriceHistoryResponse
 )
+from app.schemas.car_document import CarDocumentResponse, CarDocumentUpdate, DocumentVerificationRequest
 from app.schemas.common import PaginatedResponse, MessageResponse, IDResponse
 from app.services.car_service import CarService
 from app.services.file_service import FileService
 from app.core.dependencies import get_current_user, get_current_seller, get_optional_user
 from app.models.user import User
 from app.models.car import CarImage, Car, Brand, Model, Category, Feature
+from app.models.car_document import CarDocument, DocumentType
 from app.models.transaction import PriceHistory
 from app.utils.enum_normalizer import normalize_car_data, normalize_enum_value
 
@@ -1249,5 +1251,156 @@ async def get_price_history(
     ).order_by(PriceHistory.created_at.desc()).all()
     
     return [PriceHistoryResponse.model_validate(ph) for ph in price_history]
+
+
+# ====================================
+# CAR DOCUMENTS ENDPOINTS
+# ====================================
+
+@router.post("/{car_id}/documents", response_model=CarDocumentResponse, status_code=status.HTTP_201_CREATED)
+async def upload_car_document(
+    car_id: int,
+    file: UploadFile = File(...),
+    document_type: DocumentType = Query(..., description="Type of document"),
+    title: Optional[str] = Query(None, description="Document title"),
+    description: Optional[str] = Query(None, description="Document description"),
+    current_user: User = Depends(get_current_seller),
+    db: Session = Depends(get_db)
+):
+    """
+    Upload a document for a car listing (OR/CR, registration, insurance, etc.)
+
+    Allowed file types: PDF, Word documents, JPG, PNG
+    Max file size: 10MB
+    """
+    # Verify car exists and belongs to seller
+    car = db.query(Car).filter(Car.id == car_id).first()
+    if not car:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Car not found"
+        )
+
+    seller_id = int(getattr(current_user, 'id', 0))
+    if int(getattr(car, 'seller_id', 0)) != seller_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to upload documents for this car"
+        )
+
+    try:
+        # Upload document using FileService
+        upload_result = await FileService.upload_document(file, car_id=car_id)
+
+        # Create document record
+        document = CarDocument(
+            car_id=car_id,
+            document_type=document_type,
+            document_url=upload_result['file_url'],
+            file_name=upload_result['file_name'],
+            file_size=int(upload_result['file_size']),
+            mime_type=upload_result['mime_type'],
+            title=title or upload_result['original_name'],
+            description=description,
+            uploaded_at=datetime.utcnow()
+        )
+
+        db.add(document)
+        db.commit()
+        db.refresh(document)
+
+        return CarDocumentResponse.model_validate(document)
+
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to upload document: {str(e)}"
+        )
+
+
+@router.get("/{car_id}/documents", response_model=List[CarDocumentResponse])
+async def get_car_documents(
+    car_id: int,
+    current_user: Optional[User] = Depends(get_optional_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get all documents for a car
+
+    Public users can only see verified documents.
+    Sellers can see all their car documents.
+    Admins can see all documents.
+    """
+    car = db.query(Car).filter(Car.id == car_id).first()
+    if not car:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Car not found"
+        )
+
+    # Check permissions
+    is_seller = current_user and int(getattr(current_user, 'id', 0)) == int(getattr(car, 'seller_id', 0))
+    is_admin = current_user and str(getattr(current_user, 'role', '')).upper() == 'ADMIN'
+
+    query = db.query(CarDocument).filter(CarDocument.car_id == car_id)
+
+    # Non-admins and non-sellers can only see verified documents
+    if not is_admin and not is_seller:
+        query = query.filter(CarDocument.is_verified == True)
+
+    documents = query.order_by(CarDocument.uploaded_at.desc()).all()
+
+    return [CarDocumentResponse.model_validate(doc) for doc in documents]
+
+
+@router.delete("/{car_id}/documents/{document_id}", response_model=MessageResponse)
+async def delete_car_document(
+    car_id: int,
+    document_id: int,
+    current_user: User = Depends(get_current_seller),
+    db: Session = Depends(get_db)
+):
+    """Delete a car document (seller only)"""
+    # Verify car exists and belongs to seller
+    car = db.query(Car).filter(Car.id == car_id).first()
+    if not car:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Car not found"
+        )
+
+    seller_id = int(getattr(current_user, 'id', 0))
+    if int(getattr(car, 'seller_id', 0)) != seller_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized to delete documents for this car"
+        )
+
+    # Get document
+    document = db.query(CarDocument).filter(
+        CarDocument.id == document_id,
+        CarDocument.car_id == car_id
+    ).first()
+
+    if not document:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Document not found"
+        )
+
+    # Delete file from storage
+    document_url = str(getattr(document, 'document_url', ''))
+    FileService.delete_document(document_url)
+
+    # Delete from database
+    db.delete(document)
+    db.commit()
+
+    return MessageResponse(message="Document deleted successfully")
 
 

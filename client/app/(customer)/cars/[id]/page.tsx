@@ -21,6 +21,7 @@ import {
 import { apiService, getImageUrl } from '@/services/api';
 import { Car } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
+import { useFavorites } from '@/contexts/FavoritesContext';
 import ContactSellerModal from '@/components/ContactSellerModal';
 import CarReviews from '@/components/CarReviews';
 import ResponsiveImage from '@/components/ResponsiveImage';
@@ -29,12 +30,12 @@ export default function CarDetailPage() {
   const params = useParams();
   const router = useRouter();
   const { user } = useAuth();
-  
+  const { isFavorite, toggleFavorite } = useFavorites();
+
   const [car, setCar] = useState<Car | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState(0);
   const [contactModalOpen, setContactModalOpen] = useState(false);
-  const [isFavorite, setIsFavorite] = useState(false);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
   const [autoPlayInterval, setAutoPlayInterval] = useState<NodeJS.Timeout | null>(null);
 
@@ -116,17 +117,13 @@ export default function CarDetailPage() {
     if (!car) return;
 
     try {
-      if (isFavorite) {
-        await apiService.removeFromFavorites(car.id);
-        setIsFavorite(false);
-      } else {
-        await apiService.addToFavorites(car.id);
-        setIsFavorite(true);
-      }
+      await toggleFavorite(car.id);
     } catch (error) {
       console.error('Error toggling favorite:', error);
     }
   };
+
+  const isCarFavorite = car ? isFavorite(car.id) : false;
 
   const handleShare = async () => {
     if (navigator.share && car) {
@@ -243,7 +240,7 @@ export default function CarDetailPage() {
               isIconOnly
               onPress={handleAddToFavorites}
             >
-              <Heart size={20} fill={isFavorite ? 'currentColor' : 'none'} />
+              <Heart size={20} fill={isCarFavorite ? 'currentColor' : 'none'} />
             </Button>
             <Button
               variant="flat"

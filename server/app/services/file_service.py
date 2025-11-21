@@ -89,7 +89,90 @@ class FileService:
                 f.write(content)
         
         return result
-    
+
+    @staticmethod
+    async def upload_document(
+        file: UploadFile,
+        folder: str = "documents",
+        car_id: Optional[int] = None
+    ) -> Dict[str, str]:
+        """
+        Upload document file (PDF, Word, etc.)
+        Returns dict with document info
+        """
+        # Define allowed document types
+        ALLOWED_DOCUMENT_TYPES = {
+            'application/pdf': 'pdf',
+            'application/msword': 'doc',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
+            'image/jpeg': 'jpg',
+            'image/png': 'png',
+            'image/jpg': 'jpg',
+        }
+
+        # Validate file type
+        if file.content_type not in ALLOWED_DOCUMENT_TYPES:
+            raise ValueError(f"Invalid file type. Allowed: PDF, Word documents, JPG, PNG")
+
+        # Read file content
+        content = await file.read()
+
+        # Validate file size (max 10MB for documents)
+        file_size = len(content)
+        max_doc_size = 10 * 1024 * 1024  # 10MB
+        if file_size > max_doc_size:
+            raise ValueError(f"File too large. Max size: 10MB")
+
+        # Generate unique filename
+        original_filename = file.filename or "document.pdf"
+        file_extension = ALLOWED_DOCUMENT_TYPES.get(file.content_type, 'pdf')
+        unique_filename = f"{uuid.uuid4()}.{file_extension}"
+
+        # Create folder structure: documents/cars/{car_id}/
+        if car_id:
+            upload_path = os.path.join(settings.LOCAL_UPLOAD_DIR, folder, "cars", str(car_id))
+        else:
+            upload_path = os.path.join(settings.LOCAL_UPLOAD_DIR, folder)
+
+        os.makedirs(upload_path, exist_ok=True)
+
+        # Save document
+        file_path = os.path.join(upload_path, unique_filename)
+        with open(file_path, 'wb') as f:
+            f.write(content)
+
+        # Build URL
+        if car_id:
+            file_url = f"/uploads/{folder}/cars/{car_id}/{unique_filename}"
+        else:
+            file_url = f"/uploads/{folder}/{unique_filename}"
+
+        return {
+            "file_url": file_url,
+            "file_name": unique_filename,
+            "original_name": original_filename,
+            "file_size": str(file_size),
+            "mime_type": file.content_type or 'application/pdf'
+        }
+
+    @staticmethod
+    def delete_document(file_path: str) -> bool:
+        """Delete document file"""
+        try:
+            # Remove leading slash if present
+            if file_path.startswith('/'):
+                file_path = file_path[1:]
+
+            full_path = os.path.join(settings.LOCAL_UPLOAD_DIR, file_path.replace('/uploads/', ''))
+
+            if os.path.exists(full_path):
+                os.remove(full_path)
+                return True
+            return False
+        except Exception as e:
+            print(f"Error deleting document: {e}")
+            return False
+
     @staticmethod
     def delete_image(file_path: str) -> bool:
         """Delete image file"""

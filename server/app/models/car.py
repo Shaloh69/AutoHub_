@@ -342,6 +342,7 @@ class Car(Base):
     region = relationship("PhRegion")
 
     images = relationship("CarImage", back_populates="car", cascade="all, delete-orphan")
+    documents = relationship("CarDocument", back_populates="car", cascade="all, delete-orphan")
     features = relationship("CarFeature", back_populates="car", cascade="all, delete-orphan")
     inquiries = relationship("Inquiry", back_populates="car", cascade="all, delete-orphan")
     views = relationship("CarView", back_populates="car")

@@ -2277,6 +2277,61 @@ async def get_review_statistics(
     }
 
 
+# ========================================
+# CAR DOCUMENTS VERIFICATION
+# ========================================
+
+@router.get("/cars/{car_id}/documents", response_model=List)
+async def get_car_documents_admin(
+    car_id: int,
+    current_admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """Get all documents for a car (admin view) - Returns all documents including unverified ones"""
+    from app.models.car_document import CarDocument
+    from app.schemas.car_document import CarDocumentResponse
+
+    car = db.query(Car).filter(Car.id == car_id).first()
+    if not car:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Car not found")
+
+    documents = db.query(CarDocument).filter(
+        CarDocument.car_id == car_id
+    ).order_by(CarDocument.uploaded_at.desc()).all()
+
+    return [CarDocumentResponse.model_validate(doc) for doc in documents]
+
+
+@router.post("/cars/{car_id}/documents/{document_id}/verify", response_model=MessageResponse)
+async def verify_car_document(
+    car_id: int,
+    document_id: int,
+    is_verified: bool = Query(..., description="Verification status"),
+    current_admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """Verify or reject a car document"""
+    from app.models.car_document import CarDocument
+
+    document = db.query(CarDocument).filter(
+        CarDocument.id == document_id,
+        CarDocument.car_id == car_id
+    ).first()
+
+    if not document:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
+
+    admin_id = int(getattr(current_admin, 'id', 0))
+    setattr(document, 'is_verified', is_verified)
+    setattr(document, 'verified_by', admin_id)
+    setattr(document, 'verified_at', datetime.utcnow())
+
+    db.commit()
+
+    status_text = "verified" if is_verified else "rejected"
+    return MessageResponse(message=f"Document {status_text} successfully", success=True)
+
+
 # ===========================================
 # COMPLETE ADMIN ENDPOINTS SUMMARY:
 # ===========================================

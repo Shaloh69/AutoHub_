@@ -8,6 +8,8 @@ import { Car } from '@/types';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { apiService, getImageUrl } from '@/services/api';
+import { useFavorites } from '@/contexts/FavoritesContext';
+import { useAuth } from '@/contexts/AuthContext';
 import ResponsiveImage from './ResponsiveImage';
 
 interface CarCardProps {
@@ -17,9 +19,12 @@ interface CarCardProps {
 
 export default function CarCard({ car, onFavoriteChange }: CarCardProps) {
   const router = useRouter();
-  const [isFavorite, setIsFavorite] = useState(false); // Initialize as false, will be fetched separately if needed
+  const { user } = useAuth();
+  const { isFavorite, toggleFavorite } = useFavorites();
   const [isLoading, setIsLoading] = useState(false);
   const [imageError, setImageError] = useState(false);
+
+  const isCarFavorite = isFavorite(car.id);
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('en-PH', {
@@ -35,15 +40,17 @@ export default function CarCard({ car, onFavoriteChange }: CarCardProps) {
 
   const handleFavoriteToggle = async (e: React.MouseEvent) => {
     e.stopPropagation();
+
+    // Redirect to login if not authenticated
+    if (!user) {
+      router.push('/auth/login');
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      if (isFavorite) {
-        await apiService.removeFromFavorites(car.id);
-      } else {
-        await apiService.addToFavorites(car.id);
-      }
-      setIsFavorite(!isFavorite);
+      await toggleFavorite(car.id);
       onFavoriteChange?.();
     } catch (error) {
       console.error('Failed to toggle favorite:', error);
@@ -127,7 +134,7 @@ export default function CarCard({ car, onFavoriteChange }: CarCardProps) {
         >
           <Heart
             className={`w-4 h-4 transition-all ${
-              isFavorite
+              isCarFavorite
                 ? 'fill-primary-500 text-primary-500'
                 : 'text-gray-300 hover:text-primary-500'
             }`}
