@@ -515,7 +515,7 @@ class ApiService {
   }
 
   async getUserLimits(): Promise<ApiResponse<any>> {
-    return this.request('/users/statistics');
+    return this.request('/users/limits');
   }
 
   async upgradeSubscription(planId: number): Promise<ApiResponse<QRCodePaymentResponse>> {

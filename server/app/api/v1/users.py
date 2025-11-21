@@ -630,6 +630,82 @@ async def get_user_statistics(
     }
 
 
+@router.get("/limits")
+async def get_user_limits(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get user subscription limits and usage
+
+    Returns subscription limits, current usage, and remaining quota
+    for listings, featured listings, images, and boost credits.
+    """
+    from app.services.subscription_service import SubscriptionService
+
+    user_id = int(getattr(current_user, 'id', 0))
+
+    # Get user's subscription
+    subscription = SubscriptionService.get_user_subscription(db, user_id)
+
+    # Default limits for free tier
+    max_listings = 3
+    max_featured_listings = 0
+    max_photos_per_listing = 5
+    boost_credits_total = 0
+
+    # If user has subscription, get plan limits
+    if subscription and subscription.plan:
+        plan = subscription.plan
+        max_listings = plan.max_listings if plan.max_listings != -1 else 999999
+        max_featured_listings = plan.max_featured_listings
+        max_photos_per_listing = plan.max_photos_per_listing
+        boost_credits_total = plan.boost_credits_per_month
+
+    # Count current usage
+    active_listings_count = db.query(Car).filter(
+        Car.seller_id == user_id,
+        Car.status == "ACTIVE"
+    ).count()
+
+    featured_listings_count = db.query(Car).filter(
+        Car.seller_id == user_id,
+        Car.status == "ACTIVE",
+        Car.is_featured == True
+    ).count()
+
+    # Calculate boost credits remaining (simplified - assuming monthly reset)
+    boost_credits_used = 0  # TODO: Track actual boost usage
+    boost_credits_remaining = boost_credits_total - boost_credits_used
+
+    # Calculate percentages
+    active_percentage = (active_listings_count / max_listings * 100) if max_listings > 0 else 0
+    featured_percentage = (featured_listings_count / max_featured_listings * 100) if max_featured_listings > 0 else 0
+
+    return {
+        "active_listings": {
+            "used": active_listings_count,
+            "limit": max_listings,
+            "remaining": max_listings - active_listings_count,
+            "percentage": round(active_percentage, 1)
+        },
+        "featured_listings": {
+            "used": featured_listings_count,
+            "limit": max_featured_listings,
+            "remaining": max(0, max_featured_listings - featured_listings_count),
+            "percentage": round(featured_percentage, 1)
+        },
+        "images_per_listing": {
+            "limit": max_photos_per_listing
+        },
+        "boost_credits": {
+            "used": boost_credits_used,
+            "total": boost_credits_total,
+            "remaining": boost_credits_remaining
+        }
+    }
+
+
 @router.get("/{user_id}/public-profile")
 async def get_public_profile(
     user_id: int,
