@@ -99,9 +99,24 @@ export default function CreateCarPage() {
         apiService.getCities(),
       ]);
 
+      console.log('📊 Form data loaded:', {
+        brands: brandsRes.success ? brandsRes.data?.length : 'failed',
+        categories: categoriesRes.success ? categoriesRes.data?.length : 'failed',
+        features: featuresRes.success ? featuresRes.data?.length : 'failed',
+        cities: citiesRes.success ? citiesRes.data?.length : 'failed',
+      });
+
       if (brandsRes.success && brandsRes.data) setBrands(brandsRes.data);
       if (categoriesRes.success && categoriesRes.data) setCategories(categoriesRes.data);
-      if (featuresRes.success && featuresRes.data) setFeatures(featuresRes.data);
+
+      if (featuresRes.success && featuresRes.data) {
+        console.log('✅ Features loaded:', featuresRes.data.length);
+        console.log('📋 Feature categories:', Array.from(new Set(featuresRes.data.map(f => f.category))));
+        setFeatures(featuresRes.data);
+      } else {
+        console.error('❌ Features failed to load:', featuresRes);
+      }
+
       if (citiesRes.success && citiesRes.data) setCities(citiesRes.data);
     } catch (error) {
       console.error('Error loading form data:', error);
@@ -971,15 +986,16 @@ export default function CreateCarPage() {
                   )}
                 </div>
 
-                {['safety', 'comfort', 'entertainment', 'technology'].map(category => {
-                  const categoryFeatures = features.filter(f => f.category === category);
+                {/* Group features by category dynamically */}
+                {Array.from(new Set(features.map(f => f.category?.toUpperCase()))).filter(Boolean).sort().map(category => {
+                  const categoryFeatures = features.filter(f => f.category?.toUpperCase() === category);
                   if (categoryFeatures.length === 0) return null;
 
                   return (
                     <div key={category} className="space-y-3">
                       <h4 className="text-md font-semibold text-primary-400 capitalize flex items-center gap-2">
                         <Sparkles size={18} />
-                        {category}
+                        {category?.toLowerCase()}
                       </h4>
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                         {categoryFeatures.map(feature => {
