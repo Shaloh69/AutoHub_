@@ -2,6 +2,7 @@
 from app.models.user import User, UserRole
 from app.models.location import Currency, PhRegion, PhProvince, PhCity, StandardColor
 from app.models.car import Brand, Model, Category, Feature, Car, CarImage, CarFeature
+from app.models.car_document import CarDocument, DocumentType
 from app.models.inquiry import Inquiry, InquiryResponse, InquiryAttachment, Favorite, Report
 from app.models.transaction import Transaction, PriceHistory
 from app.models.review import Review, ReviewStatus
@@ -23,7 +24,7 @@ __all__ = [
     # Location
     "Currency", "PhRegion", "PhProvince", "PhCity", "StandardColor",
     # Car
-    "Brand", "Model", "Category", "Feature", "Car", "CarImage", "CarFeature",
+    "Brand", "Model", "Category", "Feature", "Car", "CarImage", "CarFeature", "CarDocument", "DocumentType",
     # Inquiry
     "Inquiry", "InquiryResponse", "InquiryAttachment", "Favorite",
     # Transaction
