@@ -722,7 +722,7 @@ class ApiService {
   }
 
   async verifyPayment(paymentId: number, data: {
-    action: 'verify' | 'reject';
+    action: 'approve' | 'reject';
     admin_notes?: string;
     rejection_reason?: string;
   }): Promise<ApiResponse<any>> {

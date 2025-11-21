@@ -100,7 +100,7 @@ export default function AdminPaymentsPage() {
     try {
       setActionLoading(true);
       const response = await apiService.verifyPayment(selectedPayment.id, {
-        action: 'verify',
+        action: 'approve',
         admin_notes: adminNotes,
       });
 
