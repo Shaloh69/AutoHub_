@@ -47,7 +47,8 @@ from app.schemas.common import MessageResponse, PaginatedResponse
 from app.schemas.car import CarResponse
 from app.core.dependencies import get_current_admin, get_current_moderator
 from app.models.user import User, UserRole
-from app.models.car import Car
+from app.models.car import Car, Brand, Model, CarImage, Feature, car_features
+from app.models.location import PhCity
 from app.models.subscription import (
     SubscriptionPayment, PaymentSetting, PaymentVerificationLog,
     SubscriptionPlan
