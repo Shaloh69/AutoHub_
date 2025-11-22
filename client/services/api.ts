@@ -267,6 +267,18 @@ class ApiService {
     });
   }
 
+  // Admin: Get all cars (no pagination)
+  async getAllCars(): Promise<ApiResponse<Car[]>> {
+    const response = await this.request<PaginatedResponse<Car>>('/cars?page_size=1000&sort=-created_at');
+    if (response.success && response.data) {
+      return {
+        success: true,
+        data: response.data.items || []
+      };
+    }
+    return response as ApiResponse<Car[]>;
+  }
+
   async createCar(carData: CarFormData): Promise<ApiResponse<{ id: number; message: string }>> {
     return this.request('/cars', {
       method: 'POST',
