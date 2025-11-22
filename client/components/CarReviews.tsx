@@ -98,6 +98,21 @@ export default function CarReviews({ carId, sellerId }: CarReviewsProps) {
       return;
     }
 
+    // Debug: Check if token exists
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    console.log('🔍 Review Submission Debug:');
+    console.log('- User:', user?.email);
+    console.log('- Token exists:', !!token);
+    console.log('- Token preview:', token ? `${token.substring(0, 20)}...` : 'none');
+    console.log('- Seller ID:', sellerId);
+    console.log('- Car ID:', carId);
+
+    if (!token) {
+      alert('Authentication token not found. Please sign in again.');
+      window.location.href = '/login';
+      return;
+    }
+
     try {
       setSubmitting(true);
       const response = await apiService.createReview({
@@ -110,6 +125,8 @@ export default function CarReviews({ carId, sellerId }: CarReviewsProps) {
         cons: cons.trim() || undefined,
         would_recommend: wouldRecommend,
       });
+
+      console.log('📥 Review API Response:', response);
 
       if (response.success) {
         // Reset form
@@ -127,16 +144,23 @@ export default function CarReviews({ carId, sellerId }: CarReviewsProps) {
       } else {
         // Better error messages
         const errorMsg = response.error || 'Failed to submit review';
-        if (errorMsg.toLowerCase().includes('not authenticated')) {
+        console.error('❌ Review submission failed:', errorMsg);
+
+        if (errorMsg.toLowerCase().includes('not authenticated') || errorMsg.toLowerCase().includes('invalid or expired token')) {
+          localStorage.removeItem('token');
+          localStorage.removeItem('refresh_token');
           alert('Your session has expired. Please sign in again to submit a review.');
+          window.location.href = '/login';
         } else if (errorMsg.toLowerCase().includes('already reviewed')) {
           alert('You have already reviewed this car.');
+        } else if (errorMsg.toLowerCase().includes('cannot review yourself')) {
+          alert('You cannot review your own listing.');
         } else {
-          alert(errorMsg);
+          alert(`Error: ${errorMsg}`);
         }
       }
     } catch (error) {
-      console.error('Error submitting review:', error);
+      console.error('💥 Error submitting review:', error);
       alert('An error occurred while submitting your review. Please try again.');
     } finally {
       setSubmitting(false);

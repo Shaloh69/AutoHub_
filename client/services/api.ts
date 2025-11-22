@@ -35,19 +35,33 @@ class ApiService {
       // Check if we should skip auth
       const headersRecord = options.headers as Record<string, string> | undefined;
       const shouldIncludeAuth = headersRecord?.['Authorization'] !== 'skip';
-      
+
       // Remove the 'skip' marker before sending
       const cleanHeaders = { ...options.headers };
       if (headersRecord?.['Authorization'] === 'skip') {
         delete (cleanHeaders as Record<string, string>)['Authorization'];
       }
-      
+
+      const finalHeaders = {
+        ...this.getHeaders(shouldIncludeAuth),
+        ...cleanHeaders,
+      };
+
+      // Debug logging for authentication
+      if (endpoint.includes('/reviews') && options.method === 'POST') {
+        console.log('📤 Request Details:');
+        console.log('- URL:', `${API_BASE_URL}${endpoint}`);
+        console.log('- Method:', options.method);
+        console.log('- Auth included:', shouldIncludeAuth);
+        console.log('- Headers:', {
+          'Content-Type': finalHeaders['Content-Type'],
+          'Authorization': finalHeaders['Authorization'] ? 'Bearer [token present]' : 'missing'
+        });
+      }
+
       const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         ...options,
-        headers: {
-          ...this.getHeaders(shouldIncludeAuth),
-          ...cleanHeaders,
-        },
+        headers: finalHeaders,
       });
 
       const data = await response.json().catch(() => ({}));
@@ -897,6 +911,14 @@ class ApiService {
     would_recommend?: boolean;
     transaction_id?: number;
   }): Promise<ApiResponse<any>> {
+    // Debug: Log the request being sent
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    console.log('🚀 API createReview call:');
+    console.log('- Endpoint: /reviews');
+    console.log('- Method: POST');
+    console.log('- Token present:', !!token);
+    console.log('- Data:', { ...data, comment: data.comment ? '[redacted]' : undefined });
+
     return this.request('/reviews', {
       method: 'POST',
       body: JSON.stringify(data),
