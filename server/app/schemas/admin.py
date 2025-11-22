@@ -60,6 +60,8 @@ class UserListResponse(BaseModel):
     email_verified: bool
     is_active: bool
     is_banned: bool
+    total_listings: int = 0
+    active_listings: int = 0
     created_at: datetime
     last_login_at: Optional[datetime] = None
 

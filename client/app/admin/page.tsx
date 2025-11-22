@@ -585,18 +585,11 @@ export default function AdminDashboardPage() {
                               <TableCell>
                                 <div className="flex flex-col gap-1">
                                   <span className="font-semibold text-white">
-                                    {user.total_listings ??
-                                     (typeof user.active_listings === 'object' && user.active_listings !== null
-                                       ? (user.active_listings as any)?.used
-                                       : user.active_listings) ?? 0}
+                                    {user.total_listings || 0}
                                   </span>
-                                  {user.active_listings !== undefined && (
-                                    <span className="text-xs text-gray-500">
-                                      {typeof user.active_listings === 'object' && user.active_listings !== null
-                                        ? `${(user.active_listings as any)?.used || 0} active`
-                                        : `${user.active_listings} active`}
-                                    </span>
-                                  )}
+                                  <span className="text-xs text-gray-500">
+                                    {user.active_listings || 0} active
+                                  </span>
                                 </div>
                               </TableCell>
                               <TableCell>

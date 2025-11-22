@@ -219,6 +219,8 @@ async def list_users(
                 email_verified=bool(getattr(u, 'email_verified', False)),
                 is_active=bool(getattr(u, 'is_active', True)),
                 is_banned=bool(getattr(u, 'is_banned', False)),
+                total_listings=int(getattr(u, 'total_listings', 0)),
+                active_listings=int(getattr(u, 'active_listings', 0)),
                 created_at=getattr(u, 'created_at', datetime.utcnow()),
                 last_login_at=getattr(u, 'last_login_at', None)
             )
