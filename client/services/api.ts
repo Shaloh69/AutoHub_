@@ -788,6 +788,10 @@ class ApiService {
     return this.request<PaginatedResponse<Car>>('/admin/cars/pending');
   }
 
+  async getAdminCars(): Promise<ApiResponse<Car[]>> {
+    return this.request<Car[]>('/admin/cars');
+  }
+
   async approveCar(id: number): Promise<ApiResponse<any>> {
     return this.request(`/admin/cars/${id}/approve`, {
       method: 'POST',

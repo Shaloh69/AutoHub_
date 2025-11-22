@@ -880,6 +880,120 @@ async def list_pending_cars(
         )
 
 
+@router.get("/cars", response_model=List[dict])
+async def list_all_cars_admin(
+    current_moderator: User = Depends(get_current_moderator),
+    db: Session = Depends(get_db)
+):
+    """List all cars with full admin details (approval_status, rejection_reason, etc.)"""
+    try:
+        # Get all cars ordered by newest first
+        cars = db.query(Car).order_by(desc(Car.created_at)).all()
+
+        # Format response with full details including admin fields
+        items = []
+        for car in cars:
+            # Get related data
+            brand = db.query(Brand).filter(Brand.id == car.brand_id).first() if car.brand_id else None
+            model = db.query(Model).filter(Model.id == car.model_id).first() if car.model_id else None
+            seller = db.query(User).filter(User.id == car.seller_id).first() if car.seller_id else None
+            city = db.query(PhCity).filter(PhCity.id == car.city_id).first() if car.city_id else None
+            images = db.query(CarImage).filter(CarImage.car_id == car.id).order_by(CarImage.display_order).all()
+            features = db.query(Feature).join(car_features).filter(car_features.c.car_id == car.id).all()
+
+            car_dict = {
+                "id": car.id,
+                "seller_id": car.seller_id,
+                "brand_id": car.brand_id,
+                "model_id": car.model_id,
+                "category_id": car.category_id,
+                "color_id": car.color_id,
+                "interior_color_id": car.interior_color_id,
+                "title": car.title,
+                "description": car.description,
+                "year": car.year,
+                "price": float(car.price) if car.price else 0,
+                "currency_id": car.currency_id,
+                "mileage": car.mileage,
+                "fuel_type": car.fuel_type if isinstance(car.fuel_type, str) else car.fuel_type.value if car.fuel_type else None,
+                "transmission": car.transmission if isinstance(car.transmission, str) else car.transmission.value if car.transmission else None,
+                "car_condition": car.car_condition if isinstance(car.car_condition, str) else car.car_condition.value if car.car_condition else None,
+                "city_id": car.city_id,
+                "province_id": car.province_id,
+                "region_id": car.region_id,
+                "status": car.status if isinstance(car.status, str) else car.status.value if car.status else "PENDING",
+                "approval_status": car.approval_status if isinstance(car.approval_status, str) else car.approval_status.value if car.approval_status else "PENDING",
+                "rejection_reason": car.rejection_reason,
+                "is_featured": car.is_featured,
+                "is_premium": car.is_premium,
+                "is_active": car.is_active,
+                "views_count": car.views_count or 0,
+                "inquiry_count": car.inquiry_count or 0,
+                "contact_count": car.contact_count or 0,
+                "favorite_count": car.favorite_count or 0,
+                "average_rating": float(car.average_rating) if car.average_rating else 0.0,
+                "created_at": car.created_at.isoformat() if car.created_at else None,
+                "updated_at": car.updated_at.isoformat() if car.updated_at else None,
+                "main_image": car.main_image,
+                "accident_history": car.accident_history,
+                "flood_history": car.flood_history,
+                "number_of_owners": car.number_of_owners or 0,
+                "lto_registered": car.lto_registered,
+                # Related objects
+                "brand_rel": {
+                    "id": brand.id,
+                    "name": brand.name,
+                    "slug": brand.slug
+                } if brand else None,
+                "model_rel": {
+                    "id": model.id,
+                    "name": model.name,
+                    "slug": model.slug
+                } if model else None,
+                "seller": {
+                    "id": seller.id,
+                    "first_name": seller.first_name,
+                    "last_name": seller.last_name,
+                    "email": seller.email,
+                    "role": seller.role if isinstance(seller.role, str) else seller.role.value if seller.role else "BUYER",
+                    "email_verified": seller.email_verified,
+                    "business_name": seller.business_name
+                } if seller else None,
+                "city": {
+                    "id": city.id,
+                    "name": city.name
+                } if city else None,
+                "images": [
+                    {
+                        "id": img.id,
+                        "image_url": img.image_url,
+                        "image_type": img.image_type if isinstance(img.image_type, str) else img.image_type.value if img.image_type else "other",
+                        "is_main": img.is_main,
+                        "display_order": img.display_order,
+                        "caption": img.caption
+                    } for img in images
+                ],
+                "features": [
+                    {
+                        "id": f.id,
+                        "name": f.name,
+                        "slug": f.slug
+                    } for f in features
+                ] if features else []
+            }
+            items.append(car_dict)
+
+        return items
+    except Exception as e:
+        logger.error(f"Error listing all cars for admin: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch cars: {str(e)}"
+        )
+
+
 @router.post("/cars/{car_id}/approve", response_model=MessageResponse)
 async def approve_car(
     car_id: int,

@@ -55,7 +55,7 @@ export default function AdminCarsPage() {
   const loadCars = async () => {
     try {
       setLoading(true);
-      const response = await apiService.getAllCars();
+      const response = await apiService.getAdminCars();
       if (response.success && response.data) {
         setCars(response.data);
       }
