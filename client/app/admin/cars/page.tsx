@@ -145,7 +145,7 @@ export default function AdminCarsPage() {
   };
 
   const viewDocuments = (car: CarType) => {
-    const documentImages = car.images?.filter(img => img.image_type === 'document') || [];
+    const documentImages = car.images?.filter(img => img.image_type?.toUpperCase() === 'DOCUMENT') || [];
     if (documentImages.length > 0) {
       setSelectedCar(car);
       setDocumentToView(documentImages[0].image_url);
@@ -400,7 +400,7 @@ export default function AdminCarsPage() {
           ) : (
             filteredCars.map(car => {
               const mainImage = car.main_image || car.images?.find(img => img.is_main)?.image_url || car.images?.[0]?.image_url;
-              const documentImages = car.images?.filter(img => img.image_type === 'document') || [];
+              const documentImages = car.images?.filter(img => img.image_type?.toUpperCase() === 'DOCUMENT') || [];
               const isPending = car.approval_status?.toUpperCase() === 'PENDING';
               const isRejected = car.approval_status?.toUpperCase() === 'REJECTED';
 
@@ -565,18 +565,16 @@ export default function AdminCarsPage() {
                             Details
                           </Button>
 
-                          {/* View Documents Button */}
-                          {documentImages.length > 0 && (
-                            <Button
-                              size="sm"
-                              color="warning"
-                              variant="flat"
-                              startContent={<FileText size={16} />}
-                              onPress={() => viewDocuments(car)}
-                            >
-                              Documents ({documentImages.length})
-                            </Button>
-                          )}
+                          {/* View Documents Button - Always show for verification */}
+                          <Button
+                            size="sm"
+                            color={documentImages.length > 0 ? "warning" : "default"}
+                            variant="flat"
+                            startContent={<FileText size={16} />}
+                            onPress={() => documentImages.length > 0 ? viewDocuments(car) : alert('No documents uploaded for this car')}
+                          >
+                            Documents ({documentImages.length})
+                          </Button>
 
                           {/* Public Page Button */}
                           <Button
@@ -873,11 +871,11 @@ export default function AdminCarsPage() {
                 {selectedCar && selectedCar.images && (
                   <div className="mt-4">
                     <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                      All Documents ({selectedCar.images.filter(img => img.image_type === 'document').length}):
+                      All Documents ({selectedCar.images.filter(img => img.image_type?.toUpperCase() === 'DOCUMENT').length}):
                     </p>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                       {selectedCar.images
-                        .filter(img => img.image_type === 'document')
+                        .filter(img => img.image_type?.toUpperCase() === 'DOCUMENT')
                         .map((img, idx) => (
                           <button
                             key={idx}
