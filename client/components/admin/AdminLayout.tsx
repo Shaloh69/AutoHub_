@@ -42,6 +42,12 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       description: 'Overview & Analytics'
     },
     {
+      label: 'Cars Management',
+      href: '/admin/cars',
+      icon: Car,
+      description: 'View All Listings'
+    },
+    {
       label: 'Reviews',
       href: '/admin/reviews',
       icon: MessageSquare,

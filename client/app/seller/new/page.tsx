@@ -16,7 +16,7 @@ import { Spinner } from '@heroui/spinner';
 import { Progress } from '@heroui/progress';
 import {
   ChevronLeft, ChevronRight, Check, Upload, X, AlertCircle,
-  Car, DollarSign, Settings, MapPin, Image as ImageIcon, Sparkles
+  Car, DollarSign, Settings, MapPin, Image as ImageIcon, Sparkles, FileText
 } from 'lucide-react';
 import { apiService } from '@/services/api';
 import { Brand, Model, Category, Feature, CarFormData } from '@/types';
@@ -35,17 +35,25 @@ const STEPS = [
   { number: 3, title: 'Specifications', icon: Settings, description: 'Technical details' },
   { number: 4, title: 'Condition', icon: AlertCircle, description: 'Vehicle condition' },
   { number: 5, title: 'Location', icon: MapPin, description: 'Where is it?' },
-  { number: 6, title: 'Images', icon: ImageIcon, description: 'Upload photos' },
-  { number: 7, title: 'Features', icon: Sparkles, description: 'Amenities' },
+  { number: 6, title: 'Vehicle Photos', icon: ImageIcon, description: 'Upload photos' },
+  { number: 7, title: 'Documents', icon: FileText, description: 'Upload docs' },
+  { number: 8, title: 'Features', icon: Sparkles, description: 'Amenities' },
 ];
 
-const IMAGE_TYPES = [
+// Vehicle photo types (no documents)
+const VEHICLE_PHOTO_TYPES = [
   { value: 'exterior', label: 'Exterior', icon: '🚗' },
   { value: 'interior', label: 'Interior', icon: '🪑' },
   { value: 'engine', label: 'Engine', icon: '⚙️' },
   { value: 'damage', label: 'Damage', icon: '⚠️' },
-  { value: 'document', label: 'Documents', icon: '📄' },
   { value: 'other', label: 'Other', icon: '📸' },
+];
+
+// Document types
+const DOCUMENT_TYPES = [
+  { value: 'document', label: 'Registration (OR/CR)', icon: '📄' },
+  { value: 'document', label: 'Insurance', icon: '🛡️' },
+  { value: 'document', label: 'Other Document', icon: '📋' },
 ];
 
 export default function CreateCarPage() {
@@ -62,6 +70,8 @@ export default function CreateCarPage() {
   const [selectedFeatures, setSelectedFeatures] = useState<number[]>([]);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imageMetadata, setImageMetadata] = useState<{ type: string; isMain: boolean }[]>([]);
+  const [documentFiles, setDocumentFiles] = useState<File[]>([]);
+  const [documentMetadata, setDocumentMetadata] = useState<{ type: string; isMain: boolean }[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [userLimits, setUserLimits] = useState<any>(null);
 
@@ -294,8 +304,14 @@ export default function CreateCarPage() {
       if (response.success && response.data) {
         const carId = response.data.id;
 
+        // Upload vehicle photos
         if (imageFiles.length > 0) {
           await apiService.uploadCarImages(carId, imageFiles, imageMetadata);
+        }
+
+        // Upload documents
+        if (documentFiles.length > 0) {
+          await apiService.uploadCarImages(carId, documentFiles, documentMetadata);
         }
 
         router.push('/seller/dashboard');
@@ -901,7 +917,7 @@ export default function CreateCarPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {imageFiles.map((file, index) => {
                         const metadata = imageMetadata[index] || { type: 'exterior', isMain: false };
-                        const imageType = IMAGE_TYPES.find(t => t.value === metadata.type) || IMAGE_TYPES[0];
+                        const imageType = VEHICLE_PHOTO_TYPES.find(t => t.value === metadata.type) || VEHICLE_PHOTO_TYPES[0];
 
                         return (
                           <div
@@ -949,7 +965,7 @@ export default function CreateCarPage() {
                                     value: "text-white"
                                   }}
                                 >
-                                  {IMAGE_TYPES.map(type => (
+                                  {VEHICLE_PHOTO_TYPES.map(type => (
                                     <SelectItem
                                       key={type.value}
                                       value={type.value}
@@ -986,8 +1002,108 @@ export default function CreateCarPage() {
               </div>
             )}
 
-            {/* Step 7: Features - FIXED */}
+            {/* Step 7: Documents */}
             {step === 7 && (
+              <div className="space-y-6">
+                <div className="border-2 border-dashed border-yellow-600/50 rounded-2xl p-8 text-center bg-yellow-900/10 hover:border-yellow-500 transition-all">
+                  <input
+                    type="file"
+                    accept="image/*,.pdf"
+                    multiple
+                    onChange={(e) => {
+                      const files = Array.from(e.target.files || []);
+                      if (files.length > 0) {
+                        setDocumentFiles(prev => [...prev, ...files]);
+                        const newMetadata = files.map(() => ({ type: 'document', isMain: false }));
+                        setDocumentMetadata(prev => [...prev, ...newMetadata]);
+                      }
+                    }}
+                    className="hidden"
+                    id="document-upload"
+                  />
+                  <label
+                    htmlFor="document-upload"
+                    className="cursor-pointer flex flex-col items-center"
+                  >
+                    <div className="w-20 h-20 rounded-full bg-gradient-to-br from-yellow-600 to-orange-600 flex items-center justify-center mb-4">
+                      <FileText className="text-white" size={32} />
+                    </div>
+                    <span className="text-xl font-bold text-white mb-2">
+                      Upload Vehicle Documents
+                    </span>
+                    <span className="text-sm text-gray-400 mb-1">
+                      Registration (OR/CR), Insurance, etc.
+                    </span>
+                    <span className="text-xs text-gray-500">
+                      PNG, JPG, PDF up to 10MB each • Maximum 5 documents
+                    </span>
+                  </label>
+                </div>
+
+                {documentFiles.length > 0 && (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <p className="text-white font-semibold">
+                        {documentFiles.length} document{documentFiles.length !== 1 ? 's' : ''} uploaded
+                      </p>
+                      <Chip color="warning" variant="flat">
+                        Private - Not shown to buyers
+                      </Chip>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-4">
+                      {documentFiles.map((file, index) => (
+                        <div
+                          key={index}
+                          className="relative border-2 border-yellow-700/30 rounded-xl p-4 bg-yellow-900/10 backdrop-blur-sm"
+                        >
+                          <div className="flex gap-4 items-center">
+                            <div className="flex-shrink-0">
+                              <div className="w-16 h-16 rounded-lg bg-yellow-600/20 border border-yellow-500/30 flex items-center justify-center">
+                                <FileText className="text-yellow-500" size={32} />
+                              </div>
+                            </div>
+
+                            <div className="flex-1 min-w-0">
+                              <p className="text-white font-medium truncate">{file.name}</p>
+                              <p className="text-xs text-gray-400 mt-1">
+                                {(file.size / 1024 / 1024).toFixed(2)}MB
+                              </p>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setDocumentFiles(prev => prev.filter((_, i) => i !== index));
+                                setDocumentMetadata(prev => prev.filter((_, i) => i !== index));
+                              }}
+                              className="p-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition-colors"
+                            >
+                              <X size={20} />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="p-4 bg-blue-600/10 border border-blue-500/20 rounded-lg">
+                      <div className="flex gap-3">
+                        <AlertCircle className="text-blue-400 flex-shrink-0 mt-0.5" size={20} />
+                        <div className="text-sm text-blue-200">
+                          <p className="font-semibold mb-1">Privacy Notice</p>
+                          <p className="text-blue-300/80">
+                            These documents are for verification purposes only and will NOT be visible to buyers browsing your listing.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Step 8: Features - FIXED */}
+            {step === 8 && (
               <div className="space-y-6">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold text-white">
@@ -1070,7 +1186,7 @@ export default function CreateCarPage() {
                 Back
               </Button>
 
-              {step < 7 ? (
+              {step < 8 ? (
                 <Button
                   size="lg"
                   color="primary"
