@@ -134,7 +134,7 @@ async def search_cars(
 
     # Pagination
     page: int = Query(1, ge=1),
-    page_size: int = Query(20, ge=1, le=100),
+    page_size: int = Query(20, ge=1, le=1000),
 
     # Dependencies
     current_user: Optional[User] = Depends(get_optional_user),
