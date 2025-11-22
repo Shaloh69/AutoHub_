@@ -6,16 +6,18 @@
 
 import React, { useState, useEffect } from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
-import { Card, CardBody, CardHeader } from '@heroui/card';
+import { Card, CardBody } from '@heroui/card';
 import { Button } from '@heroui/button';
 import { Input } from '@heroui/input';
 import { Chip } from '@heroui/chip';
 import { Spinner } from '@heroui/spinner';
 import { Select, SelectItem } from '@heroui/select';
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure } from '@heroui/modal';
+import { Textarea } from '@heroui/input';
 import {
   Car, Search, Filter, Eye, Trash2, CheckCircle,
-  XCircle, AlertCircle, FileText, ExternalLink, Calendar, DollarSign
+  XCircle, AlertCircle, FileText, ExternalLink, Calendar, DollarSign,
+  FileCheck, ImageIcon, User
 } from 'lucide-react';
 import { apiService, getImageUrl } from '@/services/api';
 import { Car as CarType } from '@/types';
@@ -28,13 +30,17 @@ export default function AdminCarsPage() {
   const [cars, setCars] = useState<CarType[]>([]);
   const [filteredCars, setFilteredCars] = useState<CarType[]>([]);
   const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [approvalFilter, setApprovalFilter] = useState<string>('all');
   const [selectedCar, setSelectedCar] = useState<CarType | null>(null);
   const [documentToView, setDocumentToView] = useState<string | null>(null);
+  const [rejectReason, setRejectReason] = useState('');
 
   const { isOpen: isViewOpen, onOpen: onViewOpen, onOpenChange: onViewOpenChange } = useDisclosure();
   const { isOpen: isDocOpen, onOpen: onDocOpen, onOpenChange: onDocOpenChange } = useDisclosure();
+  const { isOpen: isRejectOpen, onOpen: onRejectOpen, onOpenChange: onRejectOpenChange } = useDisclosure();
 
   useEffect(() => {
     if (user && !authLoading) {
@@ -44,7 +50,7 @@ export default function AdminCarsPage() {
 
   useEffect(() => {
     filterCars();
-  }, [cars, searchTerm, statusFilter]);
+  }, [cars, searchTerm, statusFilter, approvalFilter]);
 
   const loadCars = async () => {
     try {
@@ -71,14 +77,24 @@ export default function AdminCarsPage() {
       });
     }
 
-    // Filter by search term
+    // Filter by approval status
+    if (approvalFilter !== 'all') {
+      filtered = filtered.filter(car => {
+        const approvalStatus = car.approval_status?.toUpperCase() || 'PENDING';
+        return approvalStatus === approvalFilter.toUpperCase();
+      });
+    }
+
+    // Filter by search term - FIXED: using 'title' instead of 'listing_title'
     if (searchTerm.trim()) {
       const search = searchTerm.toLowerCase();
       filtered = filtered.filter(car =>
-        car.listing_title?.toLowerCase().includes(search) ||
-        car.brand?.name?.toLowerCase().includes(search) ||
-        car.model?.name?.toLowerCase().includes(search) ||
-        car.year?.toString().includes(search)
+        car.title?.toLowerCase().includes(search) ||
+        car.brand_rel?.name?.toLowerCase().includes(search) ||
+        car.model_rel?.name?.toLowerCase().includes(search) ||
+        car.year?.toString().includes(search) ||
+        car.seller?.first_name?.toLowerCase().includes(search) ||
+        car.seller?.last_name?.toLowerCase().includes(search)
       );
     }
 
@@ -96,6 +112,22 @@ export default function AdminCarsPage() {
         return 'danger';
       case 'SOLD':
         return 'default';
+      case 'INACTIVE':
+        return 'default';
+      default:
+        return 'default';
+    }
+  };
+
+  const getApprovalColor = (approvalStatus: string) => {
+    const upperStatus = approvalStatus?.toUpperCase() || 'PENDING';
+    switch (upperStatus) {
+      case 'APPROVED':
+        return 'success';
+      case 'PENDING':
+        return 'warning';
+      case 'REJECTED':
+        return 'danger';
       default:
         return 'default';
     }
@@ -106,9 +138,81 @@ export default function AdminCarsPage() {
     onViewOpen();
   };
 
-  const viewDocument = (imageUrl: string) => {
-    setDocumentToView(imageUrl);
-    onDocOpen();
+  const viewDocuments = (car: CarType) => {
+    const documentImages = car.images?.filter(img => img.image_type === 'document') || [];
+    if (documentImages.length > 0) {
+      setSelectedCar(car);
+      setDocumentToView(documentImages[0].image_url);
+      onDocOpen();
+    }
+  };
+
+  const handleApproveCar = async (carId: number) => {
+    if (!confirm('Are you sure you want to approve this car listing?')) {
+      return;
+    }
+
+    try {
+      setActionLoading(true);
+      const response = await apiService.approveCar(carId);
+
+      if (response.success) {
+        // Update the car in the list
+        setCars(prev => prev.map(car =>
+          car.id === carId
+            ? { ...car, approval_status: 'APPROVED', status: 'ACTIVE' }
+            : car
+        ));
+        alert('Car listing approved successfully!');
+      } else {
+        alert(response.error || 'Failed to approve car');
+      }
+    } catch (error) {
+      console.error('Error approving car:', error);
+      alert('An error occurred while approving the car');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const openRejectModal = (car: CarType) => {
+    setSelectedCar(car);
+    setRejectReason('');
+    onRejectOpen();
+  };
+
+  const handleRejectCar = async () => {
+    if (!selectedCar) return;
+
+    if (!rejectReason.trim()) {
+      alert('Please provide a reason for rejection');
+      return;
+    }
+
+    try {
+      setActionLoading(true);
+      const response = await apiService.rejectCar(selectedCar.id, rejectReason);
+
+      if (response.success) {
+        // Update the car in the list
+        setCars(prev => prev.map(car =>
+          car.id === selectedCar.id
+            ? { ...car, approval_status: 'REJECTED', status: 'INACTIVE', rejection_reason: rejectReason }
+            : car
+        ));
+        setSelectedCar(null);
+        setRejectReason('');
+        onRejectOpenChange();
+        alert('Car listing rejected successfully!');
+      } else {
+        alert(response.error || 'Failed to reject car');
+      }
+    } catch (error) {
+      console.error('Error rejecting car:', error);
+      alert('An error occurred while rejecting the car');
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   const handleDeleteCar = async (carId: number) => {
@@ -120,6 +224,7 @@ export default function AdminCarsPage() {
       const response = await apiService.deleteCar(carId);
       if (response.success) {
         setCars(prev => prev.filter(car => car.id !== carId));
+        alert('Car listing deleted successfully!');
       } else {
         alert(response.error || 'Failed to delete car');
       }
@@ -140,8 +245,8 @@ export default function AdminCarsPage() {
   const stats = {
     total: cars.length,
     active: cars.filter(c => c.status?.toUpperCase() === 'ACTIVE').length,
-    pending: cars.filter(c => c.status?.toUpperCase() === 'PENDING').length,
-    rejected: cars.filter(c => c.status?.toUpperCase() === 'REJECTED').length,
+    pending: cars.filter(c => c.approval_status?.toUpperCase() === 'PENDING').length,
+    rejected: cars.filter(c => c.approval_status?.toUpperCase() === 'REJECTED').length,
   };
 
   return (
@@ -189,7 +294,7 @@ export default function AdminCarsPage() {
             <CardBody className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-yellow-300 font-medium mb-1">Pending</p>
+                  <p className="text-sm text-yellow-300 font-medium mb-1">Pending Approval</p>
                   <p className="text-3xl font-bold text-white">{stats.pending}</p>
                 </div>
                 <div className="w-12 h-12 rounded-lg bg-yellow-600/20 flex items-center justify-center">
@@ -217,9 +322,9 @@ export default function AdminCarsPage() {
         {/* Filters */}
         <Card className="bg-black/40 backdrop-blur-xl border border-gray-700">
           <CardBody className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <Input
-                placeholder="Search by title, brand, model, or year..."
+                placeholder="Search by title, brand, model, year, or seller..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 startContent={<Search size={18} className="text-gray-400" />}
@@ -239,14 +344,30 @@ export default function AdminCarsPage() {
                   value: "text-white"
                 }}
               >
-                <SelectItem key="all">All Status</SelectItem>
-                <SelectItem key="active">Active</SelectItem>
-                <SelectItem key="pending">Pending</SelectItem>
-                <SelectItem key="rejected">Rejected</SelectItem>
-                <SelectItem key="sold">Sold</SelectItem>
+                <SelectItem key="all" value="all">All Status</SelectItem>
+                <SelectItem key="active" value="active">Active</SelectItem>
+                <SelectItem key="pending" value="pending">Pending</SelectItem>
+                <SelectItem key="sold" value="sold">Sold</SelectItem>
+                <SelectItem key="inactive" value="inactive">Inactive</SelectItem>
               </Select>
 
-              <div className="flex items-center gap-2 text-sm text-gray-400">
+              <Select
+                placeholder="Filter by approval"
+                selectedKeys={[approvalFilter]}
+                onChange={(e) => setApprovalFilter(e.target.value)}
+                startContent={<FileCheck size={18} className="text-gray-400" />}
+                classNames={{
+                  trigger: "bg-black/40 border-gray-700",
+                  value: "text-white"
+                }}
+              >
+                <SelectItem key="all" value="all">All Approval Status</SelectItem>
+                <SelectItem key="pending" value="pending">Pending</SelectItem>
+                <SelectItem key="approved" value="approved">Approved</SelectItem>
+                <SelectItem key="rejected" value="rejected">Rejected</SelectItem>
+              </Select>
+
+              <div className="flex items-center justify-end gap-2 text-sm text-gray-400">
                 <span>Showing {filteredCars.length} of {cars.length} cars</span>
               </div>
             </div>
@@ -263,7 +384,7 @@ export default function AdminCarsPage() {
                   No cars found
                 </h3>
                 <p className="text-gray-400">
-                  {searchTerm || statusFilter !== 'all'
+                  {searchTerm || statusFilter !== 'all' || approvalFilter !== 'all'
                     ? 'Try adjusting your filters'
                     : 'No car listings available'}
                 </p>
@@ -273,17 +394,26 @@ export default function AdminCarsPage() {
             filteredCars.map(car => {
               const mainImage = car.main_image || car.images?.find(img => img.is_main)?.image_url || car.images?.[0]?.image_url;
               const documentImages = car.images?.filter(img => img.image_type === 'document') || [];
+              const isPending = car.approval_status?.toUpperCase() === 'PENDING';
+              const isRejected = car.approval_status?.toUpperCase() === 'REJECTED';
 
               return (
-                <Card key={car.id} className="bg-black/40 backdrop-blur-xl border border-gray-700 hover:border-gray-600 transition-all">
+                <Card
+                  key={car.id}
+                  className={`bg-black/40 backdrop-blur-xl border transition-all ${
+                    isPending ? 'border-yellow-500/40 hover:border-yellow-500/60' :
+                    isRejected ? 'border-red-500/40 hover:border-red-500/60' :
+                    'border-gray-700 hover:border-gray-600'
+                  }`}
+                >
                   <CardBody className="p-6">
-                    <div className="flex flex-col md:flex-row gap-6">
+                    <div className="flex flex-col lg:flex-row gap-6">
                       {/* Image */}
-                      <div className="w-full md:w-64 h-48 bg-black/20 rounded-xl overflow-hidden flex-shrink-0">
+                      <div className="w-full lg:w-72 h-48 bg-black/20 rounded-xl overflow-hidden flex-shrink-0 relative">
                         {mainImage ? (
                           <img
                             src={getImageUrl(mainImage)}
-                            alt={car.listing_title}
+                            alt={car.title}
                             className="w-full h-full object-cover"
                           />
                         ) : (
@@ -291,32 +421,68 @@ export default function AdminCarsPage() {
                             <Car className="text-gray-600" size={48} />
                           </div>
                         )}
+                        {/* Image count badge */}
+                        {car.images && car.images.length > 0 && (
+                          <div className="absolute top-2 left-2">
+                            <Chip size="sm" className="bg-black/60 text-white backdrop-blur-sm">
+                              <ImageIcon size={12} className="mr-1" />
+                              {car.images.length}
+                            </Chip>
+                          </div>
+                        )}
                       </div>
 
                       {/* Details */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1 min-w-0 space-y-4">
+                        {/* Title and Status */}
+                        <div className="flex items-start justify-between gap-4">
                           <div className="flex-1 min-w-0">
                             <h3 className="text-xl font-bold text-white mb-1 truncate">
-                              {car.listing_title}
+                              {car.title}
                             </h3>
-                            <p className="text-gray-400 text-sm">
-                              {car.brand?.name} {car.model?.name} • {car.year}
+                            <p className="text-gray-400 text-sm mb-2">
+                              {car.brand_rel?.name} {car.model_rel?.name} • {car.year}
                             </p>
+                            {car.seller && (
+                              <div className="flex items-center gap-2 text-sm text-gray-400">
+                                <User size={14} />
+                                <span>{car.seller.first_name} {car.seller.last_name}</span>
+                                {car.seller.email_verified && (
+                                  <Chip size="sm" color="success" variant="flat" className="text-xs">
+                                    Verified
+                                  </Chip>
+                                )}
+                              </div>
+                            )}
                           </div>
-                          <Chip
-                            size="sm"
-                            color={getStatusColor(car.status || 'PENDING')}
-                            variant="flat"
-                            className="ml-2 flex-shrink-0"
-                          >
-                            {car.status?.toUpperCase() || 'PENDING'}
-                          </Chip>
+
+                          <div className="flex flex-col gap-2 items-end">
+                            <Chip
+                              size="sm"
+                              color={getStatusColor(car.status || 'PENDING')}
+                              variant="flat"
+                              className="font-medium"
+                            >
+                              {car.status?.toUpperCase() || 'PENDING'}
+                            </Chip>
+                            <Chip
+                              size="sm"
+                              color={getApprovalColor(car.approval_status || 'PENDING')}
+                              variant="flat"
+                              className="font-medium"
+                            >
+                              {car.approval_status?.toUpperCase() || 'PENDING'}
+                            </Chip>
+                          </div>
                         </div>
 
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                        {/* Info Grid */}
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                           <div>
-                            <p className="text-xs text-gray-500 mb-1">Price</p>
+                            <p className="text-xs text-gray-500 mb-1 flex items-center gap-1">
+                              <DollarSign size={12} />
+                              Price
+                            </p>
                             <p className="text-white font-semibold">
                               ₱{car.price?.toLocaleString()}
                             </p>
@@ -328,20 +494,60 @@ export default function AdminCarsPage() {
                             </p>
                           </div>
                           <div>
-                            <p className="text-xs text-gray-500 mb-1">Seller</p>
-                            <p className="text-white font-semibold truncate">
-                              {car.seller?.first_name} {car.seller?.last_name}
+                            <p className="text-xs text-gray-500 mb-1">Fuel / Trans</p>
+                            <p className="text-white font-semibold text-sm truncate capitalize">
+                              {car.fuel_type} / {car.transmission}
                             </p>
                           </div>
                           <div>
-                            <p className="text-xs text-gray-500 mb-1">Documents</p>
+                            <p className="text-xs text-gray-500 mb-1 flex items-center gap-1">
+                              <FileText size={12} />
+                              Documents
+                            </p>
                             <p className="text-white font-semibold">
                               {documentImages.length} file{documentImages.length !== 1 ? 's' : ''}
                             </p>
                           </div>
                         </div>
 
-                        <div className="flex flex-wrap gap-2">
+                        {/* Rejection Reason */}
+                        {isRejected && car.rejection_reason && (
+                          <div className="p-3 bg-red-600/10 border border-red-500/30 rounded-lg">
+                            <p className="text-xs text-red-300 font-medium mb-1">Rejection Reason:</p>
+                            <p className="text-sm text-red-200">{car.rejection_reason}</p>
+                          </div>
+                        )}
+
+                        {/* Action Buttons */}
+                        <div className="flex flex-wrap gap-2 pt-2">
+                          {/* Approve/Reject buttons for pending cars */}
+                          {isPending && (
+                            <>
+                              <Button
+                                size="sm"
+                                color="success"
+                                onPress={() => handleApproveCar(car.id)}
+                                isLoading={actionLoading}
+                                startContent={<CheckCircle size={16} />}
+                                className="font-medium"
+                              >
+                                Approve
+                              </Button>
+                              <Button
+                                size="sm"
+                                color="danger"
+                                variant="flat"
+                                onPress={() => openRejectModal(car)}
+                                isLoading={actionLoading}
+                                startContent={<XCircle size={16} />}
+                                className="font-medium"
+                              >
+                                Reject
+                              </Button>
+                            </>
+                          )}
+
+                          {/* View Details Button */}
                           <Button
                             size="sm"
                             color="primary"
@@ -349,24 +555,23 @@ export default function AdminCarsPage() {
                             startContent={<Eye size={16} />}
                             onPress={() => viewCarDetails(car)}
                           >
-                            View Details
+                            Details
                           </Button>
 
+                          {/* View Documents Button */}
                           {documentImages.length > 0 && (
                             <Button
                               size="sm"
                               color="warning"
                               variant="flat"
                               startContent={<FileText size={16} />}
-                              onPress={() => {
-                                setSelectedCar(car);
-                                viewDocument(documentImages[0].image_url);
-                              }}
+                              onPress={() => viewDocuments(car)}
                             >
-                              View Documents ({documentImages.length})
+                              Documents ({documentImages.length})
                             </Button>
                           )}
 
+                          {/* Public Page Button */}
                           <Button
                             size="sm"
                             variant="flat"
@@ -375,9 +580,10 @@ export default function AdminCarsPage() {
                             href={`/cars/${car.id}`}
                             target="_blank"
                           >
-                            Public Page
+                            Public View
                           </Button>
 
+                          {/* Delete Button */}
                           <Button
                             size="sm"
                             color="danger"
@@ -398,6 +604,65 @@ export default function AdminCarsPage() {
         </div>
       </div>
 
+      {/* Reject Modal */}
+      <Modal
+        isOpen={isRejectOpen}
+        onOpenChange={onRejectOpenChange}
+        size="2xl"
+      >
+        <ModalContent>
+          {(onClose) => (
+            <>
+              <ModalHeader className="flex flex-col gap-1">
+                <h2 className="text-2xl font-bold text-red-600">Reject Car Listing</h2>
+                {selectedCar && (
+                  <p className="text-sm text-gray-500 font-normal">
+                    {selectedCar.title}
+                  </p>
+                )}
+              </ModalHeader>
+              <ModalBody>
+                <div className="space-y-4">
+                  <div className="p-4 bg-red-600/10 border border-red-500/30 rounded-lg">
+                    <p className="text-sm text-red-300">
+                      <strong>Warning:</strong> This will reject the car listing and notify the seller.
+                      Please provide a clear reason for rejection.
+                    </p>
+                  </div>
+
+                  <Textarea
+                    label="Rejection Reason"
+                    placeholder="Enter the reason for rejecting this listing..."
+                    value={rejectReason}
+                    onChange={(e) => setRejectReason(e.target.value)}
+                    minRows={4}
+                    isRequired
+                    description="This message will be sent to the seller"
+                  />
+                </div>
+              </ModalBody>
+              <ModalFooter>
+                <Button
+                  variant="light"
+                  onPress={onClose}
+                  isDisabled={actionLoading}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  color="danger"
+                  onPress={handleRejectCar}
+                  isLoading={actionLoading}
+                  startContent={<XCircle size={16} />}
+                >
+                  Reject Listing
+                </Button>
+              </ModalFooter>
+            </>
+          )}
+        </ModalContent>
+      </Modal>
+
       {/* View Car Details Modal */}
       <Modal
         isOpen={isViewOpen}
@@ -409,59 +674,155 @@ export default function AdminCarsPage() {
           {(onClose) => (
             <>
               <ModalHeader className="flex flex-col gap-1">
-                <h2 className="text-2xl font-bold">{selectedCar?.listing_title}</h2>
+                <h2 className="text-2xl font-bold">{selectedCar?.title}</h2>
                 <p className="text-sm text-gray-500">
-                  ID: #{selectedCar?.id} • Status: {selectedCar?.status?.toUpperCase()}
+                  ID: #{selectedCar?.id} • Status: {selectedCar?.status?.toUpperCase()} •
+                  Approval: {selectedCar?.approval_status?.toUpperCase()}
                 </p>
               </ModalHeader>
               <ModalBody>
                 {selectedCar && (
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-6">
+                    {/* Main Image */}
+                    {(selectedCar.main_image || selectedCar.images?.[0]) && (
+                      <div className="w-full h-64 bg-black/20 rounded-lg overflow-hidden">
+                        <img
+                          src={getImageUrl(selectedCar.main_image || selectedCar.images?.[0]?.image_url)}
+                          alt={selectedCar.title}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    )}
+
+                    {/* Basic Info */}
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                       <div>
-                        <p className="text-sm text-gray-500">Brand & Model</p>
-                        <p className="font-semibold">{selectedCar.brand?.name} {selectedCar.model?.name}</p>
+                        <p className="text-sm text-gray-500 mb-1">Brand & Model</p>
+                        <p className="font-semibold">{selectedCar.brand_rel?.name} {selectedCar.model_rel?.name}</p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-500">Year</p>
+                        <p className="text-sm text-gray-500 mb-1">Year</p>
                         <p className="font-semibold">{selectedCar.year}</p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-500">Price</p>
+                        <p className="text-sm text-gray-500 mb-1">Price</p>
                         <p className="font-semibold">₱{selectedCar.price?.toLocaleString()}</p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-500">Mileage</p>
+                        <p className="text-sm text-gray-500 mb-1">Mileage</p>
                         <p className="font-semibold">{selectedCar.mileage?.toLocaleString()} km</p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-500">Transmission</p>
-                        <p className="font-semibold">{selectedCar.transmission}</p>
+                        <p className="text-sm text-gray-500 mb-1">Transmission</p>
+                        <p className="font-semibold capitalize">{selectedCar.transmission}</p>
                       </div>
                       <div>
-                        <p className="text-sm text-gray-500">Fuel Type</p>
-                        <p className="font-semibold">{selectedCar.fuel_type}</p>
+                        <p className="text-sm text-gray-500 mb-1">Fuel Type</p>
+                        <p className="font-semibold capitalize">{selectedCar.fuel_type}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500 mb-1">Condition</p>
+                        <p className="font-semibold capitalize">{selectedCar.car_condition?.replace('_', ' ')}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500 mb-1">Views</p>
+                        <p className="font-semibold">{selectedCar.views_count || 0}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500 mb-1">Inquiries</p>
+                        <p className="font-semibold">{selectedCar.inquiry_count || 0}</p>
                       </div>
                     </div>
 
+                    {/* Description */}
                     <div>
-                      <p className="text-sm text-gray-500 mb-2">Description</p>
-                      <p className="text-sm">{selectedCar.description || 'No description provided'}</p>
+                      <p className="text-sm text-gray-500 mb-2 font-medium">Description</p>
+                      <p className="text-sm whitespace-pre-wrap">{selectedCar.description || 'No description provided'}</p>
                     </div>
 
-                    <div>
-                      <p className="text-sm text-gray-500 mb-2">Seller Information</p>
-                      <p className="font-semibold">
-                        {selectedCar.seller?.first_name} {selectedCar.seller?.last_name}
-                      </p>
-                      <p className="text-sm text-gray-600">{selectedCar.seller?.email}</p>
+                    {/* Features */}
+                    {selectedCar.features && selectedCar.features.length > 0 && (
+                      <div>
+                        <p className="text-sm text-gray-500 mb-2 font-medium">Features</p>
+                        <div className="flex flex-wrap gap-2">
+                          {selectedCar.features.map(feature => (
+                            <Chip key={feature.id} size="sm" variant="flat">
+                              {feature.name}
+                            </Chip>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Seller Information */}
+                    <div className="p-4 bg-gray-100 dark:bg-gray-800 rounded-lg">
+                      <p className="text-sm text-gray-500 mb-3 font-medium">Seller Information</p>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-600 dark:text-gray-400">Name:</span>
+                          <span className="font-semibold">
+                            {selectedCar.seller?.first_name} {selectedCar.seller?.last_name}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-600 dark:text-gray-400">Email:</span>
+                          <span className="font-semibold">{selectedCar.seller?.email}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-600 dark:text-gray-400">Role:</span>
+                          <Chip size="sm" variant="flat" className="capitalize">
+                            {selectedCar.seller?.role?.toLowerCase()}
+                          </Chip>
+                        </div>
+                        {selectedCar.seller?.business_name && (
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-gray-600 dark:text-gray-400">Business:</span>
+                            <span className="font-semibold">{selectedCar.seller.business_name}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Vehicle History */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="p-3 bg-gray-100 dark:bg-gray-800 rounded-lg">
+                        <p className="text-xs text-gray-500 mb-1">Accident History</p>
+                        <Chip size="sm" color={selectedCar.accident_history ? 'danger' : 'success'}>
+                          {selectedCar.accident_history ? 'Yes' : 'No'}
+                        </Chip>
+                      </div>
+                      <div className="p-3 bg-gray-100 dark:bg-gray-800 rounded-lg">
+                        <p className="text-xs text-gray-500 mb-1">Flood History</p>
+                        <Chip size="sm" color={selectedCar.flood_history ? 'danger' : 'success'}>
+                          {selectedCar.flood_history ? 'Yes' : 'No'}
+                        </Chip>
+                      </div>
+                      <div className="p-3 bg-gray-100 dark:bg-gray-800 rounded-lg">
+                        <p className="text-xs text-gray-500 mb-1">LTO Registered</p>
+                        <Chip size="sm" color={selectedCar.lto_registered ? 'success' : 'warning'}>
+                          {selectedCar.lto_registered ? 'Yes' : 'No'}
+                        </Chip>
+                      </div>
+                      <div className="p-3 bg-gray-100 dark:bg-gray-800 rounded-lg">
+                        <p className="text-xs text-gray-500 mb-1">Number of Owners</p>
+                        <p className="font-semibold">{selectedCar.number_of_owners}</p>
+                      </div>
                     </div>
                   </div>
                 )}
               </ModalBody>
               <ModalFooter>
-                <Button color="danger" variant="light" onPress={onClose}>
+                <Button variant="light" onPress={onClose}>
                   Close
+                </Button>
+                <Button
+                  color="primary"
+                  as="a"
+                  href={`/cars/${selectedCar?.id}`}
+                  target="_blank"
+                  startContent={<ExternalLink size={16} />}
+                >
+                  View Public Page
                 </Button>
               </ModalFooter>
             </>
@@ -474,21 +835,25 @@ export default function AdminCarsPage() {
         isOpen={isDocOpen}
         onOpenChange={onDocOpenChange}
         size="5xl"
+        scrollBehavior="inside"
       >
         <ModalContent>
           {(onClose) => (
             <>
               <ModalHeader>
-                Document Viewer
-                {selectedCar && (
-                  <p className="text-sm text-gray-500 font-normal">
-                    {selectedCar.listing_title}
-                  </p>
-                )}
+                <div>
+                  <h2 className="text-xl font-bold">Document Viewer</h2>
+                  {selectedCar && (
+                    <p className="text-sm text-gray-500 font-normal mt-1">
+                      {selectedCar.title}
+                    </p>
+                  )}
+                </div>
               </ModalHeader>
               <ModalBody>
+                {/* Main Document View */}
                 {documentToView && (
-                  <div className="w-full h-[70vh] bg-black/20 rounded-lg overflow-hidden">
+                  <div className="w-full h-[60vh] bg-black/20 rounded-lg overflow-hidden">
                     <img
                       src={getImageUrl(documentToView)}
                       alt="Document"
@@ -497,24 +862,33 @@ export default function AdminCarsPage() {
                   </div>
                 )}
 
-                {/* Show all documents for this car */}
+                {/* All Documents Thumbnails */}
                 {selectedCar && selectedCar.images && (
                   <div className="mt-4">
-                    <p className="text-sm text-gray-500 mb-2">All Documents:</p>
-                    <div className="grid grid-cols-3 gap-2">
+                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                      All Documents ({selectedCar.images.filter(img => img.image_type === 'document').length}):
+                    </p>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                       {selectedCar.images
                         .filter(img => img.image_type === 'document')
                         .map((img, idx) => (
                           <button
                             key={idx}
                             onClick={() => setDocumentToView(img.image_url)}
-                            className="aspect-video bg-black/20 rounded-lg overflow-hidden hover:ring-2 ring-primary-500 transition-all"
+                            className={`aspect-video bg-black/20 rounded-lg overflow-hidden hover:ring-2 ring-primary-500 transition-all ${
+                              documentToView === img.image_url ? 'ring-2 ring-primary-500' : ''
+                            }`}
                           >
                             <img
                               src={getImageUrl(img.image_url)}
                               alt={`Document ${idx + 1}`}
                               className="w-full h-full object-cover"
                             />
+                            {img.caption && (
+                              <p className="text-xs text-gray-500 mt-1 px-2 truncate">
+                                {img.caption}
+                              </p>
+                            )}
                           </button>
                         ))}
                     </div>
@@ -522,7 +896,7 @@ export default function AdminCarsPage() {
                 )}
               </ModalBody>
               <ModalFooter>
-                <Button color="danger" variant="light" onPress={onClose}>
+                <Button variant="light" onPress={onClose}>
                   Close
                 </Button>
                 <Button
