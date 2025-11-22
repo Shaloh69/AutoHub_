@@ -52,29 +52,29 @@ class CarService:
         # Normalize enum values to match SQL schema
         car_data = normalize_car_data(car_data)
 
-        # Verify location
+        # Verify location and load province relationship to get region_id
+        from app.models.location import PhProvince
         city = db.query(PhCity).filter(PhCity.id == car_data["city_id"]).first()
         if not city:
             raise ValueError("Invalid city_id")
 
-        # FIX: Safely extract province_id and region_id with proper null checking
+        # Get province_id from city (REQUIRED field in database)
         province_id = getattr(city, 'province_id', None)
-        if province_id:
-            car_data["province_id"] = int(province_id)
-            # Get region_id from province relationship if it exists
-            province = getattr(city, 'province', None)
-            if province:
-                region_id = getattr(province, 'region_id', None)
-                if region_id:
-                    car_data["region_id"] = int(region_id)
-                else:
-                    # Fallback: Try to get region_id directly from city if province doesn't have it
-                    car_data["region_id"] = car_data.get("region_id", None)
-            else:
-                # Province relationship not loaded, keep existing region_id if provided
-                car_data["region_id"] = car_data.get("region_id", None)
-        else:
+        if not province_id:
             raise ValueError("City does not have a valid province_id")
+
+        car_data["province_id"] = int(province_id)
+
+        # Get region_id from province (REQUIRED field in database)
+        province = db.query(PhProvince).filter(PhProvince.id == province_id).first()
+        if not province:
+            raise ValueError(f"Province with id {province_id} not found")
+
+        region_id = getattr(province, 'region_id', None)
+        if not region_id:
+            raise ValueError(f"Province {province_id} does not have a valid region_id")
+
+        car_data["region_id"] = int(region_id)
 
         # NOTE: Removed auto-populate of 'make' and 'model' fields
         # The Car model uses brand_id/model_id FKs and brand_rel/model_rel relationships
