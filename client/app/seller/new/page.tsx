@@ -306,18 +306,33 @@ export default function CreateCarPage() {
 
         // Upload vehicle photos
         if (imageFiles.length > 0) {
-          await apiService.uploadCarImages(carId, imageFiles, imageMetadata);
+          const imageUploadResult = await apiService.uploadCarImages(carId, imageFiles, imageMetadata);
+
+          if (!imageUploadResult.success) {
+            console.error('Image upload failed:', imageUploadResult.error);
+            setError(`Car created successfully, but image upload failed: ${imageUploadResult.error}`);
+            setLoading(false);
+            return;
+          }
         }
 
         // Upload documents (using proper documents endpoint)
         if (documentFiles.length > 0) {
           // Map metadata to document format
           const docsMetadata = documentFiles.map((file, index) => ({
-            document_type: 'registration', // Default type, can be enhanced later
+            document_type: 'REGISTRATION', // Uppercase to match backend enum
             title: file.name,
             description: 'Vehicle document'
           }));
-          await apiService.uploadCarDocuments(carId, documentFiles, docsMetadata);
+
+          const docUploadResult = await apiService.uploadCarDocuments(carId, documentFiles, docsMetadata);
+
+          if (!docUploadResult.success) {
+            console.error('Document upload failed:', docUploadResult.error);
+            setError(`Car created successfully, but document upload failed: ${docUploadResult.error}`);
+            setLoading(false);
+            return;
+          }
         }
 
         router.push('/seller/dashboard');
