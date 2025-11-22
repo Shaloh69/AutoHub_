@@ -98,35 +98,8 @@ export default function CarReviews({ carId, sellerId }: CarReviewsProps) {
       return;
     }
 
-    // Check if token exists
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-
-    // Show debug info in alert
-    const debugInfo = `
-DEBUG INFO:
-- User Email: ${user?.email || 'none'}
-- Token Exists: ${token ? 'YES' : 'NO'}
-- Seller ID: ${sellerId}
-- Car ID: ${carId}
-- Token Preview: ${token ? token.substring(0, 30) + '...' : 'none'}
-
-Click OK to continue with review submission.
-    `;
-
-    if (!confirm(debugInfo)) {
-      return;
-    }
-
-    if (!token) {
-      alert('ERROR: Authentication token not found in localStorage.\n\nPlease sign in again.');
-      window.location.href = '/login';
-      return;
-    }
-
     try {
       setSubmitting(true);
-
-      alert('Sending request to: POST /api/v1/reviews\nWith authentication token...');
 
       const response = await apiService.createReview({
         car_id: carId,
@@ -138,9 +111,6 @@ Click OK to continue with review submission.
         cons: cons.trim() || undefined,
         would_recommend: wouldRecommend,
       });
-
-      // Show response in alert
-      alert(`RESPONSE RECEIVED:\n\nSuccess: ${response.success}\nError: ${response.error || 'none'}\nMessage: ${response.message || 'none'}`);
 
       if (response.success) {
         // Reset form
@@ -160,21 +130,19 @@ Click OK to continue with review submission.
         const errorMsg = response.error || 'Failed to submit review';
 
         if (errorMsg.toLowerCase().includes('not authenticated') || errorMsg.toLowerCase().includes('invalid or expired token')) {
-          localStorage.removeItem('token');
-          localStorage.removeItem('refresh_token');
-          alert('❌ ERROR: Your session has expired.\n\nYou will be redirected to the login page.');
-          window.location.href = '/login';
+          alert('Your session has expired. Please sign in again.');
+          window.location.href = '/auth/login';
         } else if (errorMsg.toLowerCase().includes('already reviewed')) {
-          alert('❌ You have already reviewed this car.');
+          alert('You have already reviewed this car.');
         } else if (errorMsg.toLowerCase().includes('cannot review yourself')) {
-          alert('❌ You cannot review your own listing.');
+          alert('You cannot review your own listing.');
         } else {
-          alert(`❌ ERROR: ${errorMsg}`);
+          alert(`Error: ${errorMsg}`);
         }
       }
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-      alert(`💥 EXCEPTION CAUGHT:\n\n${errorMsg}\n\nPlease try again or contact support.`);
+      alert(`An error occurred: ${errorMsg}\n\nPlease try again or contact support.`);
     } finally {
       setSubmitting(false);
     }
