@@ -924,11 +924,15 @@ class ApiService {
     if (params?.offset) searchParams.append('offset', String(params.offset));
 
     const queryString = searchParams.toString();
-    return this.request<any[]>(`/reviews${queryString ? '?' + queryString : ''}`);
+    return this.request<any[]>(`/reviews${queryString ? '?' + queryString : ''}`, {
+      headers: { 'Authorization': 'skip' },
+    });
   }
 
   async getReview(reviewId: number): Promise<ApiResponse<any>> {
-    return this.request(`/reviews/${reviewId}`);
+    return this.request(`/reviews/${reviewId}`, {
+      headers: { 'Authorization': 'skip' },
+    });
   }
 
   async updateReview(reviewId: number, data: {

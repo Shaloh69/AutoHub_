@@ -123,25 +123,47 @@ export default function CarReviews({ carId, sellerId }: CarReviewsProps) {
         // Close modal and reload reviews
         onOpenChange();
         loadReviews();
-        alert('Review submitted! It will be visible after admin approval.');
+        alert('Review submitted successfully! It will be visible after admin approval.');
       } else {
-        alert(response.error || 'Failed to submit review');
+        // Better error messages
+        const errorMsg = response.error || 'Failed to submit review';
+        if (errorMsg.toLowerCase().includes('not authenticated')) {
+          alert('Your session has expired. Please sign in again to submit a review.');
+        } else if (errorMsg.toLowerCase().includes('already reviewed')) {
+          alert('You have already reviewed this car.');
+        } else {
+          alert(errorMsg);
+        }
       }
     } catch (error) {
       console.error('Error submitting review:', error);
-      alert('An error occurred while submitting your review');
+      alert('An error occurred while submitting your review. Please try again.');
     } finally {
       setSubmitting(false);
     }
   };
 
   const handleMarkHelpful = async (reviewId: number) => {
+    if (!user) {
+      alert('Please sign in to mark reviews as helpful');
+      return;
+    }
+
     try {
-      await apiService.markReviewHelpful(reviewId);
-      // Reload reviews to show updated helpful count
-      loadReviews();
+      const response = await apiService.markReviewHelpful(reviewId);
+      if (response.success) {
+        // Reload reviews to show updated helpful count
+        loadReviews();
+      } else {
+        if (response.error?.toLowerCase().includes('not authenticated')) {
+          alert('Your session has expired. Please sign in again.');
+        } else {
+          alert(response.error || 'Failed to mark review as helpful');
+        }
+      }
     } catch (error) {
       console.error('Error marking review helpful:', error);
+      alert('An error occurred. Please try again.');
     }
   };
 
