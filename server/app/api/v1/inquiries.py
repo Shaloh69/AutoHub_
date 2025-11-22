@@ -23,34 +23,54 @@ router = APIRouter()
 @router.post("", response_model=IDResponse, status_code=status.HTTP_201_CREATED)
 async def create_inquiry(
     inquiry_data: InquiryCreate,
-    current_user: User = Depends(get_current_user),
+    current_user: Optional[User] = Depends(get_optional_user),
     db: Session = Depends(get_db)
 ):
-    """Create new inquiry for a car (authentication required)"""
+    """Create new inquiry for a car (authentication optional - allows guest inquiries)"""
     # Get car
     car = db.query(Car).filter(Car.id == inquiry_data.car_id).first()
     if not car:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Car not found")
-    
+
     # FIX: Use getattr for seller_id
     seller_id_value = int(getattr(car, 'seller_id', 0))
-    user_id_value = int(getattr(current_user, 'id', 0))
 
-    # Cannot inquire about own car
-    if seller_id_value == user_id_value:
+    # If user is authenticated, get their info
+    buyer_id = None
+    buyer_full_name = None
+    buyer_email = None
+    buyer_phone = None
+
+    if current_user:
+        user_id_value = int(getattr(current_user, 'id', 0))
+
+        # Cannot inquire about own car
+        if seller_id_value == user_id_value:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Cannot inquire about your own listing"
+            )
+
+        # Get buyer info from authenticated user - construct full name from first_name + last_name
+        buyer_id = user_id_value
+        first_name = getattr(current_user, 'first_name', '')
+        last_name = getattr(current_user, 'last_name', '')
+        buyer_full_name = f"{first_name} {last_name}".strip() if first_name or last_name else None
+        buyer_email = getattr(current_user, 'email', None)
+        buyer_phone = getattr(current_user, 'phone', None)
+
+    # Validate that we have required contact info (either from auth or from form)
+    if not (inquiry_data.buyer_name or buyer_full_name):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Cannot inquire about your own listing"
+            detail="Buyer name is required"
+        )
+    if not (inquiry_data.buyer_email or buyer_email):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Buyer email is required"
         )
 
-    # Get buyer info from authenticated user - construct full name from first_name + last_name
-    buyer_id = user_id_value
-    first_name = getattr(current_user, 'first_name', '')
-    last_name = getattr(current_user, 'last_name', '')
-    buyer_full_name = f"{first_name} {last_name}".strip() if first_name or last_name else None
-    buyer_email = getattr(current_user, 'email', None)
-    buyer_phone = getattr(current_user, 'phone', None)
-    
     # Create inquiry
     inquiry = Inquiry(
         car_id=inquiry_data.car_id,

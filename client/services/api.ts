@@ -504,10 +504,10 @@ class ApiService {
     inquiry_type?: string;
     offered_price?: number;
   }): Promise<ApiResponse<{ id: number; message: string }>> {
+    // Send token if available (optional auth) - allows both logged-in and guest users
     return this.request('/inquiries', {
       method: 'POST',
       body: JSON.stringify(inquiryData),
-      headers: { 'Authorization': 'skip' },
     });
   }
 
