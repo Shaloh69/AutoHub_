@@ -13,7 +13,7 @@ import { Spinner } from '@heroui/spinner';
 import { Tabs, Tab } from '@heroui/tabs';
 import {
   Plus, Car, Eye, MessageCircle, Heart, TrendingUp,
-  DollarSign, Clock, CheckCircle, XCircle, Crown, ArrowRight, X
+  DollarSign, Clock, CheckCircle, XCircle, Crown, ArrowRight, X, Star
 } from 'lucide-react';
 import { apiService, getImageUrl } from '@/services/api';
 import { Car as CarType, Analytics, Subscription } from '@/types';
@@ -85,6 +85,40 @@ export default function SellerDashboardPage() {
     } catch (error: any) {
       console.error('Error marking car as sold:', error);
       setError(error.message || 'An error occurred while marking the car as sold.');
+    }
+  };
+
+  const handleMakeFeatured = async (carId: number) => {
+    // Calculate current featured listings
+    const featuredCount = cars.filter(c => c.is_featured && c.status?.toUpperCase() === 'ACTIVE').length;
+    const maxFeatured = subscription?.plan?.max_featured_listings || 0;
+
+    // Check if user has reached the limit
+    if (maxFeatured !== -1 && featuredCount >= maxFeatured) {
+      setError(`You've reached your featured listing limit (${maxFeatured}). Upgrade your subscription for more featured listings.`);
+      return;
+    }
+
+    if (!confirm('Make this listing featured? This will give it priority placement and increased visibility.')) {
+      return;
+    }
+
+    try {
+      // Use boostCar API with default duration of 30 days
+      const response = await apiService.boostCar(carId, 30);
+      if (response.success) {
+        // Update the car featured status in state
+        setCars(prev => prev.map(car =>
+          car.id === carId ? { ...car, is_featured: true } : car
+        ));
+        // Reload dashboard data
+        await loadDashboardData();
+      } else {
+        setError(response.error || 'Failed to make listing featured. Please try again.');
+      }
+    } catch (error: any) {
+      console.error('Error making car featured:', error);
+      setError(error.message || 'An error occurred while making the listing featured.');
     }
   };
 
@@ -240,9 +274,9 @@ export default function SellerDashboardPage() {
             subscription={subscription}
             userLimits={analytics ? {
               usedListings: analytics.active_listings || 0,
-              usedFeatured: 0, // You can add this to analytics if needed
+              usedFeatured: cars.filter(c => c.is_featured && c.status?.toUpperCase() === 'ACTIVE').length,
               remainingListings: subscription?.plan ? (subscription.plan.max_listings === -1 ? Infinity : subscription.plan.max_listings - (analytics.active_listings || 0)) : 0,
-              remainingFeatured: subscription?.plan ? subscription.plan.max_featured_listings : 0
+              remainingFeatured: subscription?.plan ? (subscription.plan.max_featured_listings === -1 ? Infinity : subscription.plan.max_featured_listings - cars.filter(c => c.is_featured && c.status?.toUpperCase() === 'ACTIVE').length) : 0
             } : null}
             showUpgradeButton={true}
             onUpgrade={() => router.push('/subscription')}
@@ -447,9 +481,22 @@ export default function SellerDashboardPage() {
                         <div className="flex-1">
                           <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-2 mb-2">
                             <div>
-                              <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-                                {car.title}
-                              </h3>
+                              <div className="flex items-center gap-2">
+                                <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                                  {car.title}
+                                </h3>
+                                {car.is_featured && (
+                                  <Chip
+                                    size="sm"
+                                    color="warning"
+                                    variant="flat"
+                                    startContent={<Star size={12} className="fill-yellow-400" />}
+                                    className="bg-yellow-600/20 text-yellow-400 border-yellow-500/30"
+                                  >
+                                    Featured
+                                  </Chip>
+                                )}
+                              </div>
                               <p className="text-sm text-gray-600 dark:text-gray-400">
                                 {car.brand?.name} {car.model?.name} • {car.year}
                               </p>
@@ -495,6 +542,18 @@ export default function SellerDashboardPage() {
                               >
                                 Edit
                               </Button>
+                              {car.status?.toUpperCase() === 'ACTIVE' && !car.is_featured && (
+                                <Button
+                                  size="sm"
+                                  variant="flat"
+                                  color="warning"
+                                  startContent={<Star size={16} />}
+                                  onPress={() => handleMakeFeatured(car.id)}
+                                  className="bg-yellow-600/20 hover:bg-yellow-600/30 border-yellow-500/30 text-yellow-400"
+                                >
+                                  Make Featured
+                                </Button>
+                              )}
                               {car.status?.toUpperCase() === 'ACTIVE' && (
                                 <Button
                                   size="sm"
