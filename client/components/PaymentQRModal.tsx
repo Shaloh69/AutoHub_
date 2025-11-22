@@ -96,7 +96,7 @@ export default function PaymentQRModal({
             Complete Your Payment
           </h3>
           <p className="text-xs sm:text-sm text-autohub-accent1-600">
-            {planName} - ₱{amount.toLocaleString()}
+            {planName} - ₱{typeof amount === 'number' ? amount.toLocaleString() : parseFloat(amount).toLocaleString()}
           </p>
         </ModalHeader>
 

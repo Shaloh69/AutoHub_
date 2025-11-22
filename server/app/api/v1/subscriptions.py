@@ -132,14 +132,14 @@ async def get_payment_history(
     ]
 
 
-@router.post("/upgrade")
+@router.post("/upgrade", response_model=QRCodePaymentResponse)
 async def upgrade_subscription(
     plan_id: int,
     request: Request,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Upgrade to a higher plan"""
+    """Upgrade to a higher plan - Returns same structure as subscribe endpoint"""
     user_id = int(getattr(current_user, 'id', 0))
 
     # Cancel current subscription
@@ -160,21 +160,18 @@ async def upgrade_subscription(
 
         # Get QR code settings
         qr_settings = SubscriptionService.get_qr_code_settings(db)
-        
-        return {
-            "message": "Subscription upgrade initiated. Please complete payment.",
-            "subscription": UserSubscriptionResponse.model_validate(subscription),
-            "payment": {
-                "payment_id": int(getattr(payment, 'id', 0)),
-                "subscription_id": int(getattr(subscription, 'id', 0)),
-                "amount": float(getattr(payment, 'amount', 0)),
-                "currency": 'PHP',
-                "status": str(getattr(payment, 'status', 'pending')),
-                "qr_code_url": qr_settings["qr_code_image_url"],
-                "instructions": qr_settings["payment_instructions"],
-                "created_at": getattr(payment, 'created_at', datetime.utcnow())
-            }
-        }
+
+        # Return same structure as /subscribe endpoint for consistency
+        return QRCodePaymentResponse(
+            payment_id=int(getattr(payment, 'id', 0)),
+            subscription_id=int(getattr(subscription, 'id', 0)),
+            amount=Decimal(str(getattr(payment, 'amount', 0))),
+            currency='PHP',
+            qr_code_url=qr_settings["qr_code_image_url"],
+            instructions=qr_settings["payment_instructions"],
+            status=str(getattr(payment, 'status', 'pending')),
+            created_at=getattr(payment, 'created_at', datetime.utcnow())
+        )
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 

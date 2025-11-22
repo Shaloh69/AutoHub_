@@ -98,6 +98,8 @@ export default function SubscriptionPage() {
   const handleSubscribe = async (planId: number) => {
     try {
       setActionLoading(planId.toString());
+      setError(null);
+
       const response = await apiService.subscribe({
         plan_id: planId,
         billing_cycle: 'monthly',
@@ -106,15 +108,17 @@ export default function SubscriptionPage() {
 
       if (response.success && response.data) {
         const plan = plans.find(p => p.id === planId);
-        if (plan) {
+        if (plan && response.data.qr_code_url) {
           setPendingSubscription({
             paymentId: response.data.payment_id,
             planName: plan.name,
-            amount: response.data.amount,
+            amount: typeof response.data.amount === 'number' ? response.data.amount : parseFloat(response.data.amount),
             qrCodeUrl: response.data.qr_code_url,
-            instructions: response.data.instructions
+            instructions: response.data.instructions || 'Please scan the QR code and submit your payment reference number.'
           });
           setShowPaymentModal(true);
+        } else {
+          throw new Error('QR code not available. Please contact support.');
         }
       } else {
         throw new Error(response.error || 'Subscription failed');
@@ -129,19 +133,23 @@ export default function SubscriptionPage() {
   const handleUpgrade = async (planId: number) => {
     try {
       setActionLoading(planId.toString());
+      setError(null);
+
       const response = await apiService.upgradeSubscription(planId);
 
       if (response.success && response.data) {
         const plan = plans.find(p => p.id === planId);
-        if (plan) {
+        if (plan && response.data.qr_code_url) {
           setPendingSubscription({
             paymentId: response.data.payment_id,
             planName: plan.name,
-            amount: response.data.amount,
+            amount: typeof response.data.amount === 'number' ? response.data.amount : parseFloat(response.data.amount),
             qrCodeUrl: response.data.qr_code_url,
-            instructions: response.data.instructions
+            instructions: response.data.instructions || 'Please scan the QR code and submit your payment reference number.'
           });
           setShowPaymentModal(true);
+        } else {
+          throw new Error('QR code not available. Please contact support.');
         }
       } else {
         throw new Error(response.error || 'Upgrade failed');
@@ -153,9 +161,11 @@ export default function SubscriptionPage() {
     }
   };
 
-  const handlePaymentSubmitted = () => {
-    fetchSubscriptionData();
+  const handlePaymentSubmitted = async () => {
+    setShowPaymentModal(false);
     setPendingSubscription(null);
+    // Refresh subscription data to show updated status
+    await fetchSubscriptionData();
   };
 
   const handleCancelSubscription = async () => {
@@ -316,11 +326,11 @@ export default function SubscriptionPage() {
                   <CardBody className="space-y-6">
                     <div className="text-center">
                       <div className="text-5xl font-bold text-primary-600 dark:text-primary-400 mb-2">
-                        {plan.price === 0 ? 'Free' : `₱${plan.price}`}
+                        {plan.price === 0 ? 'Free' : `₱${plan.price.toLocaleString()}`}
                       </div>
                       {plan.price > 0 && (
                         <div className="text-gray-600 dark:text-gray-400 text-sm">
-                          per {plan.billing_cycle?.toLowerCase()}
+                          per {plan.billing_cycle?.toLowerCase() || 'month'}
                         </div>
                       )}
                     </div>
@@ -625,7 +635,7 @@ function PendingPaymentCard({
               Payment Pending Verification
             </h3>
             <p className="text-sm text-gray-600 dark:text-gray-400">
-              Amount: ₱{payment.amount} • Created: {new Date(payment.created_at).toLocaleDateString()}
+              Amount: ₱{payment.amount.toLocaleString()} • Created: {new Date(payment.created_at).toLocaleDateString()}
             </p>
           </div>
           <Chip color="warning" size="sm">
