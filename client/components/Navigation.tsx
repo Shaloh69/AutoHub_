@@ -25,7 +25,7 @@ import {
   Shield, Menu, Crown, Search, Home
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { apiService } from '@/services/api';
+import { apiService, getImageUrl } from '@/services/api';
 
 export default function Navigation() {
   const pathname = usePathname();
@@ -371,7 +371,7 @@ export default function Navigation() {
                       <div className="w-7 h-7 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white text-xs font-bold overflow-hidden border-2 border-white/30">
                         {user?.profile_image ? (
                           <img
-                            src={user.profile_image}
+                            src={getImageUrl(user.profile_image)}
                             alt={user.first_name}
                             className="w-full h-full object-cover"
                           />
