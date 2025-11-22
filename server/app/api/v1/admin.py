@@ -47,7 +47,7 @@ from app.schemas.common import MessageResponse, PaginatedResponse
 from app.schemas.car import CarResponse
 from app.core.dependencies import get_current_admin, get_current_moderator
 from app.models.user import User, UserRole
-from app.models.car import Car, Brand, Model, CarImage, Feature, car_features
+from app.models.car import Car, Brand, Model, CarImage, Feature, CarFeature
 from app.models.location import PhCity
 from app.models.subscription import (
     SubscriptionPayment, PaymentSetting, PaymentVerificationLog,
@@ -900,7 +900,7 @@ async def list_all_cars_admin(
             seller = db.query(User).filter(User.id == car.seller_id).first() if car.seller_id else None
             city = db.query(PhCity).filter(PhCity.id == car.city_id).first() if car.city_id else None
             images = db.query(CarImage).filter(CarImage.car_id == car.id).order_by(CarImage.display_order).all()
-            features = db.query(Feature).join(car_features).filter(car_features.c.car_id == car.id).all()
+            features = db.query(Feature).join(CarFeature).filter(CarFeature.car_id == car.id).all()
 
             car_dict = {
                 "id": car.id,
