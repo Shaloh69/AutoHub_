@@ -386,6 +386,60 @@ class ApiService {
     });
   }
 
+  async uploadCarDocuments(
+    carId: number,
+    files: File[],
+    documentsMetadata?: { title?: string; description?: string; document_type: string }[]
+  ): Promise<ApiResponse<any>> {
+    const token = localStorage.getItem('token');
+    const results = [];
+
+    // Upload documents one by one with their metadata
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const meta = documentsMetadata?.[i] || { document_type: 'other' };
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      // Build query params
+      const params = new URLSearchParams();
+      params.append('document_type', meta.document_type);
+      if (meta.title) params.append('title', meta.title);
+      if (meta.description) params.append('description', meta.description);
+
+      const url = `${API_BASE_URL}/cars/${carId}/documents?${params.toString()}`;
+
+      try {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+          body: formData,
+        });
+
+        const data = await response.json().catch(() => ({}));
+        results.push({
+          success: response.ok,
+          data: response.ok ? data : undefined,
+          error: !response.ok ? (data.detail || 'Upload failed') : undefined,
+        });
+      } catch (error) {
+        results.push({
+          success: false,
+          error: 'Network error',
+        });
+      }
+    }
+
+    // Return success if all uploads succeeded
+    const allSuccess = results.every(r => r.success);
+    return {
+      success: allSuccess,
+      data: allSuccess ? results.map(r => r.data) : undefined,
+      error: !allSuccess ? results.find(r => !r.success)?.error : undefined,
+    };
+  }
+
   async boostCar(carId: number, duration: number): Promise<ApiResponse<any>> {
     return this.request(`/cars/${carId}/boost`, {
       method: 'POST',

@@ -309,9 +309,15 @@ export default function CreateCarPage() {
           await apiService.uploadCarImages(carId, imageFiles, imageMetadata);
         }
 
-        // Upload documents
+        // Upload documents (using proper documents endpoint)
         if (documentFiles.length > 0) {
-          await apiService.uploadCarImages(carId, documentFiles, documentMetadata);
+          // Map metadata to document format
+          const docsMetadata = documentFiles.map((file, index) => ({
+            document_type: 'registration', // Default type, can be enhanced later
+            title: file.name,
+            description: 'Vehicle document'
+          }));
+          await apiService.uploadCarDocuments(carId, documentFiles, docsMetadata);
         }
 
         router.push('/seller/dashboard');

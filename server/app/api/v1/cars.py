@@ -950,8 +950,12 @@ async def upload_car_image(
     if not car:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Car not found")
     
-    # Check image limit based on subscription
-    image_count = db.query(CarImage).filter(CarImage.car_id == car_id).count()
+    # Check image limit based on subscription (excluding documents)
+    # Documents should be uploaded via the /documents endpoint and have their own limits
+    image_count = db.query(CarImage).filter(
+        CarImage.car_id == car_id,
+        CarImage.image_type != 'document'  # Don't count documents toward photo limit
+    ).count()
 
     # Get subscription from database (Fixed: don't rely on current_user.current_subscription)
     from app.services.subscription_service import SubscriptionService
@@ -962,10 +966,11 @@ async def upload_car_image(
     else:
         max_images = 5  # Free tier limit
 
-    if image_count >= max_images:
+    # Only enforce limit for regular photos, not documents
+    if image_type != 'document' and image_count >= max_images:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Maximum {max_images} images allowed for your subscription"
+            detail=f"Maximum {max_images} photos allowed for your subscription. Please use the documents endpoint for documents."
         )
     
     try:
