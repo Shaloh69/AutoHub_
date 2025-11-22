@@ -24,6 +24,7 @@ export default function QRCodeSettings({ apiBaseUrl = process.env.NEXT_PUBLIC_AP
   const [success, setSuccess] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [imageKey, setImageKey] = useState<number>(0); // For force refresh only when needed
 
   useEffect(() => {
     loadSettings();
@@ -51,8 +52,9 @@ export default function QRCodeSettings({ apiBaseUrl = process.env.NEXT_PUBLIC_AP
       const qrSetting = data.find((s: any) => s.setting_key === 'payment_qr_code_image');
       const instrSetting = data.find((s: any) => s.setting_key === 'payment_instructions');
 
-      if (qrSetting) {
+      if (qrSetting && qrSetting.setting_value !== qrCodeUrl) {
         setQrCodeUrl(qrSetting.setting_value);
+        setImageKey(prev => prev + 1); // Only increment when URL actually changes
       }
       if (instrSetting) {
         setInstructions(instrSetting.setting_value);
@@ -211,7 +213,7 @@ export default function QRCodeSettings({ apiBaseUrl = process.env.NEXT_PUBLIC_AP
             <div className="flex justify-center">
               <div className="bg-white p-4 rounded-lg shadow-md border-2 border-autohub-primary-200 w-full max-w-sm">
                 <ResponsiveImage
-                  key={qrCodeUrl}
+                  key={`qr-current-${imageKey}`}
                   src={qrCodeUrl}
                   alt="Current GCash QR Code"
                   aspectRatio="square"
@@ -275,7 +277,7 @@ export default function QRCodeSettings({ apiBaseUrl = process.env.NEXT_PUBLIC_AP
               <div className="flex justify-center">
                 <div className="bg-white p-4 rounded-lg shadow-md border-2 border-dashed border-autohub-primary-300 w-full max-w-xs">
                   <ResponsiveImage
-                    key={previewUrl}
+                    key="qr-preview"
                     src={previewUrl}
                     alt="Preview"
                     aspectRatio="square"

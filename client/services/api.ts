@@ -746,6 +746,15 @@ class ApiService {
     return this.request<any[]>(`/admin/payments/${paymentId}/logs`);
   }
 
+  async getAllPaymentVerificationLogs(limit: number = 100, offset: number = 0, action?: string): Promise<ApiResponse<any[]>> {
+    const params = new URLSearchParams({
+      limit: String(limit),
+      offset: String(offset)
+    });
+    if (action) params.append('action', action);
+    return this.request<any[]>(`/admin/payments/verification-logs?${params.toString()}`);
+  }
+
   // ==================== FRAUD DETECTION ====================
 
   async getFraudIndicators(limit: number = 50, severity?: string): Promise<ApiResponse<any[]>> {

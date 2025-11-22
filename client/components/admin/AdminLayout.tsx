@@ -13,7 +13,7 @@ import { Chip } from '@heroui/chip';
 import {
   LayoutDashboard, MessageSquare, CreditCard, Shield,
   Users, Car, Settings, LogOut, Menu, X, Bell,
-  ChevronRight, Search, Home, Calendar
+  ChevronRight, Search, Home, Calendar, History
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -52,6 +52,12 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       href: '/admin/payments',
       icon: CreditCard,
       description: 'Verify Subscriptions'
+    },
+    {
+      label: 'Transaction History',
+      href: '/admin/transaction-history',
+      icon: History,
+      description: 'Payment Audit Trail'
     },
     {
       label: 'Fraud Detection',

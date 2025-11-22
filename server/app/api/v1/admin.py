@@ -1405,6 +1405,45 @@ Car Marketplace Philippines Team
         )
 
 
+@router.get("/payments/verification-logs", response_model=List[PaymentVerificationLogResponse])
+async def get_all_payment_verification_logs(
+    limit: int = 100,
+    offset: int = 0,
+    action: str = None,
+    current_admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """Get all payment verification logs with optional filtering"""
+    query = db.query(PaymentVerificationLog, User, SubscriptionPayment).join(
+        User, PaymentVerificationLog.admin_id == User.id
+    ).join(
+        SubscriptionPayment, PaymentVerificationLog.payment_id == SubscriptionPayment.id
+    )
+
+    # Filter by action if provided
+    if action and action.upper() in ['VERIFIED', 'REJECTED', 'REQUESTED_INFO']:
+        query = query.filter(PaymentVerificationLog.action == action.upper())
+
+    logs = query.order_by(
+        PaymentVerificationLog.created_at.desc()
+    ).limit(limit).offset(offset).all()
+
+    return [
+        PaymentVerificationLogResponse(
+            id=int(getattr(log, 'id', 0)),
+            payment_id=int(getattr(log, 'payment_id', 0)),
+            admin_id=int(getattr(log, 'admin_id', 0)),
+            admin_name=f"{getattr(admin, 'first_name', '')} {getattr(admin, 'last_name', '')}".strip(),
+            action=str(getattr(log, 'action', '')),
+            previous_status=str(getattr(log, 'previous_status', '') or ''),
+            new_status=str(getattr(log, 'new_status', '') or ''),
+            notes=str(getattr(log, 'notes', '') or ''),
+            created_at=getattr(log, 'created_at', datetime.utcnow())
+        )
+        for log, admin, payment in logs
+    ]
+
+
 @router.get("/payments/{payment_id}/logs", response_model=List[PaymentVerificationLogResponse])
 async def get_payment_logs(
     payment_id: int,
@@ -1419,7 +1458,7 @@ async def get_payment_logs(
     ).order_by(
         PaymentVerificationLog.created_at.desc()
     ).all()
-    
+
     return [
         PaymentVerificationLogResponse(
             id=int(getattr(log, 'id', 0)),
