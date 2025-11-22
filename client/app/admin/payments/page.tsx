@@ -56,6 +56,7 @@ export default function AdminPaymentsPage() {
   const [actionLoading, setActionLoading] = useState(false);
   const [verificationReference, setVerificationReference] = useState('');
   const [rejectionReason, setRejectionReason] = useState('');
+  const [adminNotes, setAdminNotes] = useState('');
   const [stats, setStats] = useState<PaymentStats | null>(null);
 
   const { isOpen: isVerifyOpen, onOpen: onVerifyOpen, onOpenChange: onVerifyOpenChange } = useDisclosure();
@@ -145,13 +146,14 @@ export default function AdminPaymentsPage() {
       const response = await apiService.verifyPayment(selectedPayment.payment_id, {
         action: 'reject',
         rejection_reason: rejectionReason,
-        admin_notes: verificationReference ? `Verification Reference: ${verificationReference}` : '',
+        admin_notes: adminNotes.trim() || undefined,
       });
 
       if (response.success) {
         setPayments(prev => prev.filter(p => p.payment_id !== selectedPayment.payment_id));
         setRejectionReason('');
         setVerificationReference('');
+        setAdminNotes('');
         setSelectedPayment(null);
         onRejectOpenChange();
         loadStatistics();
