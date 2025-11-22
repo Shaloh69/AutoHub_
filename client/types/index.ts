@@ -37,6 +37,7 @@ export type CityType = 'CITY' | 'MUNICIPALITY' | 'DISTRICT';
 export type ColorCategory = 'PRIMARY' | 'NEUTRAL' | 'METALLIC' | 'SPECIAL';
 export type FeatureCategory = 'SAFETY' | 'COMFORT' | 'TECHNOLOGY' | 'PERFORMANCE' | 'EXTERIOR' | 'INTERIOR';
 export type ImageType = 'EXTERIOR' | 'INTERIOR' | 'ENGINE' | 'DAMAGE' | 'DOCUMENT' | 'OTHER';
+export type DocumentType = 'OR_CR' | 'REGISTRATION' | 'INSURANCE' | 'WARRANTY' | 'SERVICE_HISTORY' | 'DEED_OF_SALE' | 'LTO_DOCUMENTS' | 'OTHER';
 
 export interface User {
   id: number;
@@ -320,6 +321,7 @@ export interface Car {
   region?: PhRegion;  // Backend populates region via relationship
   seller?: User;
   images?: CarImage[];
+  documents?: CarDocument[];
   features?: Feature[];
   location?: Location;
 }
@@ -332,6 +334,18 @@ export interface CarImage {
   is_main: boolean;
   display_order: number;
   caption?: string;
+  uploaded_at?: string;
+}
+
+export interface CarDocument {
+  id: number;
+  car_id: number;
+  document_type: DocumentType;
+  document_url: string;
+  file_name: string;
+  title?: string;
+  description?: string;
+  is_verified: boolean;
   uploaded_at?: string;
 }
 

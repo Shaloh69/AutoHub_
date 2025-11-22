@@ -888,6 +888,8 @@ async def list_all_cars_admin(
 ):
     """List all cars with full admin details (approval_status, rejection_reason, etc.)"""
     try:
+        from app.models.car_document import CarDocument
+
         # Get all cars ordered by newest first
         cars = db.query(Car).order_by(desc(Car.created_at)).all()
 
@@ -900,6 +902,7 @@ async def list_all_cars_admin(
             seller = db.query(User).filter(User.id == car.seller_id).first() if car.seller_id else None
             city = db.query(PhCity).filter(PhCity.id == car.city_id).first() if car.city_id else None
             images = db.query(CarImage).filter(CarImage.car_id == car.id).order_by(CarImage.display_order).all()
+            documents = db.query(CarDocument).filter(CarDocument.car_id == car.id).order_by(CarDocument.uploaded_at.desc()).all()
             features = db.query(Feature).join(CarFeature).filter(CarFeature.car_id == car.id).all()
 
             car_dict = {
@@ -973,6 +976,18 @@ async def list_all_cars_admin(
                         "display_order": img.display_order,
                         "caption": img.caption
                     } for img in images
+                ],
+                "documents": [
+                    {
+                        "id": doc.id,
+                        "document_type": doc.document_type if isinstance(doc.document_type, str) else doc.document_type.value if doc.document_type else "OTHER",
+                        "document_url": doc.document_url,
+                        "file_name": doc.file_name,
+                        "title": doc.title,
+                        "description": doc.description,
+                        "is_verified": doc.is_verified,
+                        "uploaded_at": doc.uploaded_at.isoformat() if doc.uploaded_at else None
+                    } for doc in documents
                 ],
                 "features": [
                     {

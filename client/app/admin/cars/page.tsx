@@ -146,7 +146,14 @@ export default function AdminCarsPage() {
 
   const viewDocuments = (car: CarType) => {
     const documentImages = car.images?.filter(img => img.image_type?.toUpperCase() === 'DOCUMENT') || [];
-    if (documentImages.length > 0) {
+    const actualDocuments = car.documents || [];
+
+    // Prioritize actual documents over images
+    if (actualDocuments.length > 0) {
+      setSelectedCar(car);
+      setDocumentToView(actualDocuments[0].document_url);
+      onDocOpen();
+    } else if (documentImages.length > 0) {
       setSelectedCar(car);
       setDocumentToView(documentImages[0].image_url);
       onDocOpen();
@@ -401,6 +408,8 @@ export default function AdminCarsPage() {
             filteredCars.map(car => {
               const mainImage = car.main_image || car.images?.find(img => img.is_main)?.image_url || car.images?.[0]?.image_url;
               const documentImages = car.images?.filter(img => img.image_type?.toUpperCase() === 'DOCUMENT') || [];
+              const actualDocuments = car.documents || [];
+              const totalDocuments = documentImages.length + actualDocuments.length;
               const isPending = car.approval_status?.toUpperCase() === 'PENDING';
               const isRejected = car.approval_status?.toUpperCase() === 'REJECTED';
 
@@ -568,12 +577,12 @@ export default function AdminCarsPage() {
                           {/* View Documents Button - Always show for verification */}
                           <Button
                             size="sm"
-                            color={documentImages.length > 0 ? "warning" : "default"}
+                            color={totalDocuments > 0 ? "warning" : "default"}
                             variant="flat"
                             startContent={<FileText size={16} />}
-                            onPress={() => documentImages.length > 0 ? viewDocuments(car) : alert('No documents uploaded for this car')}
+                            onPress={() => totalDocuments > 0 ? viewDocuments(car) : alert('No documents uploaded for this car')}
                           >
-                            Documents ({documentImages.length})
+                            Documents ({totalDocuments})
                           </Button>
 
                           {/* Public Page Button */}
@@ -868,35 +877,65 @@ export default function AdminCarsPage() {
                 )}
 
                 {/* All Documents Thumbnails */}
-                {selectedCar && selectedCar.images && (
+                {selectedCar && (
                   <div className="mt-4">
-                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                      All Documents ({selectedCar.images.filter(img => img.image_type?.toUpperCase() === 'DOCUMENT').length}):
-                    </p>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                      {selectedCar.images
-                        .filter(img => img.image_type?.toUpperCase() === 'DOCUMENT')
-                        .map((img, idx) => (
-                          <button
-                            key={idx}
-                            onClick={() => setDocumentToView(img.image_url)}
-                            className={`aspect-video bg-black/20 rounded-lg overflow-hidden hover:ring-2 ring-primary-500 transition-all ${
-                              documentToView === img.image_url ? 'ring-2 ring-primary-500' : ''
-                            }`}
-                          >
-                            <img
-                              src={getImageUrl(img.image_url)}
-                              alt={`Document ${idx + 1}`}
-                              className="w-full h-full object-cover"
-                            />
-                            {img.caption && (
-                              <p className="text-xs text-gray-500 mt-1 px-2 truncate">
-                                {img.caption}
-                              </p>
-                            )}
-                          </button>
-                        ))}
-                    </div>
+                    {(() => {
+                      const documentImages = selectedCar.images?.filter(img => img.image_type?.toUpperCase() === 'DOCUMENT') || [];
+                      const actualDocuments = selectedCar.documents || [];
+                      const totalDocs = documentImages.length + actualDocuments.length;
+
+                      return (
+                        <>
+                          <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                            All Documents ({totalDocs}):
+                          </p>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                            {/* Actual CarDocument records */}
+                            {actualDocuments.map((doc, idx) => (
+                              <button
+                                key={`doc-${doc.id}`}
+                                onClick={() => setDocumentToView(doc.document_url)}
+                                className={`aspect-video bg-black/20 rounded-lg overflow-hidden hover:ring-2 ring-primary-500 transition-all ${
+                                  documentToView === doc.document_url ? 'ring-2 ring-primary-500' : ''
+                                }`}
+                              >
+                                <div className="w-full h-full flex flex-col items-center justify-center p-2">
+                                  <FileText size={32} className="text-blue-500 mb-2" />
+                                  <p className="text-xs text-gray-300 text-center truncate w-full">
+                                    {doc.title || doc.file_name || doc.document_type}
+                                  </p>
+                                  {doc.is_verified && (
+                                    <CheckCircle size={12} className="text-green-500 mt-1" />
+                                  )}
+                                </div>
+                              </button>
+                            ))}
+
+                            {/* Document images */}
+                            {documentImages.map((img, idx) => (
+                              <button
+                                key={`img-${img.id}`}
+                                onClick={() => setDocumentToView(img.image_url)}
+                                className={`aspect-video bg-black/20 rounded-lg overflow-hidden hover:ring-2 ring-primary-500 transition-all ${
+                                  documentToView === img.image_url ? 'ring-2 ring-primary-500' : ''
+                                }`}
+                              >
+                                <img
+                                  src={getImageUrl(img.image_url)}
+                                  alt={`Document ${idx + 1}`}
+                                  className="w-full h-full object-cover"
+                                />
+                                {img.caption && (
+                                  <p className="text-xs text-gray-500 mt-1 px-2 truncate">
+                                    {img.caption}
+                                  </p>
+                                )}
+                              </button>
+                            ))}
+                          </div>
+                        </>
+                      );
+                    })()}
                   </div>
                 )}
               </ModalBody>
