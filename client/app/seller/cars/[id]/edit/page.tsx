@@ -68,6 +68,7 @@ export default function EditCarPage() {
   const [imageMetadata, setImageMetadata] = useState<{ type: string; isMain: boolean }[]>([]);
   const [existingImages, setExistingImages] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [userLimits, setUserLimits] = useState<any>(null);
 
   const [formData, setFormData] = useState<Partial<CarFormData>>({
     price_negotiable: true,
@@ -172,17 +173,19 @@ export default function EditCarPage() {
 
   const loadFormData = async () => {
     try {
-      const [brandsRes, categoriesRes, featuresRes, citiesRes] = await Promise.all([
+      const [brandsRes, categoriesRes, featuresRes, citiesRes, limitsRes] = await Promise.all([
         apiService.getBrands(true),
         apiService.getCategories(),
         apiService.getFeatures(),
         apiService.getCities(),
+        apiService.getUserLimits(),
       ]);
 
       if (brandsRes.success && brandsRes.data) setBrands(brandsRes.data);
       if (categoriesRes.success && categoriesRes.data) setCategories(categoriesRes.data);
       if (featuresRes.success && featuresRes.data) setFeatures(featuresRes.data);
       if (citiesRes.success && citiesRes.data) setCities(citiesRes.data);
+      if (limitsRes.success && limitsRes.data) setUserLimits(limitsRes.data);
     } catch (error) {
       console.error('Error loading form data:', error);
     }
@@ -421,6 +424,22 @@ export default function EditCarPage() {
           <p className="text-gray-400">
             Step {step} of {STEPS.length}: {STEPS[step - 1].title}
           </p>
+
+          {/* Active Listings Info */}
+          {userLimits && (
+            <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-blue-600/20 border border-blue-500/30 rounded-lg">
+              <Car size={16} className="text-blue-400" />
+              <span className="text-sm text-blue-200">
+                Active Listings: <span className="font-bold text-white">{userLimits.active_listings || 0}</span>
+                {userLimits.max_listings !== -1 && (
+                  <span className="text-blue-300"> / {userLimits.max_listings}</span>
+                )}
+                {userLimits.max_listings === -1 && (
+                  <span className="text-blue-300"> (Unlimited)</span>
+                )}
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Progress Bar */}
