@@ -98,23 +98,36 @@ export default function CarReviews({ carId, sellerId }: CarReviewsProps) {
       return;
     }
 
-    // Debug: Check if token exists
+    // Check if token exists
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-    console.log('🔍 Review Submission Debug:');
-    console.log('- User:', user?.email);
-    console.log('- Token exists:', !!token);
-    console.log('- Token preview:', token ? `${token.substring(0, 20)}...` : 'none');
-    console.log('- Seller ID:', sellerId);
-    console.log('- Car ID:', carId);
+
+    // Show debug info in alert
+    const debugInfo = `
+DEBUG INFO:
+- User Email: ${user?.email || 'none'}
+- Token Exists: ${token ? 'YES' : 'NO'}
+- Seller ID: ${sellerId}
+- Car ID: ${carId}
+- Token Preview: ${token ? token.substring(0, 30) + '...' : 'none'}
+
+Click OK to continue with review submission.
+    `;
+
+    if (!confirm(debugInfo)) {
+      return;
+    }
 
     if (!token) {
-      alert('Authentication token not found. Please sign in again.');
+      alert('ERROR: Authentication token not found in localStorage.\n\nPlease sign in again.');
       window.location.href = '/login';
       return;
     }
 
     try {
       setSubmitting(true);
+
+      alert('Sending request to: POST /api/v1/reviews\nWith authentication token...');
+
       const response = await apiService.createReview({
         car_id: carId,
         seller_id: sellerId,
@@ -126,7 +139,8 @@ export default function CarReviews({ carId, sellerId }: CarReviewsProps) {
         would_recommend: wouldRecommend,
       });
 
-      console.log('📥 Review API Response:', response);
+      // Show response in alert
+      alert(`RESPONSE RECEIVED:\n\nSuccess: ${response.success}\nError: ${response.error || 'none'}\nMessage: ${response.message || 'none'}`);
 
       if (response.success) {
         // Reset form
@@ -140,28 +154,27 @@ export default function CarReviews({ carId, sellerId }: CarReviewsProps) {
         // Close modal and reload reviews
         onOpenChange();
         loadReviews();
-        alert('Review submitted successfully! It will be visible after admin approval.');
+        alert('✅ Review submitted successfully! It will be visible after admin approval.');
       } else {
         // Better error messages
         const errorMsg = response.error || 'Failed to submit review';
-        console.error('❌ Review submission failed:', errorMsg);
 
         if (errorMsg.toLowerCase().includes('not authenticated') || errorMsg.toLowerCase().includes('invalid or expired token')) {
           localStorage.removeItem('token');
           localStorage.removeItem('refresh_token');
-          alert('Your session has expired. Please sign in again to submit a review.');
+          alert('❌ ERROR: Your session has expired.\n\nYou will be redirected to the login page.');
           window.location.href = '/login';
         } else if (errorMsg.toLowerCase().includes('already reviewed')) {
-          alert('You have already reviewed this car.');
+          alert('❌ You have already reviewed this car.');
         } else if (errorMsg.toLowerCase().includes('cannot review yourself')) {
-          alert('You cannot review your own listing.');
+          alert('❌ You cannot review your own listing.');
         } else {
-          alert(`Error: ${errorMsg}`);
+          alert(`❌ ERROR: ${errorMsg}`);
         }
       }
     } catch (error) {
-      console.error('💥 Error submitting review:', error);
-      alert('An error occurred while submitting your review. Please try again.');
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      alert(`💥 EXCEPTION CAUGHT:\n\n${errorMsg}\n\nPlease try again or contact support.`);
     } finally {
       setSubmitting(false);
     }
