@@ -161,19 +161,19 @@ export default function SubscriptionUsagePage() {
             <div className="space-y-4">
               <div className="flex justify-between items-center mb-2">
                 <span className="text-gray-300">
-                  {featureUsage.active_listings.used} of {featureUsage.active_listings.limit} used
+                  {featureUsage.active_listings?.used || 0} of {featureUsage.active_listings?.limit || 0} used
                 </span>
                 <Chip
-                  color={getProgressColor(featureUsage.active_listings.percentage) as any}
+                  color={getProgressColor(featureUsage.active_listings?.percentage || 0) as any}
                   variant="flat"
                   size="sm"
                 >
-                  {featureUsage.active_listings.percentage}%
+                  {Math.round(featureUsage.active_listings?.percentage || 0)}%
                 </Chip>
               </div>
               <Progress
-                value={featureUsage.active_listings.percentage}
-                color={getProgressColor(featureUsage.active_listings.percentage) as any}
+                value={featureUsage.active_listings?.percentage || 0}
+                color={getProgressColor(featureUsage.active_listings?.percentage || 0) as any}
                 className="max-w-full"
               />
             </div>
@@ -197,19 +197,18 @@ export default function SubscriptionUsagePage() {
             <div className="space-y-4">
               <div className="flex justify-between items-center mb-2">
                 <span className="text-gray-300">
-                  {featureUsage.featured_listings.used} of {featureUsage.featured_listings.limit} used
+                  {featureUsage.featured_listings?.used || 0} of {featureUsage.featured_listings?.limit || 0} used
                 </span>
                 <Chip
-                  color={getProgressColor(featureUsage.featured_listings.percentage) as any}
+                  color={getProgressColor(featureUsage.featured_listings?.percentage || 0) as any}
                   variant="flat"
-                  size="sm"
-                >
-                  {featureUsage.featured_listings.percentage}%
+                  size="sm">
+                  {Math.round(featureUsage.featured_listings?.percentage || 0)}%
                 </Chip>
               </div>
               <Progress
-                value={featureUsage.featured_listings.percentage}
-                color={getProgressColor(featureUsage.featured_listings.percentage) as any}
+                value={featureUsage.featured_listings?.percentage || 0}
+                color={getProgressColor(featureUsage.featured_listings?.percentage || 0) as any}
                 className="max-w-full"
               />
             </div>
@@ -233,19 +232,19 @@ export default function SubscriptionUsagePage() {
             <div className="space-y-4">
               <div className="flex justify-between items-center mb-2">
                 <span className="text-gray-300">
-                  {featureUsage.premium_listings.used} of {featureUsage.premium_listings.limit} used
+                  {featureUsage.premium_listings?.used || 0} of {featureUsage.premium_listings?.limit || 0} used
                 </span>
                 <Chip
-                  color={getProgressColor(featureUsage.premium_listings.percentage) as any}
+                  color={getProgressColor(featureUsage.premium_listings?.percentage || 0) as any}
                   variant="flat"
                   size="sm"
                 >
-                  {featureUsage.premium_listings.percentage}%
+                  {Math.round(featureUsage.premium_listings?.percentage || 0)}%
                 </Chip>
               </div>
               <Progress
-                value={featureUsage.premium_listings.percentage}
-                color={getProgressColor(featureUsage.premium_listings.percentage) as any}
+                value={featureUsage.premium_listings?.percentage || 0}
+                color={getProgressColor(featureUsage.premium_listings?.percentage || 0) as any}
                 className="max-w-full"
               />
             </div>
@@ -270,7 +269,7 @@ export default function SubscriptionUsagePage() {
             <CardBody className="pt-6">
               <div className="text-center">
                 <p className="text-4xl font-bold text-gradient-red mb-2">
-                  {featureUsage.images_per_listing.limit}
+                  {featureUsage.images_per_listing?.limit || 0}
                 </p>
                 <p className="text-gray-400">images per listing</p>
               </div>
@@ -293,10 +292,10 @@ export default function SubscriptionUsagePage() {
             <CardBody className="pt-6">
               <div className="text-center">
                 <p className="text-4xl font-bold text-gradient-red mb-2">
-                  {featureUsage.boost_credits.remaining}
+                  {featureUsage.boost_credits?.remaining || 0}
                 </p>
                 <p className="text-gray-400">
-                  of {featureUsage.boost_credits.total} remaining
+                  of {featureUsage.boost_credits?.total || 0} remaining
                 </p>
               </div>
             </CardBody>
