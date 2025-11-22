@@ -199,6 +199,3 @@ export default function PaymentQRModal({
     </Modal>
   );
 }
-
-// Add React import for useEffect
-import React from 'react';
