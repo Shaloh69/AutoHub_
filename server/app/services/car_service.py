@@ -182,28 +182,30 @@ class CarService:
     
     @staticmethod
     def delete_car(db: Session, car_id: int, user_id: int) -> bool:
-        """Delete car listing"""
+        """Delete car listing (soft delete)"""
         car = db.query(Car).filter(Car.id == car_id, Car.seller_id == user_id).first()
         if not car:
             raise ValueError("Car not found or unauthorized")
-        
-        # Soft delete
+
+        # Soft delete - set to INACTIVE status (REMOVED is not in CarStatus enum)
         setattr(car, 'deleted_at', datetime.utcnow())
         setattr(car, 'is_active', False)
-        setattr(car, 'status', 'removed')
-        
+        setattr(car, 'status', 'INACTIVE')  # FIX: Changed from 'removed' to 'INACTIVE'
+
         # Update user stats - FIX: Use getattr
         user = db.query(User).filter(User.id == user_id).first()
         if user:
             current_active = int(getattr(user, 'active_listings', 0))
+            current_total = int(getattr(user, 'total_listings', 0))
             setattr(user, 'active_listings', max(0, current_active - 1))
-        
+            setattr(user, 'total_listings', max(0, current_total - 1))
+
         db.commit()
-        
+
         # Clear cache
         cache.delete(f"car:{car_id}")
         cache.delete(f"user_cars:{user_id}")
-        
+
         return True
     
     @staticmethod
