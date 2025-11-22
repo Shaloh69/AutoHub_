@@ -65,6 +65,29 @@ export default function SellerDashboardPage() {
     }
   };
 
+  const handleMarkAsSold = async (carId: number) => {
+    if (!confirm('Mark this car as sold? This will free up a listing slot in your subscription.')) {
+      return;
+    }
+
+    try {
+      const response = await apiService.updateCar(carId, { status: 'SOLD' });
+      if (response.success) {
+        // Update the car status in state
+        setCars(prev => prev.map(car =>
+          car.id === carId ? { ...car, status: 'SOLD' } : car
+        ));
+        // Reload dashboard data to update analytics and subscription limits
+        await loadDashboardData();
+      } else {
+        setError(response.error || 'Failed to mark car as sold. Please try again.');
+      }
+    } catch (error: any) {
+      console.error('Error marking car as sold:', error);
+      setError(error.message || 'An error occurred while marking the car as sold.');
+    }
+  };
+
   const handleDeleteCar = async (carId: number) => {
     if (!confirm('Are you sure you want to delete this listing? This action cannot be undone.')) {
       return;
@@ -456,7 +479,7 @@ export default function SellerDashboardPage() {
                               {formatPrice(car.price)}
                             </span>
 
-                            <div className="flex gap-2 ml-auto">
+                            <div className="flex gap-2 ml-auto flex-wrap">
                               <Button
                                 size="sm"
                                 variant="flat"
@@ -472,6 +495,18 @@ export default function SellerDashboardPage() {
                               >
                                 Edit
                               </Button>
+                              {car.status?.toUpperCase() === 'ACTIVE' && (
+                                <Button
+                                  size="sm"
+                                  variant="flat"
+                                  color="success"
+                                  startContent={<CheckCircle size={16} />}
+                                  onPress={() => handleMarkAsSold(car.id)}
+                                  className="bg-green-600/20 hover:bg-green-600/30 border-green-500/30 text-green-400"
+                                >
+                                  Mark as Sold
+                                </Button>
+                              )}
                               <Button
                                 size="sm"
                                 variant="flat"
