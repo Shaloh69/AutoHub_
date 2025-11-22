@@ -446,10 +446,7 @@ export default function SubscriptionPage() {
                         <Button
                           className="w-full bg-gradient-to-r from-primary-500 to-secondary-500 text-white font-semibold hover:shadow-lg"
                           size="lg"
-                          onPress={(e) => {
-                            e.stopPropagation();
-                            handleUpgrade(plan.id);
-                          }}
+                          onPress={() => handleUpgrade(plan.id)}
                           isLoading={actionLoading === plan.id.toString()}
                         >
                           Upgrade Now
@@ -464,10 +461,7 @@ export default function SubscriptionPage() {
                               : 'bg-primary-500 text-white hover:bg-primary-600'
                           }`}
                           size="lg"
-                          onPress={(e) => {
-                            e.stopPropagation();
-                            handlePlanSelect(plan);
-                          }}
+                          onPress={() => handlePlanSelect(plan)}
                           isLoading={actionLoading === plan.id.toString()}
                         >
                           {isSelected ? '✓ Selected' : 'Select Plan'}
