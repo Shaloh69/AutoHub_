@@ -271,6 +271,9 @@ class SubscriptionService:
         Args:
             db: Database session
             request_base_url: Base URL from the request (DEPRECATED - not used anymore)
+
+        Raises:
+            ValueError: If QR code is not configured in payment settings
         """
         import os
         from app.config import settings
@@ -283,8 +286,17 @@ class SubscriptionService:
             PaymentSetting.setting_key == "payment_instructions"
         ).first()
 
-        # Get QR code path from settings (default to SVG placeholder)
-        qr_code_path = getattr(qr_image, 'setting_value', '/uploads/qr/default_payment_qr.svg') if qr_image else '/uploads/qr/default_payment_qr.svg'
+        # Get QR code path from settings - validate it's not empty
+        qr_code_path = None
+        if qr_image:
+            setting_value = getattr(qr_image, 'setting_value', None)
+            # Only use the value if it's not None and not empty
+            if setting_value and setting_value.strip():
+                qr_code_path = setting_value.strip()
+
+        # If no valid QR code configured, raise an error
+        if not qr_code_path:
+            raise ValueError("QR code is not configured. Please upload a QR code in the admin payment settings.")
 
         # Always use BACKEND_URL from settings to ensure correct URL
         # This ensures QR codes are served from the backend, not the frontend
@@ -299,9 +311,16 @@ class SubscriptionService:
         # Construct full QR code URL
         qr_code_url = f"{api_base_url}{qr_code_path}" if qr_code_path.startswith('/') else f"{api_base_url}/{qr_code_path}"
 
+        # Get instructions with default fallback
+        instructions_text = 'Please scan the QR code and enter the reference number from your payment confirmation.'
+        if instructions:
+            setting_value = getattr(instructions, 'setting_value', None)
+            if setting_value and setting_value.strip():
+                instructions_text = setting_value.strip()
+
         return {
             "qr_code_image_url": qr_code_url,
-            "payment_instructions": getattr(instructions, 'setting_value', 'Please scan the QR code and enter the reference number from your payment confirmation.') if instructions else 'Please scan the QR code and enter the reference number from your payment confirmation.'
+            "payment_instructions": instructions_text
         }
     
     @staticmethod

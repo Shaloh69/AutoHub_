@@ -142,6 +142,12 @@ async def upgrade_subscription(
     """Upgrade to a higher plan - Returns same structure as subscribe endpoint"""
     user_id = int(getattr(current_user, 'id', 0))
 
+    # Validate QR code is configured BEFORE canceling and creating new subscription
+    try:
+        qr_settings = SubscriptionService.get_qr_code_settings(db)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
     # Cancel current subscription
     try:
         SubscriptionService.cancel_subscription(db, user_id)
@@ -157,9 +163,6 @@ async def upgrade_subscription(
             billing_cycle="monthly",
             payment_method="qr_code"
         )
-
-        # Get QR code settings
-        qr_settings = SubscriptionService.get_qr_code_settings(db)
 
         # Return same structure as /subscribe endpoint for consistency
         return QRCodePaymentResponse(
@@ -195,6 +198,11 @@ async def subscribe_to_plan(
     try:
         user_id = int(getattr(current_user, 'id', 0))
 
+        # For QR code payments, validate QR code is configured BEFORE creating subscription
+        if subscription_data.payment_method == "qr_code":
+            # This will raise ValueError if QR code is not configured
+            qr_settings = SubscriptionService.get_qr_code_settings(db)
+
         # Create subscription and payment
         subscription, payment = SubscriptionService.subscribe(
             db,
@@ -207,7 +215,6 @@ async def subscribe_to_plan(
 
         # For QR code payments, return QR code information
         if subscription_data.payment_method == "qr_code":
-            qr_settings = SubscriptionService.get_qr_code_settings(db)
             
             # Send notification to user
             try:
