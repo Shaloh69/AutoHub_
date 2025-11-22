@@ -12,7 +12,7 @@ import { Chip } from "@heroui/chip";
 import { Spinner } from "@heroui/spinner";
 import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from "@heroui/table";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure } from "@heroui/modal";
-import { Textarea } from "@heroui/input";
+import { Input, Textarea } from "@heroui/input";
 import { Tabs, Tab } from "@heroui/tabs";
 import {
   CheckCircle, XCircle, Clock, DollarSign, User,
@@ -54,7 +54,7 @@ export default function AdminPaymentsPage() {
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
-  const [adminNotes, setAdminNotes] = useState('');
+  const [verificationReference, setVerificationReference] = useState('');
   const [rejectionReason, setRejectionReason] = useState('');
   const [stats, setStats] = useState<PaymentStats | null>(null);
 
@@ -102,17 +102,17 @@ export default function AdminPaymentsPage() {
       console.log('DEBUG: Verifying payment', {
         paymentId: selectedPayment.payment_id,
         action: 'approve',
-        admin_notes: adminNotes
+        verification_reference: verificationReference
       });
       const response = await apiService.verifyPayment(selectedPayment.payment_id, {
         action: 'approve',
-        admin_notes: adminNotes,
+        admin_notes: verificationReference ? `Verification Reference: ${verificationReference}` : '',
       });
       console.log('DEBUG: Response received', response);
 
       if (response.success) {
         setPayments(prev => prev.filter(p => p.payment_id !== selectedPayment.payment_id));
-        setAdminNotes('');
+        setVerificationReference('');
         setSelectedPayment(null);
         onVerifyOpenChange();
         loadStatistics();
@@ -145,13 +145,13 @@ export default function AdminPaymentsPage() {
       const response = await apiService.verifyPayment(selectedPayment.payment_id, {
         action: 'reject',
         rejection_reason: rejectionReason,
-        admin_notes: adminNotes,
+        admin_notes: verificationReference ? `Verification Reference: ${verificationReference}` : '',
       });
 
       if (response.success) {
         setPayments(prev => prev.filter(p => p.payment_id !== selectedPayment.payment_id));
         setRejectionReason('');
-        setAdminNotes('');
+        setVerificationReference('');
         setSelectedPayment(null);
         onRejectOpenChange();
         loadStatistics();
@@ -538,18 +538,18 @@ export default function AdminPaymentsPage() {
                       </CardBody>
                     </Card>
 
-                    <Textarea
-                      label="Admin Notes (Optional)"
+                    <Input
+                      label="Verification Reference Number (Optional)"
                       labelPlacement="outside"
-                      placeholder="Add any notes about this verification..."
-                      value={adminNotes}
-                      onChange={(e) => setAdminNotes(e.target.value)}
-                      minRows={3}
+                      placeholder="Enter bank transaction ID or verification reference..."
+                      value={verificationReference}
+                      onChange={(e) => setVerificationReference(e.target.value)}
                       classNames={{
                         input: "bg-gray-800 text-white",
                         inputWrapper: "bg-gray-800 border-gray-700",
                         label: "text-gray-300 font-medium"
                       }}
+                      description="Enter the bank transaction ID or internal reference number for auditing"
                     />
 
                     <div className="bg-green-900/20 border border-green-600/30 p-4 rounded-lg">

@@ -210,7 +210,8 @@ export default function CarDetailPage() {
     );
   }
 
-  const images = car.images || [];
+  // Filter out document images from public view
+  const images = (car.images || []).filter(img => img.image_type !== 'document');
   const currentImage = images[selectedImage] || null;
 
   return (

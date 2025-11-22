@@ -13,7 +13,7 @@ import { Spinner } from '@heroui/spinner';
 import { Tabs, Tab } from '@heroui/tabs';
 import {
   Plus, Car, Eye, MessageCircle, Heart, TrendingUp,
-  DollarSign, Clock, CheckCircle, XCircle, Crown, ArrowRight
+  DollarSign, Clock, CheckCircle, XCircle, Crown, ArrowRight, X
 } from 'lucide-react';
 import { apiService, getImageUrl } from '@/services/api';
 import { Car as CarType, Analytics, Subscription } from '@/types';
@@ -30,6 +30,7 @@ export default function SellerDashboardPage() {
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedTab, setSelectedTab] = useState('all');
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (user && !authLoading) {
@@ -65,7 +66,7 @@ export default function SellerDashboardPage() {
   };
 
   const handleDeleteCar = async (carId: number) => {
-    if (!confirm('Are you sure you want to delete this listing?')) {
+    if (!confirm('Are you sure you want to delete this listing? This action cannot be undone.')) {
       return;
     }
 
@@ -73,9 +74,14 @@ export default function SellerDashboardPage() {
       const response = await apiService.deleteCar(carId);
       if (response.success) {
         setCars(prev => prev.filter(car => car.id !== carId));
+        // Reload dashboard data to update analytics
+        await loadDashboardData();
+      } else {
+        setError(response.error || 'Failed to delete listing. Please try again.');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error deleting car:', error);
+      setError(error.message || 'An error occurred while deleting the listing.');
     }
   };
 
@@ -173,6 +179,33 @@ export default function SellerDashboardPage() {
                     Verify Now
                   </Button>
                 </div>
+              </div>
+            </CardBody>
+          </Card>
+        )}
+
+        {/* Error Display */}
+        {error && (
+          <Card className="mb-6 bg-red-600/10 backdrop-blur-md border border-red-500/30">
+            <CardBody>
+              <div className="flex items-start gap-3">
+                <XCircle size={24} className="text-red-600 flex-shrink-0" />
+                <div className="flex-1">
+                  <h3 className="font-bold text-red-900 dark:text-red-100 mb-1">
+                    Error
+                  </h3>
+                  <p className="text-sm text-red-800 dark:text-red-200">
+                    {error}
+                  </p>
+                </div>
+                <Button
+                  size="sm"
+                  variant="flat"
+                  isIconOnly
+                  onPress={() => setError(null)}
+                >
+                  <X size={16} />
+                </Button>
               </div>
             </CardBody>
           </Card>

@@ -537,11 +537,16 @@ export default function AdminDashboardPage() {
                             >
                               <TableCell>
                                 <div>
-                                  <p className="font-semibold text-white">
-                                    {user.first_name} {user.last_name}
-                                  </p>
+                                  <div className="flex items-center gap-2">
+                                    <code className="text-xs bg-gray-800/50 px-2 py-1 rounded text-gray-400">
+                                      #{user.id}
+                                    </code>
+                                    <p className="font-semibold text-white">
+                                      {user.first_name} {user.last_name}
+                                    </p>
+                                  </div>
                                   {user.business_name && (
-                                    <p className="text-xs text-gray-500">
+                                    <p className="text-xs text-gray-500 mt-1">
                                       {user.business_name}
                                     </p>
                                   )}
@@ -578,7 +583,14 @@ export default function AdminDashboardPage() {
                                 </div>
                               </TableCell>
                               <TableCell>
-                                <span className="font-semibold text-white">{user.total_listings || 0}</span>
+                                <div className="flex flex-col gap-1">
+                                  <span className="font-semibold text-white">{user.total_listings ?? user.active_listings ?? 0}</span>
+                                  {(user.active_listings !== undefined && user.active_listings !== user.total_listings) && (
+                                    <span className="text-xs text-gray-500">
+                                      {user.active_listings} active
+                                    </span>
+                                  )}
+                                </div>
                               </TableCell>
                               <TableCell>
                                 <div className="flex gap-2">

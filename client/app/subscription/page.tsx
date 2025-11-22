@@ -368,7 +368,7 @@ export default function SubscriptionPage() {
                           className="w-full"
                           variant="bordered"
                           size="lg"
-                          disabled
+                          isDisabled
                         >
                           Current Plan
                         </Button>
@@ -398,7 +398,7 @@ export default function SubscriptionPage() {
                         <Button
                           variant="bordered"
                           className="w-full"
-                          disabled
+                          isDisabled
                           size="lg"
                         >
                           {currentSubscription.plan && (currentSubscription.plan?.price ?? 0) > plan.price ? 'Lower Tier' : 'Not Available'}
