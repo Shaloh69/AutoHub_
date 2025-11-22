@@ -15,7 +15,7 @@ import { useRouter } from 'next/navigation';
 import PaymentQRModal from '@/components/PaymentQRModal';
 import { ActiveSubscriptionCard } from '@/components/subscription/ActiveSubscriptionCard';
 import ResponsiveImage from '@/components/ResponsiveImage';
-import { Crown, Sparkles, Zap, TrendingUp } from 'lucide-react';
+import { Crown, Sparkles, Zap, TrendingUp, CheckCircle as CheckCircleIcon, Clock, AlertCircle } from 'lucide-react';
 
 interface PaymentHistory {
   id: number;
@@ -39,6 +39,7 @@ export default function SubscriptionPage() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null);
   const [pendingSubscription, setPendingSubscription] = useState<{
     paymentId: number;
     planName: string;
@@ -95,23 +96,29 @@ export default function SubscriptionPage() {
     }
   };
 
-  const handleSubscribe = async (planId: number) => {
+  const handlePlanSelect = (plan: SubscriptionPlan) => {
+    setSelectedPlan(plan);
+    setError(null);
+  };
+
+  const handleConfirmSubscribe = async () => {
+    if (!selectedPlan) return;
+
     try {
-      setActionLoading(planId.toString());
+      setActionLoading(selectedPlan.id.toString());
       setError(null);
 
       const response = await apiService.subscribe({
-        plan_id: planId,
+        plan_id: selectedPlan.id,
         billing_cycle: 'monthly',
         payment_method: 'qr_code'
       });
 
       if (response.success && response.data) {
-        const plan = plans.find(p => p.id === planId);
-        if (plan && response.data.qr_code_url) {
+        if (response.data.qr_code_url) {
           setPendingSubscription({
             paymentId: response.data.payment_id,
-            planName: plan.name,
+            planName: selectedPlan.name,
             amount: typeof response.data.amount === 'number' ? response.data.amount : parseFloat(response.data.amount),
             qrCodeUrl: response.data.qr_code_url,
             instructions: response.data.instructions || 'Please scan the QR code and submit your payment reference number.'
@@ -164,6 +171,7 @@ export default function SubscriptionPage() {
   const handlePaymentSubmitted = async () => {
     setShowPaymentModal(false);
     setPendingSubscription(null);
+    setSelectedPlan(null);
     // Refresh subscription data to show updated status
     await fetchSubscriptionData();
   };
@@ -247,11 +255,57 @@ export default function SubscriptionPage() {
         loading={actionLoading === 'cancel'}
       />
 
+      {/* Selected Plan Preview - NEW */}
+      {selectedPlan && !currentSubscription && (
+        <Card className="border-2 border-primary-500 bg-gradient-to-br from-primary-50 to-secondary-50 dark:from-primary-950 dark:to-secondary-950">
+          <CardBody className="p-6">
+            <div className="flex items-start justify-between flex-wrap gap-4">
+              <div className="flex-1">
+                <div className="flex items-center gap-3 mb-2">
+                  {getPlanIcon(selectedPlan.name)}
+                  <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
+                    {selectedPlan.name} Selected
+                  </h3>
+                </div>
+                <p className="text-gray-600 dark:text-gray-400 mb-4">
+                  {selectedPlan.description || `Perfect for ${selectedPlan.name.toLowerCase()} users`}
+                </p>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-4xl font-bold text-primary-600 dark:text-primary-400">
+                    ₱{selectedPlan.price.toLocaleString()}
+                  </span>
+                  <span className="text-gray-600 dark:text-gray-400">
+                    per {selectedPlan.billing_cycle?.toLowerCase() || 'month'}
+                  </span>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="bordered"
+                  onPress={() => setSelectedPlan(null)}
+                >
+                  Change Plan
+                </Button>
+                <Button
+                  color="primary"
+                  size="lg"
+                  onPress={handleConfirmSubscribe}
+                  isLoading={actionLoading === selectedPlan.id.toString()}
+                  startContent={<Crown size={20} />}
+                >
+                  Proceed to Payment
+                </Button>
+              </div>
+            </div>
+          </CardBody>
+        </Card>
+      )}
+
       {/* Pending Payments Section */}
       {pendingPayments.length > 0 && (
         <div className="space-y-4">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Pending Payments
+            Payment Status
           </h2>
           {pendingPayments.map((payment) => (
             <PendingPaymentCard
@@ -284,12 +338,18 @@ export default function SubscriptionPage() {
                 (currentSubscription.plan?.price ?? 0) < plan.price &&
                 !isCurrent;
 
+              const isSelected = selectedPlan?.id === plan.id;
+
               return (
                 <Card
                   key={plan.id}
-                  className={`relative overflow-hidden transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl ${
+                  isPressable={!isCurrent && !currentSubscription}
+                  onPress={() => !isCurrent && !currentSubscription && handlePlanSelect(plan)}
+                  className={`relative overflow-hidden transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl cursor-pointer ${
                     isCurrent
                       ? 'border-4 border-primary-500 shadow-xl ring-2 ring-primary-300'
+                      : isSelected
+                      ? 'border-4 border-secondary-500 shadow-xl ring-2 ring-secondary-300 scale-105'
                       : plan.is_popular
                       ? 'border-2 border-secondary-500 shadow-xl'
                       : 'border border-gray-200 dark:border-gray-700'
@@ -386,7 +446,10 @@ export default function SubscriptionPage() {
                         <Button
                           className="w-full bg-gradient-to-r from-primary-500 to-secondary-500 text-white font-semibold hover:shadow-lg"
                           size="lg"
-                          onPress={() => handleUpgrade(plan.id)}
+                          onPress={(e) => {
+                            e.stopPropagation();
+                            handleUpgrade(plan.id);
+                          }}
                           isLoading={actionLoading === plan.id.toString()}
                         >
                           Upgrade Now
@@ -394,15 +457,20 @@ export default function SubscriptionPage() {
                       ) : !currentSubscription ? (
                         <Button
                           className={`w-full font-semibold ${
-                            plan.is_popular
+                            isSelected
+                              ? 'bg-success-500 text-white shadow-lg'
+                              : plan.is_popular
                               ? 'bg-secondary-500 text-white shadow-lg hover:shadow-xl'
                               : 'bg-primary-500 text-white hover:bg-primary-600'
                           }`}
                           size="lg"
-                          onPress={() => handleSubscribe(plan.id)}
+                          onPress={(e) => {
+                            e.stopPropagation();
+                            handlePlanSelect(plan);
+                          }}
                           isLoading={actionLoading === plan.id.toString()}
                         >
-                          Get Started
+                          {isSelected ? '✓ Selected' : 'Select Plan'}
                         </Button>
                       ) : (
                         <Button
@@ -608,7 +676,10 @@ function PendingPaymentCard({
       });
 
       if (response.success) {
-        onPaymentSubmitted();
+        // Auto-refresh page data after 2 seconds to show updated status
+        setTimeout(() => {
+          onPaymentSubmitted();
+        }, 2000);
       } else {
         const errorMessage = typeof response.error === 'string'
           ? response.error
@@ -625,21 +696,43 @@ function PendingPaymentCard({
   };
 
   const hasSubmittedReference = !!payment.reference_number;
+  const isVerified = !!payment.admin_verified_at;
+
+  // Determine status: Pending -> Completed Transaction -> Reviewed
+  const getPaymentStatus = () => {
+    if (isVerified) return 'Reviewed';
+    if (hasSubmittedReference) return 'Completed Transaction';
+    return 'Pending';
+  };
+
+  const getStatusColor = () => {
+    if (isVerified) return 'success';
+    if (hasSubmittedReference) return 'primary';
+    return 'warning';
+  };
+
+  const paymentStatus = getPaymentStatus();
 
   return (
-    <Card className="border-2 border-orange-500 bg-orange-50 dark:bg-orange-950">
+    <Card className={`border-2 ${
+      isVerified
+        ? 'border-green-500 bg-green-50 dark:bg-green-950'
+        : hasSubmittedReference
+        ? 'border-blue-500 bg-blue-50 dark:bg-blue-950'
+        : 'border-orange-500 bg-orange-50 dark:bg-orange-950'
+    }`}>
       <CardBody className="space-y-4">
         <div className="flex items-start justify-between">
           <div>
             <h3 className="text-xl font-bold text-gray-900 dark:text-white">
-              Payment Pending Verification
+              Payment Status: {paymentStatus}
             </h3>
             <p className="text-sm text-gray-600 dark:text-gray-400">
               Amount: ₱{payment.amount.toLocaleString()} • Created: {new Date(payment.created_at).toLocaleDateString()}
             </p>
           </div>
-          <Chip color="warning" size="sm">
-            {hasSubmittedReference ? 'Under Review' : 'Awaiting Payment'}
+          <Chip color={getStatusColor()} size="md" variant="flat">
+            {paymentStatus}
           </Chip>
         </div>
 
@@ -649,20 +742,53 @@ function PendingPaymentCard({
           </div>
         )}
 
-        {hasSubmittedReference ? (
+        {isVerified ? (
+          <div className="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700 rounded-lg p-4">
+            <div className="flex items-start gap-3">
+              <CheckCircleIcon className="text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" size={24} />
+              <div>
+                <h4 className="font-semibold text-gray-900 dark:text-white mb-2">
+                  Payment Verified & Approved!
+                </h4>
+                <p className="text-sm text-gray-700 dark:text-gray-300">
+                  Reference Number: <span className="font-bold">{payment.reference_number}</span>
+                </p>
+                <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">
+                  Verified: {payment.admin_verified_at ? new Date(payment.admin_verified_at).toLocaleString() : 'N/A'}
+                </p>
+                <p className="text-sm text-green-700 dark:text-green-300 mt-3 font-medium">
+                  ✓ Your subscription is now active. Refresh the page to see your new plan!
+                </p>
+                <Button
+                  color="success"
+                  size="sm"
+                  className="mt-3"
+                  onPress={() => window.location.reload()}
+                >
+                  Refresh Page
+                </Button>
+              </div>
+            </div>
+          </div>
+        ) : hasSubmittedReference ? (
           <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
-            <h4 className="font-semibold text-gray-900 dark:text-white mb-2">
-              Payment Reference Submitted
-            </h4>
-            <p className="text-sm text-gray-700 dark:text-gray-300">
-              Reference Number: <span className="font-bold">{payment.reference_number}</span>
-            </p>
-            <p className="text-sm text-gray-700 dark:text-gray-300 mt-2">
-              Submitted: {payment.submitted_at ? new Date(payment.submitted_at).toLocaleString() : 'N/A'}
-            </p>
-            <p className="text-sm text-gray-700 dark:text-gray-300 mt-3">
-              Your payment is being verified by our admin team. You'll be notified once approved.
-            </p>
+            <div className="flex items-start gap-3">
+              <Clock className="text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" size={24} />
+              <div>
+                <h4 className="font-semibold text-gray-900 dark:text-white mb-2">
+                  Transaction Completed - Awaiting Review
+                </h4>
+                <p className="text-sm text-gray-700 dark:text-gray-300">
+                  Reference Number: <span className="font-bold">{payment.reference_number}</span>
+                </p>
+                <p className="text-sm text-gray-700 dark:text-gray-300 mt-2">
+                  Submitted: {payment.submitted_at ? new Date(payment.submitted_at).toLocaleString() : 'N/A'}
+                </p>
+                <p className="text-sm text-gray-700 dark:text-gray-300 mt-3">
+                  Your payment reference has been received and is being verified by our admin team. You'll be notified once approved.
+                </p>
+              </div>
+            </div>
           </div>
         ) : (
           <>
