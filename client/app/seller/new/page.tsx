@@ -360,11 +360,11 @@ export default function CreateCarPage() {
             <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-blue-600/20 border border-blue-500/30 rounded-lg">
               <Car size={16} className="text-blue-400" />
               <span className="text-sm text-blue-200">
-                Active Listings: <span className="font-bold text-white">{userLimits.active_listings || 0}</span>
-                {userLimits.max_listings !== -1 && (
-                  <span className="text-blue-300"> / {userLimits.max_listings}</span>
+                Active Listings: <span className="font-bold text-white">{userLimits.active_listings?.used || 0}</span>
+                {userLimits.active_listings?.limit !== -1 && (
+                  <span className="text-blue-300"> / {userLimits.active_listings?.limit || 0}</span>
                 )}
-                {userLimits.max_listings === -1 && (
+                {userLimits.active_listings?.limit === -1 && (
                   <span className="text-blue-300"> (Unlimited)</span>
                 )}
               </span>
