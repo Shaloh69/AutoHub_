@@ -45,14 +45,18 @@ async def update_profile(
     """Update user profile"""
     # Update fields
     update_data = profile_data.model_dump(exclude_unset=True)
-    
+
+    # Handle phone_number alias (frontend sends phone_number, DB uses phone)
+    if 'phone_number' in update_data and update_data['phone_number'] is not None:
+        update_data['phone'] = update_data.pop('phone_number')
+
     for key, value in update_data.items():
         if hasattr(current_user, key):
             setattr(current_user, key, value)
-    
+
     db.commit()
     db.refresh(current_user)
-    
+
     return UserProfile.model_validate(current_user)
 
 

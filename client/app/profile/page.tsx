@@ -16,7 +16,7 @@ import {
   User, Mail, Phone, MapPin, Shield, Star,
   Upload, Check, X, AlertCircle
 } from 'lucide-react';
-import { apiService } from '@/services/api';
+import { apiService, getImageUrl } from '@/services/api';
 import { useRequireAuth } from '@/contexts/AuthContext';
 
 export default function ProfilePage() {
@@ -226,7 +226,7 @@ export default function ProfilePage() {
                 <div className="w-32 h-32 rounded-full bg-gradient-to-br from-blue-400 to-purple-600 flex items-center justify-center text-white text-4xl font-bold mx-auto overflow-hidden">
                   {user.profile_image ? (
                     <img
-                      src={user.profile_image}
+                      src={getImageUrl(user.profile_image)}
                       alt={user.first_name}
                       className="w-full h-full object-cover"
                     />

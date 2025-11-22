@@ -214,7 +214,7 @@ export function useAuth() {
 
 // Hook for protected routes
 export function useRequireAuth() {
-  const { user, loading } = useAuth();
+  const { user, loading, updateUser, refreshUser } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -226,7 +226,7 @@ export function useRequireAuth() {
     }
   }, [user, loading, pathname, router]);
 
-  return { user, loading };
+  return { user, loading, updateUser, refreshUser };
 }
 
 // Hook for seller routes

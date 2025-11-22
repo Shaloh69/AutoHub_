@@ -5,7 +5,7 @@ Path: car_marketplace_ph/app/schemas/auth.py
 NEW FEATURE: Role upgrade functionality for buyers
 ===========================================
 """
-from pydantic import BaseModel, EmailStr, Field, field_validator, field_serializer, ConfigDict
+from pydantic import BaseModel, EmailStr, Field, field_validator, field_serializer, model_validator, ConfigDict
 from typing import Optional
 from datetime import datetime
 
@@ -120,10 +120,11 @@ class UserProfile(BaseModel):
     first_name: str
     last_name: str
     phone: Optional[str] = None
+    phone_number: Optional[str] = None  # Alias for phone (for frontend compatibility)
     role: str  # Will be serialized from enum
     profile_image: Optional[str] = None
     bio: Optional[str] = None
-    
+
     # Location info
     city_id: Optional[int] = None
     province_id: Optional[int] = None
@@ -131,19 +132,20 @@ class UserProfile(BaseModel):
     address: Optional[str] = None
     barangay: Optional[str] = None
     postal_code: Optional[str] = None
-    
+
     # Business info (for dealers)
     business_name: Optional[str] = None
+    business_address: Optional[str] = None
     business_permit_number: Optional[str] = None
     tin_number: Optional[str] = None
-    
+
     # Verification status
     email_verified: bool = False
     phone_verified: bool = False
     identity_verified: bool = False
     business_verified: bool = False
     verification_level: Optional[str] = None
-    
+
     # Statistics
     average_rating: float = 0.0
     total_ratings: int = 0
@@ -153,19 +155,19 @@ class UserProfile(BaseModel):
     total_listings: int = 0
     active_listings: int = 0
     sold_listings: int = 0
-    
+
     # Account status
     is_active: bool = True
     is_banned: bool = False
-    
+
     # Subscription info
     subscription_status: Optional[str] = None
     subscription_expires_at: Optional[datetime] = None
-    
+
     # Timestamps
     created_at: datetime
     last_login_at: Optional[datetime] = None
-    
+
     @field_serializer('role')
     def serialize_role(self, role, _info):
         """Convert UserRole enum to string value"""
@@ -179,10 +181,18 @@ class UserProfile(BaseModel):
             return role.value
         # Fallback to string conversion
         return str(role).lower()
-    
+
+    @model_validator(mode='after')
+    def populate_phone_number(self):
+        """Populate phone_number from phone for frontend compatibility"""
+        if self.phone and not self.phone_number:
+            self.phone_number = self.phone
+        return self
+
     model_config = ConfigDict(
         from_attributes=True,
-        use_enum_values=True
+        use_enum_values=True,
+        populate_by_name=True
     )
 
 
@@ -191,14 +201,16 @@ class UserUpdate(BaseModel):
     first_name: Optional[str] = Field(None, min_length=1, max_length=100)
     last_name: Optional[str] = Field(None, min_length=1, max_length=100)
     phone: Optional[str] = Field(None, max_length=20)
+    phone_number: Optional[str] = Field(None, max_length=20)  # Alias for phone
     bio: Optional[str] = Field(None, max_length=1000)
     city_id: Optional[int] = None
     address: Optional[str] = Field(None, max_length=500)
     barangay: Optional[str] = Field(None, max_length=100)
     postal_code: Optional[str] = Field(None, max_length=10)
-    
+
     # Business info updates (for dealers)
     business_name: Optional[str] = Field(None, max_length=200)
+    business_address: Optional[str] = Field(None, max_length=500)
     business_permit_number: Optional[str] = Field(None, max_length=100)
     tin_number: Optional[str] = Field(None, max_length=20)
     dti_registration: Optional[str] = Field(None, max_length=100)
