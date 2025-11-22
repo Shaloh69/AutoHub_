@@ -128,17 +128,31 @@ export default function SellerDashboardPage() {
     }
 
     try {
+      // Clear any previous errors
+      setError(null);
+
       const response = await apiService.deleteCar(carId);
+
       if (response.success) {
+        // Remove car from state immediately for better UX
         setCars(prev => prev.filter(car => car.id !== carId));
-        // Reload dashboard data to update analytics
+
+        // Reload dashboard data to update analytics and subscription limits
         await loadDashboardData();
+
+        // Show success message
+        alert('✅ Listing deleted successfully! Your subscription slot has been freed.');
       } else {
-        setError(response.error || 'Failed to delete listing. Please try again.');
+        // Show specific error message
+        const errorMsg = response.error || 'Failed to delete listing. Please try again.';
+        setError(errorMsg);
+        alert(`❌ Error: ${errorMsg}`);
       }
     } catch (error: any) {
       console.error('Error deleting car:', error);
-      setError(error.message || 'An error occurred while deleting the listing.');
+      const errorMsg = error.message || 'An error occurred while deleting the listing.';
+      setError(errorMsg);
+      alert(`❌ Error: ${errorMsg}\n\nPlease try again or contact support.`);
     }
   };
 
