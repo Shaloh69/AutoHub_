@@ -25,6 +25,7 @@ import { useRequireAdmin } from '@/contexts/AuthContext';
 import LoadingSpinner from '@/components/LoadingSpinner';
 
 export default function AdminCarsPage() {
+  const [mounted, setMounted] = useState(false);
   const { user, loading: authLoading } = useRequireAdmin();
 
   const [cars, setCars] = useState<CarType[]>([]);
@@ -41,6 +42,11 @@ export default function AdminCarsPage() {
   const { isOpen: isViewOpen, onOpen: onViewOpen, onOpenChange: onViewOpenChange } = useDisclosure();
   const { isOpen: isDocOpen, onOpen: onDocOpen, onOpenChange: onDocOpenChange } = useDisclosure();
   const { isOpen: isRejectOpen, onOpen: onRejectOpen, onOpenChange: onRejectOpenChange } = useDisclosure();
+
+  // Ensure component only renders on client side
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (user && !authLoading) {
@@ -234,7 +240,8 @@ export default function AdminCarsPage() {
     }
   };
 
-  if (authLoading || loading) {
+  // Prevent SSR rendering issues
+  if (!mounted || authLoading || loading) {
     return (
       <AdminLayout>
         <LoadingSpinner />
