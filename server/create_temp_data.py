@@ -1,20 +1,20 @@
 """
 ===========================================
-Temporary Data Seeder for AutoHub (NORMALIZED SCHEMA v4.0 - ENHANCED)
+Main Data Seeder for AutoHub (NORMALIZED SCHEMA v4.0 - ENHANCED)
 ===========================================
-Creates comprehensive sample data for testing:
-- Admin user
-- Seller user
-- Buyer user
-- 20+ sample car listings with images
+Creates core sample data for testing:
+- Users (admin, seller, buyer)
 - Brands, models, categories, features
+- Colors and location data
 - Subscriptions for users
-- Inquiries between buyers and sellers
-- Transactions for sold cars
-- Reviews from buyers
-- Favorites
+- Inquiries, transactions, reviews (if cars exist)
+- Favorites and notifications
 - Car views for analytics
-- Notifications
+
+MODULAR DESIGN:
+- Car listings are now in a SEPARATE file: seed_cars.py
+- Run seed_cars.py independently to add/manage car data
+- This keeps the seeder clean and maintainable
 
 UPDATED FOR:
 - Fully normalized database schema
@@ -71,8 +71,12 @@ def create_users(db):
         print("⚠️  Users already exist. Skipping user creation.")
         return
 
-    # Get location
-    city_id, province_id, region_id = get_location(db)
+    # Get location (Metro Manila by default)
+    city = db.query(PhCity).filter(PhCity.name.like("%Manila%")).first()
+    if city and city.province:
+        city_id, province_id, region_id = city.id, city.province_id, city.province.region_id
+    else:
+        city_id, province_id, region_id = 1, 1, 1
 
     # Admin user - UPPERCASE ENUM
     admin = User(
@@ -369,359 +373,13 @@ def create_features(db):
     print("✅ Created features")
 
 
-def get_location(db):
-    """Get a default location (Metro Manila)"""
-    city = db.query(PhCity).filter(PhCity.name.like("%Manila%")).first()
-    if city and city.province:
-        return city.id, city.province_id, city.province.region_id
-    # Fallback to IDs if name search fails
-    return 1, 1, 1
-
-
-def get_color_id(db, color_name):
-    """Get color ID by name"""
-    color = db.query(StandardColor).filter(StandardColor.name == color_name).first()
-    return color.id if color else 1  # Default to first color if not found
-
-
-def clear_old_car_data(db):
-    """Clear existing car data to start fresh"""
-    print("\n🗑️  Clearing old car data and related records...")
-
-    try:
-        # Delete in order due to foreign key constraints
-        deleted_reviews = db.query(Review).delete()
-        deleted_favorites = db.query(Favorite).delete()
-        deleted_views = db.query(CarView).delete()
-        deleted_inquiry_responses = db.query(InquiryResponse).delete()
-        deleted_inquiries = db.query(Inquiry).delete()
-        deleted_transactions = db.query(Transaction).delete()
-        deleted_features = db.query(CarFeature).delete()
-        deleted_images = db.query(CarImage).delete()
-        deleted_cars = db.query(Car).delete()
-
-        db.commit()
-        print(f"   ✓ Deleted {deleted_cars} cars")
-        print(f"   ✓ Deleted {deleted_inquiries} inquiries")
-        print(f"   ✓ Deleted {deleted_transactions} transactions")
-        print(f"   ✓ Deleted {deleted_reviews} reviews")
-        print(f"   ✓ Deleted {deleted_favorites} favorites")
-    except Exception as e:
-        print(f"   ⚠️  Error clearing data: {e}")
-        db.rollback()
-
-
-def create_sample_cars(db):
-    """Create sample car listings with comprehensive data - NORMALIZED SCHEMA"""
-    print("\n📝 Creating sample cars...")
-
-    # Get seller user
-    seller = db.query(User).filter(User.email == "seller@autohub.com").first()
-    if not seller:
-        print("❌ Seller not found!")
-        return []
-
-    # Get brands and models
-    toyota = db.query(Brand).filter(Brand.name == "Toyota").first()
-    honda = db.query(Brand).filter(Brand.name == "Honda").first()
-    mitsubishi = db.query(Brand).filter(Brand.name == "Mitsubishi").first()
-
-    if not toyota or not honda or not mitsubishi:
-        print("❌ Brands not found!")
-        return []
-
-    # Get models
-    vios = db.query(Model).filter(Model.name == "Vios").first()
-    fortuner = db.query(Model).filter(Model.name == "Fortuner").first()
-    civic = db.query(Model).filter(Model.name == "Civic").first()
-    crv = db.query(Model).filter(Model.name == "CR-V").first()
-    montero = db.query(Model).filter(Model.name == "Montero Sport").first()
-    innova = db.query(Model).filter(Model.name == "Innova").first()
-    wigo = db.query(Model).filter(Model.name == "Wigo").first()
-
-    # Validate models exist
-    if not all([vios, fortuner, civic, crv, montero]):
-        print("❌ One or more models not found!")
-        return []
-
-    # Get location
-    city_id, province_id, region_id = get_location(db)
-
-    # Get some features
-    features = db.query(Feature).limit(10).all()
-
-    # NORMALIZED: Sample cars using FKs for colors, no duplicate fields
-    sample_cars = [
-        {
-            "brand_id": toyota.id,
-            "model_id": vios.id,
-            "title": "2020 Toyota Vios 1.3 E - Well Maintained, Low Mileage",
-            "description": "Selling my well-maintained 2020 Toyota Vios. Single owner, casa-maintained, complete papers. Perfect for daily commute or family use. Very fuel efficient!",
-            "year": 2020,
-            "price": Decimal("650000"),
-            "mileage": 35000,
-            "fuel_type": FuelType.GASOLINE,
-            "transmission": TransmissionType.AUTOMATIC,
-            "car_condition": ConditionRating.EXCELLENT,
-            "color_id": get_color_id(db, "White"),
-            "interior_color_id": get_color_id(db, "Beige"),
-            "body_type": BodyType.SEDAN,
-            "mileage_unit": MileageUnit.KM,
-            "visibility": Visibility.PUBLIC,
-            "status": CarStatus.ACTIVE,
-            "approval_status": ApprovalStatus.APPROVED,
-            "engine_size": "1.3L",
-            "seats": 5,
-            "doors": 4,
-            "drivetrain": DrivetrainType.FWD,
-            "horsepower": 98,
-            "trim": "1.3 E",
-        },
-        {
-            "brand_id": toyota.id,
-            "model_id": fortuner.id,
-            "title": "2018 Toyota Fortuner 2.4 G 4x2 DSL AT - Family SUV",
-            "description": "2018 Toyota Fortuner in excellent condition. 7-seater, diesel, automatic. Perfect for family trips. All original paint, no accident history.",
-            "year": 2018,
-            "price": Decimal("1450000"),
-            "mileage": 68000,
-            "fuel_type": FuelType.DIESEL,
-            "transmission": TransmissionType.AUTOMATIC,
-            "car_condition": ConditionRating.EXCELLENT,
-            "color_id": get_color_id(db, "Gray"),
-            "interior_color_id": get_color_id(db, "Black"),
-            "body_type": BodyType.SUV,
-            "mileage_unit": MileageUnit.KM,
-            "visibility": Visibility.PUBLIC,
-            "status": CarStatus.SOLD,  # This one is sold
-            "approval_status": ApprovalStatus.APPROVED,
-            "engine_size": "2.4L",
-            "seats": 7,
-            "doors": 4,
-            "drivetrain": DrivetrainType.RWD,
-            "horsepower": 148,
-            "trim": "2.4 G 4x2",
-        },
-        {
-            "brand_id": honda.id,
-            "model_id": civic.id,
-            "title": "2019 Honda Civic RS Turbo - Sport Mode, Showroom Condition",
-            "description": "2019 Honda Civic RS Turbo in showroom condition. Very low mileage, always garaged. Turbo engine, sporty design. Must see!",
-            "year": 2019,
-            "price": Decimal("1250000"),
-            "mileage": 28000,
-            "fuel_type": FuelType.GASOLINE,
-            "transmission": TransmissionType.CVT,
-            "car_condition": ConditionRating.LIKE_NEW,
-            "color_id": get_color_id(db, "Red"),
-            "interior_color_id": get_color_id(db, "Black"),
-            "body_type": BodyType.SEDAN,
-            "mileage_unit": MileageUnit.KM,
-            "visibility": Visibility.PUBLIC,
-            "status": CarStatus.ACTIVE,
-            "approval_status": ApprovalStatus.APPROVED,
-            "engine_size": "1.5L Turbo",
-            "seats": 5,
-            "doors": 4,
-            "drivetrain": DrivetrainType.FWD,
-            "horsepower": 173,
-            "trim": "RS Turbo",
-        },
-        {
-            "brand_id": honda.id,
-            "model_id": crv.id,
-            "title": "2017 Honda CR-V 2.0 S - Spacious Family SUV",
-            "description": "2017 Honda CR-V in very good condition. Spacious interior, comfortable ride. Perfect for family use. Fresh from casa service.",
-            "year": 2017,
-            "price": Decimal("1100000"),
-            "mileage": 75000,
-            "fuel_type": FuelType.GASOLINE,
-            "transmission": TransmissionType.AUTOMATIC,
-            "car_condition": ConditionRating.GOOD,
-            "color_id": get_color_id(db, "Silver"),
-            "interior_color_id": get_color_id(db, "Gray"),
-            "body_type": BodyType.SUV,
-            "mileage_unit": MileageUnit.KM,
-            "visibility": Visibility.PUBLIC,
-            "status": CarStatus.ACTIVE,
-            "approval_status": ApprovalStatus.APPROVED,
-            "engine_size": "2.0L",
-            "seats": 5,
-            "doors": 4,
-            "drivetrain": DrivetrainType.FWD,
-            "horsepower": 154,
-            "trim": "2.0 S",
-        },
-        {
-            "brand_id": mitsubishi.id,
-            "model_id": montero.id,
-            "title": "2021 Mitsubishi Montero Sport GLS Premium - Like New",
-            "description": "2021 Montero Sport GLS Premium. Almost brand new condition. Very low mileage. Top of the line variant with all premium features.",
-            "year": 2021,
-            "price": Decimal("1850000"),
-            "mileage": 15000,
-            "fuel_type": FuelType.DIESEL,
-            "transmission": TransmissionType.AUTOMATIC,
-            "car_condition": ConditionRating.LIKE_NEW,
-            "color_id": get_color_id(db, "Black"),
-            "interior_color_id": get_color_id(db, "Brown"),
-            "body_type": BodyType.SUV,
-            "mileage_unit": MileageUnit.KM,
-            "visibility": Visibility.PUBLIC,
-            "status": CarStatus.ACTIVE,
-            "approval_status": ApprovalStatus.APPROVED,
-            "engine_size": "2.4L",
-            "seats": 7,
-            "doors": 4,
-            "drivetrain": DrivetrainType.RWD,
-            "horsepower": 181,
-            "trim": "GLS Premium",
-        },
-    ]
-
-    # Add more cars if models exist
-    if innova:
-        sample_cars.append({
-            "brand_id": toyota.id,
-            "model_id": innova.id,
-            "title": "2019 Toyota Innova 2.8 E DSL AT - Family MPV",
-            "description": "2019 Toyota Innova in excellent condition. 8-seater, diesel, automatic. Perfect for family use.",
-            "year": 2019,
-            "price": Decimal("1150000"),
-            "mileage": 55000,
-            "fuel_type": FuelType.DIESEL,
-            "transmission": TransmissionType.AUTOMATIC,
-            "car_condition": ConditionRating.EXCELLENT,
-            "color_id": get_color_id(db, "White"),
-            "interior_color_id": get_color_id(db, "Gray"),
-            "body_type": BodyType.MPV,
-            "mileage_unit": MileageUnit.KM,
-            "visibility": Visibility.PUBLIC,
-            "status": CarStatus.ACTIVE,
-            "approval_status": ApprovalStatus.APPROVED,
-            "engine_size": "2.8L",
-            "seats": 8,
-            "doors": 4,
-            "drivetrain": DrivetrainType.RWD,
-            "horsepower": 174,
-            "trim": "2.8 E",
-        })
-
-    if wigo:
-        sample_cars.append({
-            "brand_id": toyota.id,
-            "model_id": wigo.id,
-            "title": "2018 Toyota Wigo G - Economical City Car",
-            "description": "2018 Toyota Wigo G. Perfect for city driving. Very fuel efficient.",
-            "year": 2018,
-            "price": Decimal("380000"),
-            "mileage": 42000,
-            "fuel_type": FuelType.GASOLINE,
-            "transmission": TransmissionType.AUTOMATIC,
-            "car_condition": ConditionRating.GOOD,
-            "color_id": get_color_id(db, "Red"),
-            "interior_color_id": get_color_id(db, "Black"),
-            "body_type": BodyType.HATCHBACK,
-            "mileage_unit": MileageUnit.KM,
-            "visibility": Visibility.PUBLIC,
-            "status": CarStatus.ACTIVE,
-            "approval_status": ApprovalStatus.APPROVED,
-            "engine_size": "1.0L",
-            "seats": 5,
-            "doors": 4,
-            "drivetrain": DrivetrainType.FWD,
-            "horsepower": 66,
-            "trim": "G",
-        })
-
-    created_cars = []
-    created_count = 0
-
-    for car_data in sample_cars:
-        try:
-            # NORMALIZED: Create car without duplicate fields
-            car = Car(
-                seller_id=seller.id,
-                city_id=city_id,
-                province_id=province_id,
-                region_id=region_id,
-                latitude=Decimal("14.5995"),
-                longitude=Decimal("120.9842"),
-                currency_id=1,  # NORMALIZED: Using FK
-                price_negotiable=True,
-                financing_available=True,
-                accident_history=False,
-                flood_history=False,
-                number_of_owners=1,
-                service_history_available=True,
-                lto_registered=True,
-                casa_maintained=True,
-                is_active=True,
-                is_featured=(created_count == 0),  # First car is featured
-                is_premium=False,
-                verified=True,
-                views_count=random.randint(10, 100),
-                unique_views_count=random.randint(5, 50),
-                inquiry_count=0,
-                contact_count=0,
-                click_count=0,
-                favorite_count=0,
-                average_rating=Decimal("0.00"),
-                quality_score=85,
-                completeness_score=90,
-                ranking_score=80,
-                registration_status="REGISTERED",
-                or_cr_status="COMPLETE",
-                deed_of_sale_available=True,
-                has_emission_test=True,
-                insurance_status="ACTIVE",
-                warranty_remaining=False,
-                trade_in_accepted=False,
-                installment_available=True,
-                created_at=datetime.now() - timedelta(days=random.randint(10, 60)),
-                updated_at=datetime.now(),
-                published_at=datetime.now() - timedelta(days=random.randint(5, 30)),
-                expires_at=datetime.now() + timedelta(days=30),
-                sold_at=datetime.now() - timedelta(days=5) if car_data["status"] == CarStatus.SOLD else None,
-                **car_data
-            )
-
-            db.add(car)
-            db.flush()
-
-            # Add multiple sample images with UPPERCASE type
-            image_types = ["EXTERIOR", "INTERIOR", "ENGINE"]
-            for idx, img_type in enumerate(image_types):
-                brand = db.query(Brand).filter(Brand.id == car.brand_id).first()
-                model = db.query(Model).filter(Model.id == car.model_id).first()
-                image = CarImage(
-                    car_id=car.id,
-                    image_url=f"https://via.placeholder.com/800x600/{'333' if idx == 0 else '555'}/fff?text={brand.name}+{model.name}+{img_type}",
-                    image_type=img_type,
-                    is_main=(idx == 0),
-                    display_order=idx,
-                    uploaded_at=datetime.now()
-                )
-                db.add(image)
-
-            # Add features
-            if features:
-                for feature in features[:5]:  # Add 5 features per car
-                    car_feature = CarFeature(car_id=car.id, feature_id=feature.id)
-                    db.add(car_feature)
-
-            created_cars.append(car)
-            created_count += 1
-            print(f"   ✓ Created: {car.title}")
-
-        except Exception as e:
-            print(f"   ✗ Error creating car '{car_data.get('title', 'Unknown')}': {str(e)}")
-            db.rollback()
-            continue
-
-    db.commit()
-    print(f"\n✅ Successfully created {created_count} sample cars with images and features")
-    return created_cars
+# Import car seeder functions from separate file
+try:
+    from seed_cars import create_sample_cars, clear_all_cars
+except ImportError:
+    print("⚠️  Warning: seed_cars.py not found. Car creation will be skipped.")
+    create_sample_cars = None
+    clear_all_cars = None
 
 
 def create_subscriptions(db):
@@ -1161,18 +819,37 @@ def main():
     db = SessionLocal()
 
     try:
-        # Clear old car data and related records first
-        clear_old_car_data(db)
-
-        # Create core data
+        # Create core data (users, brands, colors, etc.)
         create_users(db)
         create_colors(db)
         create_brands_and_models(db)
         create_categories(db)
         create_features(db)
 
-        # Create cars
-        cars = create_sample_cars(db)
+        # Create cars using separate seeder (if available)
+        cars = []
+        if create_sample_cars:
+            print("\n" + "="*60)
+            print("🚗 Car Data Seeding")
+            print("="*60)
+            print("\nWould you like to:")
+            print("  1. Create sample cars (default)")
+            print("  2. Skip car creation")
+            print("  3. Clear existing cars and create new ones")
+
+            choice = input("\nEnter choice (1-3, default=1): ").strip() or "1"
+
+            if choice == "3":
+                if clear_all_cars:
+                    if clear_all_cars(db):
+                        cars = create_sample_cars(db)
+            elif choice == "1":
+                cars = create_sample_cars(db)
+            else:
+                print("⏭️  Skipping car creation")
+        else:
+            print("\n⚠️  Car seeder not available. Skipping car creation.")
+            print("   💡 Run 'python3 seed_cars.py' separately to add cars.")
 
         # Create enhanced data
         create_subscriptions(db)
@@ -1184,38 +861,37 @@ def main():
         create_notifications(db)
 
         print("\n" + "="*60)
-        print("✅ All data created successfully!")
+        print("✅ Data Seeding Complete!")
         print("="*60)
         print("\n📋 Test Accounts:")
         print("   🔐 Admin:  admin@autohub.com  / admin123")
         print("   🏪 Seller: seller@autohub.com / seller123 (Pro subscription)")
         print("   🛒 Buyer:  buyer@autohub.com  / buyer123")
 
-        print("\n🚗 Sample Data Created:")
-        print(f"   ✓ {len(cars)} car listings (1 sold, rest active)")
-        print("   ✓ Multiple images per car (EXTERIOR, INTERIOR, ENGINE)")
-        print("   ✓ Features assigned to each car")
+        print("\n📊 Sample Data Created:")
+        if cars:
+            print(f"   ✓ {len(cars)} car listings (with images, features, etc.)")
+        else:
+            print("   ⚠ No cars created (use seed_cars.py to add cars)")
         print("   ✓ Subscription for seller (Pro plan - ACTIVE)")
-        print("   ✓ 3 inquiries with responses")
-        print("   ✓ 1 completed transaction")
-        print("   ✓ 1 review (5-star rating)")
-        print("   ✓ 3 favorites from buyer")
-        print("   ✓ Multiple car views for analytics")
-        print("   ✓ 4 notifications")
+        if cars:
+            print("   ✓ Inquiries, transactions, reviews (if cars exist)")
+        print("   ✓ Notifications for users")
 
         print("\n🌐 You can now:")
         print("   - Login as buyer to browse cars, send inquiries, add favorites")
         print("   - Login as seller to manage listings, respond to inquiries")
         print("   - Login as admin to moderate content and verify payments")
         print("   - View analytics and engagement data")
-        print("   - Test the complete car marketplace workflow")
 
         print("\n💡 Schema Compliance:")
         print("   - ✅ 100% aligned with NORMALIZED SCHEMA v4.0")
         print("   - ✅ All ENUM values in UPPERCASE")
         print("   - ✅ Using FK relationships (color_id, currency_id, etc.)")
         print("   - ✅ No duplicate fields (fully normalized 3NF)")
-        print("   - ✅ Complete test data for all major features")
+
+        print("\n🔧 Additional Commands:")
+        print("   - python3 seed_cars.py  # Add/manage car data separately")
         print("="*60 + "\n")
 
     except Exception as e:
