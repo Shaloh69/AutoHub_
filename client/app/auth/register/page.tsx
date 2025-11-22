@@ -166,24 +166,6 @@ export default function RegisterPage() {
                 </div>
               )}
 
-              {/* Account Type */}
-              <Select
-                label="I want to"
-                selectedKeys={[formData.role]}
-                onChange={(e) => setFormData(prev => ({ ...prev, role: e.target.value }))}
-                isRequired
-              >
-                <SelectItem key="buyer">
-                  Buy a car
-                </SelectItem>
-                <SelectItem key="seller">
-                  Sell my car
-                </SelectItem>
-                <SelectItem key="dealer">
-                  Register as a dealer
-                </SelectItem>
-              </Select>
-
               {/* Name Fields */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Input

@@ -186,6 +186,34 @@ class ApiService {
     });
   }
 
+  async uploadProfileImage(file: File): Promise<ApiResponse<{ message: string; success: boolean }>> {
+    const token = localStorage.getItem('token');
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const url = `${API_BASE_URL}/users/profile/photo`;
+
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+        body: formData,
+      });
+
+      const data = await response.json().catch(() => ({}));
+      return {
+        success: response.ok,
+        data: response.ok ? data : undefined,
+        error: !response.ok ? (data.detail || 'Upload failed') : undefined,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: 'Network error',
+      };
+    }
+  }
+
   async refreshToken(): Promise<ApiResponse<{ access_token: string }>> {
     const refreshToken = localStorage.getItem('refresh_token');
     if (!refreshToken) {
