@@ -452,10 +452,7 @@ export default function SubscriptionPage() {
                         <Button
                           className="w-full bg-gradient-to-r from-primary-500 to-secondary-500 text-white font-semibold hover:shadow-lg"
                           size="lg"
-                          onPress={(e) => {
-                            e.stopPropagation();
-                            handleUpgrade(plan.id);
-                          }}
+                          onPress={() => handleUpgrade(plan.id)}
                           isLoading={actionLoading === plan.id.toString()}
                         >
                           Upgrade Now

@@ -1517,7 +1517,7 @@ async def verify_payment(
         # Send email notification to user
         email_sent = False
         try:
-            if verify_request.action == "verify":
+            if verify_request.action == "approve" or verify_request.action == "verify":
                 # Approved email
                 subject = "Payment Verified - Subscription Activated"
                 text_body = f"""

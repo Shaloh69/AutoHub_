@@ -490,17 +490,30 @@ class SubscriptionService:
         log = PaymentVerificationLog(
             payment_id=payment_id,
             admin_id=admin_id,
-            action="verified" if action == "approve" else "rejected",
+            action="VERIFIED" if action == "approve" or action == "verify" else "REJECTED",
             previous_status=previous_status,
             new_status=new_status,
             notes=admin_notes or rejection_reason
         )
         db.add(log)
-        
+
         db.commit()
         db.refresh(payment)
-        
-        return payment
+
+        # Get user details for email notification
+        user = db.query(User).filter(User.id == getattr(payment, 'user_id', 0)).first()
+
+        # Return dictionary with all necessary information
+        return {
+            "payment": payment,
+            "previous_status": previous_status,
+            "new_status": new_status,
+            "user_id": getattr(payment, 'user_id', 0),
+            "user_email": getattr(user, 'email', '') if user else '',
+            "user_name": f"{getattr(user, 'first_name', '')} {getattr(user, 'last_name', '')}".strip() if user else '',
+            "reference_number": getattr(payment, 'reference_number', ''),
+            "amount": getattr(payment, 'amount', Decimal("0"))
+        }
     
     @staticmethod
     def get_payment_statistics(db: Session) -> Dict:
