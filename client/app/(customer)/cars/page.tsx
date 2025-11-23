@@ -197,15 +197,25 @@ export default function SearchCarsPage() {
                     <SlidersHorizontal size={20} className="text-primary-400" />
                     Filters
                   </h2>
-                  <Button
-                    size="sm"
-                    variant="flat"
-                    onPress={handleClearFilters}
-                    startContent={<X size={16} />}
-                    className="bg-white/10 hover:bg-white/20 border border-white/20"
-                  >
-                    Clear
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="flat"
+                      onPress={handleClearFilters}
+                      startContent={<X size={16} />}
+                      className="bg-white/10 hover:bg-white/20 border border-white/20"
+                    >
+                      Clear
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="bg-gradient-to-r from-primary-600 to-primary-700 text-white font-bold shadow-2xl shadow-primary-600/30 hover:shadow-primary-600/50 hover:scale-105 transition-all duration-300"
+                      onPress={handleSearch}
+                      startContent={<Search size={16} />}
+                    >
+                      Apply
+                    </Button>
+                  </div>
                 </div>
 
                 {/* Search */}
@@ -402,16 +412,6 @@ export default function SearchCarsPage() {
                   >
                     Financing available
                   </Checkbox>
-                </div>
-
-                <div className="flex justify-end">
-                  <Button
-                    className="bg-gradient-to-r from-primary-600 to-primary-700 text-white font-bold shadow-2xl shadow-primary-600/30 hover:shadow-primary-600/50 hover:scale-105 transition-all duration-300"
-                    onPress={handleSearch}
-                    startContent={<Search size={18} />}
-                  >
-                    Apply Filters
-                  </Button>
                 </div>
               </CardBody>
             </Card>
