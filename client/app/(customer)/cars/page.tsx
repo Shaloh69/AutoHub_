@@ -178,7 +178,7 @@ export default function SearchCarsPage() {
 
       <div className="max-w-7xl mx-auto relative z-10">
         {/* Header with glassmorphism */}
-        <div className="mb-8 p-6 bg-black/20 backdrop-blur-2xl rounded-3xl border border-white/10">
+        <div className="mb-8 p-6 bg-black/20 backdrop-blur-2xl rounded-3xl border border-white/10 text-right">
           <h1 className="text-4xl md:text-5xl font-black text-white mb-2">
             Search <span className="text-gradient-red">Cars</span>
           </h1>
