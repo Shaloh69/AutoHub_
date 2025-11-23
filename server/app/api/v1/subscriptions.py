@@ -160,8 +160,8 @@ async def upgrade_subscription(
             db,
             user_id=user_id,
             plan_id=plan_id,
-            billing_cycle="monthly",
-            payment_method="qr_code"
+            billing_cycle="MONTHLY",
+            payment_method="QR_CODE"
         )
 
         # Return same structure as /subscribe endpoint for consistency
@@ -199,7 +199,7 @@ async def subscribe_to_plan(
         user_id = int(getattr(current_user, 'id', 0))
 
         # For QR code payments, validate QR code is configured BEFORE creating subscription
-        if subscription_data.payment_method == "qr_code":
+        if subscription_data.payment_method == "QR_CODE":
             # This will raise ValueError if QR code is not configured
             qr_settings = SubscriptionService.get_qr_code_settings(db)
 
@@ -214,7 +214,7 @@ async def subscribe_to_plan(
         )
 
         # For QR code payments, return QR code information
-        if subscription_data.payment_method == "qr_code":
+        if subscription_data.payment_method == "QR_CODE":
             
             # Send notification to user
             try:
