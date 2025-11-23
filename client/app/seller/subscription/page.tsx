@@ -131,7 +131,7 @@ export default function SellerSubscriptionPage() {
               color="default"
               variant="flat"
               onPress={() => router.push('/subscription')}
-              className="bg-white text-autohub-primary-600 hover:bg-white/90"
+              className="bg-red-500 text-autohub-primary-600 hover:bg-white/90"
             >
               {isActive ? 'Manage Plan' : 'Upgrade Now'}
             </Button>
