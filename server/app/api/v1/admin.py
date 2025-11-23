@@ -48,10 +48,10 @@ from app.schemas.car import CarResponse
 from app.core.dependencies import get_current_admin, get_current_moderator
 from app.models.user import User, UserRole
 from app.models.car import Car, Brand, Model, CarImage, Feature, CarFeature
-from app.models.location import PhCity
+from app.models.location import PhCity, Currency
 from app.models.subscription import (
     SubscriptionPayment, PaymentSetting, PaymentVerificationLog,
-    SubscriptionPlan
+    SubscriptionPlan, UserSubscription
 )
 from app.models.security import FraudIndicator, AuditLog, SystemConfig
 from app.services.subscription_service import SubscriptionService
@@ -1351,10 +1351,10 @@ async def get_all_payments(
             SubscriptionPlan.name.label('plan_name'),
             Currency.code.label('currency')
         ).join(
-            User, SubscriptionPayment.user_id == User.id
+            User, SubscriptionPayment.user_id == User.id, isouter=False
         ).join(
-            SubscriptionPlan, SubscriptionPayment.plan_id == SubscriptionPlan.id
-        ).join(
+            SubscriptionPlan, SubscriptionPayment.plan_id == SubscriptionPlan.id, isouter=False
+        ).outerjoin(
             Currency, SubscriptionPayment.currency_id == Currency.id
         )
 
@@ -1374,7 +1374,7 @@ async def get_all_payments(
                 user_email=str(p.email),
                 plan_name=str(p.plan_name),
                 amount=float(p.amount),
-                currency=str(p.currency),
+                currency=str(p.currency or 'PHP'),
                 reference_number=str(p.reference_number or ''),
                 payment_method=str(p.payment_method),
                 status=str(p.status),
@@ -1384,10 +1384,10 @@ async def get_all_payments(
             for p in payments
         ]
     except Exception as e:
-        logger.error(f"Error fetching all payments: {e}")
+        logger.error(f"Error fetching all payments: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to fetch payments"
+            detail=f"Failed to fetch payments: {str(e)}"
         )
 
 
@@ -1611,9 +1611,9 @@ Car Marketplace Philippines Team
 
 @router.get("/payments/verification-logs", response_model=List[PaymentVerificationLogResponse])
 async def get_all_payment_verification_logs(
-    limit: int = 100,
-    offset: int = 0,
-    action: str = None,
+    limit: int = Query(100, ge=1, le=1000),
+    offset: int = Query(0, ge=0),
+    action: Optional[str] = Query(None),
     current_admin: User = Depends(get_current_admin),
     db: Session = Depends(get_db)
 ):
