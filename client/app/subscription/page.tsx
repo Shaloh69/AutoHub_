@@ -110,8 +110,8 @@ export default function SubscriptionPage() {
 
       const response = await apiService.subscribe({
         plan_id: selectedPlan.id,
-        billing_cycle: 'monthly',
-        payment_method: 'qr_code'
+        billing_cycle: 'MONTHLY',
+        payment_method: 'QR_CODE'
       });
 
       if (response.success && response.data) {

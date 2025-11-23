@@ -606,8 +606,8 @@ class ApiService {
 
   async subscribe(planData: {
     plan_id: number;
-    billing_cycle: 'monthly' | 'annual';
-    payment_method: string;
+    billing_cycle: 'MONTHLY' | 'QUARTERLY' | 'YEARLY' | 'ONE_TIME';
+    payment_method: 'QR_CODE' | 'CREDIT_CARD' | 'BANK_TRANSFER' | 'GCASH' | 'PAYMAYA' | 'PAYPAL';
     promo_code?: string;
   }): Promise<ApiResponse<QRCodePaymentResponse>> {
     return this.request<QRCodePaymentResponse>('/subscriptions/subscribe', {
