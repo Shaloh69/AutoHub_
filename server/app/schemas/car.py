@@ -105,10 +105,14 @@ class CarCreate(BaseModel):
         mode='before'
     )
     @classmethod
-    def uppercase_enums(cls, v):
+    def uppercase_enums(cls, v, info):
         """Convert enum string values to uppercase to match database schema"""
         if v is not None and isinstance(v, str):
-            return v.upper()
+            uppercased = v.upper()
+            # Special case: FOUR_WD → 4WD
+            if info.field_name == 'drivetrain' and uppercased == 'FOUR_WD':
+                return '4WD'
+            return uppercased
         return v
 
     model_config = ConfigDict(
@@ -212,10 +216,14 @@ class CarUpdate(BaseModel):
         mode='before'
     )
     @classmethod
-    def uppercase_enums(cls, v):
+    def uppercase_enums(cls, v, info):
         """Convert enum string values to uppercase to match database schema"""
         if v is not None and isinstance(v, str):
-            return v.upper()
+            uppercased = v.upper()
+            # Special case: FOUR_WD → 4WD
+            if info.field_name == 'drivetrain' and uppercased == 'FOUR_WD':
+                return '4WD'
+            return uppercased
         return v
 
     model_config = ConfigDict(
