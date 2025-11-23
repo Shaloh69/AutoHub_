@@ -343,9 +343,7 @@ export default function SubscriptionPage() {
               return (
                 <Card
                   key={plan.id}
-                  isPressable={!isCurrent && !currentSubscription}
-                  onPress={() => !isCurrent && !currentSubscription && handlePlanSelect(plan)}
-                  className={`relative overflow-hidden transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl cursor-pointer ${
+                  className={`relative overflow-hidden transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl ${
                     isCurrent
                       ? 'border-4 border-primary-500 shadow-xl ring-2 ring-primary-300'
                       : isSelected
@@ -464,10 +462,7 @@ export default function SubscriptionPage() {
                               : 'bg-primary-500 text-white hover:bg-primary-600'
                           }`}
                           size="lg"
-                          onPress={(e) => {
-                            e.stopPropagation();
-                            handlePlanSelect(plan);
-                          }}
+                          onPress={() => handlePlanSelect(plan)}
                           isLoading={actionLoading === plan.id.toString()}
                         >
                           {isSelected ? '✓ Selected' : 'Select Plan'}
