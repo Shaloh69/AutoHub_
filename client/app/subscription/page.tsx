@@ -49,6 +49,7 @@ export default function SubscriptionPage() {
   } | null>(null);
   const [paymentHistory, setPaymentHistory] = useState<PaymentHistory[]>([]);
   const [pendingPayments, setPendingPayments] = useState<PaymentHistory[]>([]);
+  const [dismissedPayments, setDismissedPayments] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -101,6 +102,10 @@ export default function SubscriptionPage() {
     setError(null);
   };
 
+  const handleDismissPayment = (paymentId: number) => {
+    setDismissedPayments(prev => new Set(prev).add(paymentId));
+  };
+
   const handleConfirmSubscribe = async () => {
     if (!selectedPlan) return;
 
@@ -110,8 +115,8 @@ export default function SubscriptionPage() {
 
       const response = await apiService.subscribe({
         plan_id: selectedPlan.id,
-        billing_cycle: 'monthly',
-        payment_method: 'qr_code'
+        billing_cycle: 'MONTHLY',
+        payment_method: 'QR_CODE'
       });
 
       if (response.success && response.data) {
@@ -302,18 +307,21 @@ export default function SubscriptionPage() {
       )}
 
       {/* Pending Payments Section */}
-      {pendingPayments.length > 0 && (
+      {pendingPayments.filter(p => !dismissedPayments.has(p.id)).length > 0 && (
         <div className="space-y-4">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
             Payment Status
           </h2>
-          {pendingPayments.map((payment) => (
-            <PendingPaymentCard
-              key={payment.id}
-              payment={payment}
-              onPaymentSubmitted={fetchSubscriptionData}
-            />
-          ))}
+          {pendingPayments
+            .filter(p => !dismissedPayments.has(p.id))
+            .map((payment) => (
+              <PendingPaymentCard
+                key={payment.id}
+                payment={payment}
+                onPaymentSubmitted={fetchSubscriptionData}
+                onDismiss={() => handleDismissPayment(payment.id)}
+              />
+            ))}
         </div>
       )}
 
@@ -608,10 +616,12 @@ function ComparisonRow({
 // Pending Payment Card Component (kept from original)
 function PendingPaymentCard({
   payment,
-  onPaymentSubmitted
+  onPaymentSubmitted,
+  onDismiss
 }: {
   payment: PaymentHistory;
   onPaymentSubmitted: () => void;
+  onDismiss?: () => void;
 }) {
   const [referenceNumber, setReferenceNumber] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -726,9 +736,22 @@ function PendingPaymentCard({
               Amount: ₱{payment.amount.toLocaleString()} • Created: {new Date(payment.created_at).toLocaleDateString()}
             </p>
           </div>
-          <Chip color={getStatusColor()} size="md" variant="flat">
-            {paymentStatus}
-          </Chip>
+          <div className="flex items-center gap-2">
+            <Chip color={getStatusColor()} size="md" variant="flat">
+              {paymentStatus}
+            </Chip>
+            {!hasSubmittedReference && onDismiss && (
+              <Button
+                size="sm"
+                variant="light"
+                color="danger"
+                onPress={onDismiss}
+                title="Dismiss this payment"
+              >
+                ✕
+              </Button>
+            )}
+          </div>
         </div>
 
         {error && (
