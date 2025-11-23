@@ -34,25 +34,48 @@ interface PaymentVerificationLog {
   created_at: string;
 }
 
+interface PaymentTransaction {
+  payment_id: number;
+  user_id: number;
+  user_name: string;
+  user_email: string;
+  plan_name: string;
+  amount: number;
+  currency: string;
+  reference_number: string;
+  payment_method: string;
+  status: string;
+  submitted_at: string;
+  created_at: string;
+}
+
 export default function TransactionHistoryPage() {
   const { user, loading: authLoading } = useRequireAdmin();
 
   const [logs, setLogs] = useState<PaymentVerificationLog[]>([]);
   const [filteredLogs, setFilteredLogs] = useState<PaymentVerificationLog[]>([]);
+  const [allPayments, setAllPayments] = useState<PaymentTransaction[]>([]);
+  const [filteredPayments, setFilteredPayments] = useState<PaymentTransaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionFilter, setActionFilter] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState('');
   const [dateFilter, setDateFilter] = useState<string>('all');
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState<string>('all');
 
   useEffect(() => {
     if (user && !authLoading) {
       loadTransactionHistory();
+      loadAllPayments();
     }
   }, [user, authLoading]);
 
   useEffect(() => {
     filterLogs();
   }, [logs, actionFilter, searchTerm, dateFilter]);
+
+  useEffect(() => {
+    filterPayments();
+  }, [allPayments, paymentStatusFilter, searchTerm, dateFilter]);
 
   const loadTransactionHistory = async () => {
     try {
@@ -66,6 +89,59 @@ export default function TransactionHistoryPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const loadAllPayments = async () => {
+    try {
+      const response = await apiService.getAllPayments(500, 0);
+      if (response.success && response.data) {
+        setAllPayments(response.data);
+      }
+    } catch (error) {
+      console.error('Error loading all payments:', error);
+    }
+  };
+
+  const filterPayments = () => {
+    let filtered = [...allPayments];
+
+    // Filter by payment status
+    if (paymentStatusFilter && paymentStatusFilter !== 'all') {
+      filtered = filtered.filter(p => p.status.toUpperCase() === paymentStatusFilter.toUpperCase());
+    }
+
+    // Filter by search term
+    if (searchTerm.trim()) {
+      const search = searchTerm.toLowerCase();
+      filtered = filtered.filter(p =>
+        p.payment_id.toString().includes(search) ||
+        p.user_name.toLowerCase().includes(search) ||
+        p.user_email.toLowerCase().includes(search) ||
+        (p.reference_number && p.reference_number.toLowerCase().includes(search))
+      );
+    }
+
+    // Filter by date
+    if (dateFilter !== 'all') {
+      const now = new Date();
+      const filterDate = new Date();
+
+      switch (dateFilter) {
+        case 'today':
+          filterDate.setHours(0, 0, 0, 0);
+          break;
+        case 'week':
+          filterDate.setDate(now.getDate() - 7);
+          break;
+        case 'month':
+          filterDate.setMonth(now.getMonth() - 1);
+          break;
+      }
+
+      filtered = filtered.filter(p => new Date(p.created_at) >= filterDate);
+    }
+
+    setFilteredPayments(filtered);
   };
 
   const filterLogs = () => {
@@ -177,7 +253,22 @@ export default function TransactionHistoryPage() {
     const rejected = logs.filter(l => l.action === 'REJECTED').length;
     const requestedInfo = logs.filter(l => l.action === 'REQUESTED_INFO').length;
 
-    return { verified, rejected, requestedInfo, total: logs.length };
+    // Payment stats
+    const totalPayments = allPayments.length;
+    const pendingPayments = allPayments.filter(p => p.status === 'PENDING').length;
+    const verifiedPayments = allPayments.filter(p => p.status === 'VERIFIED').length;
+    const rejectedPayments = allPayments.filter(p => p.status === 'REJECTED').length;
+
+    return {
+      verified,
+      rejected,
+      requestedInfo,
+      total: logs.length,
+      totalPayments,
+      pendingPayments,
+      verifiedPayments,
+      rejectedPayments
+    };
   };
 
   if (authLoading) {
@@ -202,7 +293,10 @@ export default function TransactionHistoryPage() {
               </div>
               Transaction History
             </h1>
-            <p className="text-gray-400">Complete audit trail of all payment verifications</p>
+            <p className="text-gray-400">Complete audit trail of all payment verifications and actions</p>
+            <p className="text-gray-500 text-sm mt-1">
+              Note: This page shows <strong>admin actions</strong> (approvals/rejections). To see pending payments awaiting verification, visit the <a href="/admin/payments" className="text-primary-400 underline">Payments page</a>.
+            </p>
           </div>
           <Button
             color="primary"
@@ -214,13 +308,38 @@ export default function TransactionHistoryPage() {
           </Button>
         </div>
 
-        {/* Statistics Cards */}
+        {/* Payment Statistics */}
+        <Card className="bg-gradient-to-br from-purple-600/10 to-purple-800/10 backdrop-blur-md border border-purple-500/20 mb-4">
+          <CardBody className="p-6">
+            <h3 className="text-lg font-semibold text-white mb-4">Payment Overview</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div>
+                <p className="text-sm text-gray-400">Total Payments</p>
+                <p className="text-2xl font-bold text-white">{stats.totalPayments}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-400">Pending</p>
+                <p className="text-2xl font-bold text-yellow-400">{stats.pendingPayments}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-400">Verified</p>
+                <p className="text-2xl font-bold text-green-400">{stats.verifiedPayments}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-400">Rejected</p>
+                <p className="text-2xl font-bold text-red-400">{stats.rejectedPayments}</p>
+              </div>
+            </div>
+          </CardBody>
+        </Card>
+
+        {/* Verification Log Statistics */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card className="bg-gradient-to-br from-blue-600/20 to-blue-800/20 backdrop-blur-md border border-blue-500/30">
             <CardBody className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-blue-300 font-medium mb-1">Total Transactions</p>
+                  <p className="text-sm text-blue-300 font-medium mb-1">Admin Actions</p>
                   <p className="text-3xl font-bold text-white">{stats.total}</p>
                 </div>
                 <div className="w-12 h-12 rounded-lg bg-blue-500/20 flex items-center justify-center">

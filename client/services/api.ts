@@ -825,6 +825,15 @@ class ApiService {
 
   // ==================== ADMIN PAYMENTS ====================
 
+  async getAllPayments(limit: number = 100, offset: number = 0, status?: string): Promise<ApiResponse<any[]>> {
+    const params = new URLSearchParams({
+      limit: String(limit),
+      offset: String(offset)
+    });
+    if (status) params.append('status_filter', status);
+    return this.request<any[]>(`/admin/payments/all?${params.toString()}`);
+  }
+
   async getPendingPayments(limit: number = 100, offset: number = 0): Promise<ApiResponse<any[]>> {
     return this.request<any[]>(`/admin/payments/pending?limit=${limit}&offset=${offset}`);
   }
