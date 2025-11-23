@@ -1379,7 +1379,8 @@ async def get_all_payments(
                 payment_method=str(p.payment_method),
                 status=str(p.status),
                 submitted_at=p.submitted_at.isoformat() if p.submitted_at else p.created_at.isoformat(),
-                created_at=p.created_at.isoformat()
+                created_at=p.created_at.isoformat(),
+                days_pending=(datetime.utcnow() - p.created_at).days if p.status == 'PENDING' else 0
             )
             for p in payments
         ]
@@ -1429,6 +1430,45 @@ async def get_payment_statistics(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to fetch payment statistics"
         )
+
+
+@router.get("/payments/verification-logs", response_model=List[PaymentVerificationLogResponse])
+async def get_all_payment_verification_logs(
+    limit: int = Query(100, ge=1, le=1000),
+    offset: int = Query(0, ge=0),
+    action: Optional[str] = Query(None),
+    current_admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """Get all payment verification logs with optional filtering"""
+    query = db.query(PaymentVerificationLog, User, SubscriptionPayment).join(
+        User, PaymentVerificationLog.admin_id == User.id
+    ).join(
+        SubscriptionPayment, PaymentVerificationLog.payment_id == SubscriptionPayment.id
+    )
+
+    # Filter by action if provided
+    if action and action.upper() in ['VERIFIED', 'REJECTED', 'REQUESTED_INFO']:
+        query = query.filter(PaymentVerificationLog.action == action.upper())
+
+    logs = query.order_by(
+        PaymentVerificationLog.created_at.desc()
+    ).limit(limit).offset(offset).all()
+
+    return [
+        PaymentVerificationLogResponse(
+            id=int(getattr(log, 'id', 0)),
+            payment_id=int(getattr(log, 'payment_id', 0)),
+            admin_id=int(getattr(log, 'admin_id', 0)),
+            admin_name=f"{getattr(admin, 'first_name', '')} {getattr(admin, 'last_name', '')}".strip(),
+            action=str(getattr(log, 'action', '')),
+            previous_status=str(getattr(log, 'previous_status', '') or ''),
+            new_status=str(getattr(log, 'new_status', '') or ''),
+            notes=str(getattr(log, 'notes', '') or ''),
+            created_at=getattr(log, 'created_at', datetime.utcnow())
+        )
+        for log, admin, payment in logs
+    ]
 
 
 @router.get("/payments/{payment_id}", response_model=SubscriptionPaymentDetailedResponse)
@@ -1607,45 +1647,6 @@ Car Marketplace Philippines Team
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to verify payment"
         )
-
-
-@router.get("/payments/verification-logs", response_model=List[PaymentVerificationLogResponse])
-async def get_all_payment_verification_logs(
-    limit: int = Query(100, ge=1, le=1000),
-    offset: int = Query(0, ge=0),
-    action: Optional[str] = Query(None),
-    current_admin: User = Depends(get_current_admin),
-    db: Session = Depends(get_db)
-):
-    """Get all payment verification logs with optional filtering"""
-    query = db.query(PaymentVerificationLog, User, SubscriptionPayment).join(
-        User, PaymentVerificationLog.admin_id == User.id
-    ).join(
-        SubscriptionPayment, PaymentVerificationLog.payment_id == SubscriptionPayment.id
-    )
-
-    # Filter by action if provided
-    if action and action.upper() in ['VERIFIED', 'REJECTED', 'REQUESTED_INFO']:
-        query = query.filter(PaymentVerificationLog.action == action.upper())
-
-    logs = query.order_by(
-        PaymentVerificationLog.created_at.desc()
-    ).limit(limit).offset(offset).all()
-
-    return [
-        PaymentVerificationLogResponse(
-            id=int(getattr(log, 'id', 0)),
-            payment_id=int(getattr(log, 'payment_id', 0)),
-            admin_id=int(getattr(log, 'admin_id', 0)),
-            admin_name=f"{getattr(admin, 'first_name', '')} {getattr(admin, 'last_name', '')}".strip(),
-            action=str(getattr(log, 'action', '')),
-            previous_status=str(getattr(log, 'previous_status', '') or ''),
-            new_status=str(getattr(log, 'new_status', '') or ''),
-            notes=str(getattr(log, 'notes', '') or ''),
-            created_at=getattr(log, 'created_at', datetime.utcnow())
-        )
-        for log, admin, payment in logs
-    ]
 
 
 @router.get("/payments/{payment_id}/logs", response_model=List[PaymentVerificationLogResponse])
