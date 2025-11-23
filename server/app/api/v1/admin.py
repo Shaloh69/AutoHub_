@@ -1319,6 +1319,78 @@ async def update_system_config(
 # PAYMENT VERIFICATION ENDPOINTS (EXISTING - PRESERVED)
 # ========================================
 
+@router.get("/payments/all", response_model=List[PendingPaymentSummary])
+async def get_all_payments(
+    limit: int = Query(100, ge=1, le=500),
+    offset: int = Query(0, ge=0),
+    status_filter: Optional[str] = Query(None),
+    current_admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db)
+):
+    """
+    Get list of ALL payments (pending, verified, rejected)
+
+    Returns list of all payments with user details, sorted by creation date
+    """
+    try:
+        query = db.query(
+            SubscriptionPayment.id.label('payment_id'),
+            SubscriptionPayment.user_id,
+            SubscriptionPayment.plan_id,
+            SubscriptionPayment.amount,
+            SubscriptionPayment.currency_id,
+            SubscriptionPayment.reference_number,
+            SubscriptionPayment.payment_method,
+            SubscriptionPayment.status,
+            SubscriptionPayment.submitted_at,
+            SubscriptionPayment.created_at,
+            SubscriptionPayment.admin_verified_at,
+            User.first_name,
+            User.last_name,
+            User.email,
+            SubscriptionPlan.name.label('plan_name'),
+            Currency.code.label('currency')
+        ).join(
+            User, SubscriptionPayment.user_id == User.id
+        ).join(
+            SubscriptionPlan, SubscriptionPayment.plan_id == SubscriptionPlan.id
+        ).join(
+            Currency, SubscriptionPayment.currency_id == Currency.id
+        )
+
+        # Filter by status if provided
+        if status_filter:
+            query = query.filter(SubscriptionPayment.status == status_filter.upper())
+
+        payments = query.order_by(
+            SubscriptionPayment.created_at.desc()
+        ).limit(limit).offset(offset).all()
+
+        return [
+            PendingPaymentSummary(
+                payment_id=int(p.payment_id),
+                user_id=int(p.user_id),
+                user_name=f"{p.first_name} {p.last_name}".strip(),
+                user_email=str(p.email),
+                plan_name=str(p.plan_name),
+                amount=float(p.amount),
+                currency=str(p.currency),
+                reference_number=str(p.reference_number or ''),
+                payment_method=str(p.payment_method),
+                status=str(p.status),
+                submitted_at=p.submitted_at.isoformat() if p.submitted_at else p.created_at.isoformat(),
+                created_at=p.created_at.isoformat()
+            )
+            for p in payments
+        ]
+    except Exception as e:
+        logger.error(f"Error fetching all payments: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to fetch payments"
+        )
+
+
 @router.get("/payments/pending", response_model=List[PendingPaymentSummary])
 async def get_pending_payments(
     limit: int = Query(100, ge=1, le=500),
@@ -1328,7 +1400,7 @@ async def get_pending_payments(
 ):
     """
     Get list of pending payments requiring verification
-    
+
     Returns list of payments with user details, sorted by submission date
     """
     try:
