@@ -404,13 +404,15 @@ export default function SearchCarsPage() {
                   </Checkbox>
                 </div>
 
-                <Button
-                  className="w-full bg-gradient-to-r from-primary-600 to-primary-700 text-white font-bold shadow-2xl shadow-primary-600/30 hover:shadow-primary-600/50 hover:scale-105 transition-all duration-300"
-                  onPress={handleSearch}
-                  startContent={<Search size={18} />}
-                >
-                  Apply Filters
-                </Button>
+                <div className="flex justify-end">
+                  <Button
+                    className="bg-gradient-to-r from-primary-600 to-primary-700 text-white font-bold shadow-2xl shadow-primary-600/30 hover:shadow-primary-600/50 hover:scale-105 transition-all duration-300"
+                    onPress={handleSearch}
+                    startContent={<Search size={18} />}
+                  >
+                    Apply Filters
+                  </Button>
+                </div>
               </CardBody>
             </Card>
           </div>
